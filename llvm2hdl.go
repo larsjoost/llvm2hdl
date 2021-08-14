@@ -1,5 +1,3 @@
-// This example parses an LLVM IR assembly file and pretty-prints the data types
-// of the parsed module to standard output.
 package main
 
 import (
@@ -20,18 +18,15 @@ import (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	print_llvm := flag.Bool("llvm-tree", false, "Prints the llvm tree")
+	print_llvm := flag.Bool("llvm-tree", false, "Prints the parsed llvm tree")
 	flag.Parse()
 
 	file_names := flag.Args()
-	// Parse the LLVM IR assembly file `foo.ll`.
 	for _, file_name := range file_names {
 		m, err := asm.ParseFile(file_name)
 		if err != nil {
 			log.Fatalf("%+v", err)
 		}
-		// Pretty-print the data types of the parsed LLVM IR module.
-
 		if *print_llvm {
 			pretty.Println(m)
 		} else {
@@ -104,9 +99,22 @@ func getValue(x value.Value) string {
 	return ""
 }
 
-func getTermRet(term *ir.TermRet) string {
-	x := getValue(term.X)
-	return "return " + x + ";"
+func getInstanceAdd(add *ir.InstAdd) *Instance {
+	return &Instance{operation: "add", a_input: getValue(add.X), b_input: getValue((add.Y))}
+}
+
+func getInstance(x value.Value) *Instance {
+	switch x := x.(type) {
+	case *ir.InstAdd:
+		return getInstanceAdd(x)
+	default:
+		log.Fatal("Unknown instance: " + reflect.TypeOf(x).String())
+	}
+	return nil
+}
+
+func getTermRet(term *ir.TermRet) *Instance {
+	return getInstance(term.X)
 }
 
 // genCallgraph returns the callgraph in Graphviz DOT format of the given LLVM
