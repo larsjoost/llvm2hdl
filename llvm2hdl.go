@@ -35,10 +35,6 @@ func main() {
 	}
 }
 
-func getInstAdd(add *ir.InstAdd) string {
-	return getValue(add.X) + " + " + getValue(add.Y)
-}
-
 func getInstLoad(x *ir.InstLoad) string {
 	return getValue(x.Src)
 }
@@ -89,8 +85,6 @@ func getValue(x value.Value) string {
 		return getInstLoad(x)
 	case *ir.InstAlloca:
 		return getInstAlloca(x)
-	case *ir.InstAdd:
-		return getInstAdd(x)
 	case *ir.Param:
 		return getParamName(x)
 	default:
@@ -146,7 +140,7 @@ func genCode(m *ir.Module) string {
 				case *ir.InstAlloca:
 					buf.WriteString(getInstAlloca(inst) + " -- Alloca\n")
 				case *ir.InstAdd:
-					buf.WriteString(getInstAdd(inst) + " -- Add\n")
+					codeGen.addInstance(getInstance(inst))
 				case *ir.InstStore:
 					buf.WriteString(getInstStore(inst) + "; -- Store\n")
 				default:
@@ -157,7 +151,7 @@ func genCode(m *ir.Module) string {
 			term := block.Term
 			switch term := term.(type) {
 			case *ir.TermRet:
-				codeGen.addReturnAssignment(getTermRet(term))
+				codeGen.addReturnInstance(getTermRet(term))
 			}
 		}
 	}

@@ -4,7 +4,7 @@ type VhdlGen struct {
 	name            string
 	ports           []string
 	generics        []string
-	instance        []Instance
+	instances       InstanceContainer
 	returnDataWidth string
 	returnName      string
 }
@@ -13,19 +13,25 @@ func (x *VhdlGen) initialize(name string, returnDataWidth string) {
 	x.name = name
 	x.returnDataWidth = returnDataWidth
 	x.returnName = "return_value"
+	tagInputName := "tag_in"
+	tagOutputName := "tag_out"
 	x.ports = append(x.ports,
 		"clk : IN std_ulogic",
 		"sreset : IN std_ulogic",
-		"tag_in : in std_ulogic_vector(0 to tag_width - 1) := (others => '0')",
-		"tag_out : out std_ulogic_vector(0 to tag_width - 1)",
+		tagInputName+" : in std_ulogic_vector(0 to tag_width - 1) := (others => '0')",
+		tagOutputName+" : out std_ulogic_vector(0 to tag_width - 1)",
 		x.returnName+" : out std_ulogic_vector(0 to "+returnDataWidth+" - 1)")
 	x.generics = append(x.generics,
 		"tag_width : positive := 1")
 }
 
-func (x *VhdlGen) addReturnAssignment(instance *Instance) {
+func (x *VhdlGen) addInstance(instance *Instance) {
+	x.instances.add(instance)
+}
+
+func (x *VhdlGen) addReturnInstance(instance *Instance) {
 	instance.q_output = x.returnName
-	x.instance = append(x.instance, *instance)
+	x.addInstance(instance)
 }
 
 func (x *VhdlGen) addPort(port_description string) {
@@ -64,11 +70,7 @@ func (x *VhdlGen) entityToString() string {
 }
 
 func (x *VhdlGen) instancesToString() string {
-	t := ""
-	for _, i := range x.instance {
-		t = t + i.toString()
-	}
-	return t + "\n"
+	return x.instances.toString()
 }
 
 func (x *VhdlGen) architectureToString() string {
