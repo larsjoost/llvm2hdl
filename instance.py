@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from messages import Messages
 
 class Instance:
 	
@@ -10,9 +11,13 @@ class Instance:
 
 	def setInstruction(self, instruction):
 		self.instruction = instruction
-
+		# %add = add nsw i32 %0, %1
+		a = str(instruction).split("=")
+		self.opcode = self.parent._removeEmptyElements(a)[0].strip()
+		self.data_width = self.parent._removeEmptyElements(a[1].split(' '))[2]
+		
 	def getDataWidth(self):
-		return self.instruction.type
+		return self.data_width
 
 	def getInstanceIndex(self):
 		if self.prev is None:
@@ -40,7 +45,7 @@ class Instance:
 		instance_name = self.getInstanceName()
 		return instance_name + "_q_i"
 
-	def print(self):
+	def printInstance(self):
 		instance_name = self.getInstanceName()
 		print(instance_name, ": entity", self.library + "." + self.instruction.name, "is ", end="")
 		input_ports = ""
@@ -53,9 +58,13 @@ class Instance:
 			", q => " + self.getOutputSignalName(),
 			");")	
 
+	def printDeclarations(self):
+		print("signal", self.getOutputSignalName(), ":", )
+
 class InstanceContainer:
 	
 	def __init__(self):
+		self.msg = Messages()
 		self.container = []
 		self.assignmentMap = {}
 		self.instanceMap = {}
@@ -75,9 +84,6 @@ class InstanceContainer:
 
 	def _addInstruction(self, instruction):
 		instance = Instance(self)
-		# %add = add nsw i32 %0, %1
-		instruction_reference = self._removeEmptyElements(str(instruction).split("="))[0].strip()
-		self.instanceMap[instruction_reference] = instance
 		try:
 			last_instance = self.container[-1]
 			last_instance.next = instance
@@ -85,6 +91,7 @@ class InstanceContainer:
 		except IndexError:
 			pass
 		instance.setInstruction(instruction)
+		self.instanceMap[instance.opcode] = instance
 		self.container.append(instance)
 
 	def _removeEmptyElements(self, x):
@@ -114,7 +121,7 @@ class InstanceContainer:
 			source = self._removeEmptyElements(d)[1].strip()
 			x = self.Assignment(destination=destination, source=source)
 		else:
-			print("Unknown instruction:", str(instruction))
+			self.msg.error("Unknown instruction: " + str(instruction))
 		return x
 
 	def _addAssignmentInstruction(self, instruction):
@@ -127,7 +134,6 @@ class InstanceContainer:
 		self.return_value = self.instanceMap[instance_reference].getOutputSignalName()
 
 	def addInstruction(self, instruction):
-		print("instruction:", instruction)
 		if instruction.opcode in ["add"]:
 			self._addInstruction(instruction)
 		elif instruction.opcode in ["store", "load"]:
@@ -137,7 +143,12 @@ class InstanceContainer:
 		else:
 			print("Unknown instruction:", instruction.opcode)
 
-	def print(self):
+	def printInstances(self):
 		for i in self.container:
-			i.print()
+			i.printInstance()
 		print("return_value <= ", self.return_value, ";")
+
+	def printDeclarations(self):
+		for i in self.container:
+			i.printDeclarations()
+			

@@ -68,8 +68,9 @@ class FunctionParser:
 		self.printPorts()
 		print("end entity " + f.name + ";")
 		print("architecture rtl of " + f.name + " is")
+		self.instance_container.printDeclarations()
 		print("begin")
-		self.instance_container.print()
+		self.instance_container.printInstances()
 		print("end architecture " + f.name + ";")
 
 class VhdlGen:
