@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from messages import Messages
+from vhdl_declarations import VhdlDeclarations
+from llvm_declarations import LlvmDeclarations
 
 class Instance:
 	
@@ -8,14 +10,17 @@ class Instance:
 		self.library = "work"
 		self.next = None
 		self.prev = None
+		self.llvm_decl = LlvmDeclarations()
+		self.vhdl_decl = VhdlDeclarations()
 
 	def setInstruction(self, instruction):
 		self.instruction = instruction
 		# %add = add nsw i32 %0, %1
 		a = str(instruction).split("=")
 		self.opcode = self.parent._removeEmptyElements(a)[0].strip()
-		self.data_width = self.parent._removeEmptyElements(a[1].split(' '))[2]
-		
+		data_type = self.parent._removeEmptyElements(a[1].split(' '))[2]
+		self.data_width = self.llvm_decl.getDataWidth(data_type) 
+
 	def getDataWidth(self):
 		return self.data_width
 
@@ -45,21 +50,25 @@ class Instance:
 		instance_name = self.getInstanceName()
 		return instance_name + "_q_i"
 
-	def printInstance(self):
+	def writeInstance(self, file_handle):
 		instance_name = self.getInstanceName()
-		print(instance_name, ": entity", self.library + "." + self.instruction.name, "is ", end="")
+		file_handle.write(instance_name + " : entity " + self.library + "." + self.instruction.name + " is ")
 		input_ports = ""
 		for index, operand in enumerate(self.instruction.operands):
 			input_ports += ", " + chr(ord('a') + index) + " => " + str(self.parent.resolveOperand(operand))
-		print("port map (clk => clk, sreset => sreset",
-			", tag_in => " + self.getPreviousTagName(),
-			input_ports,
-			", tag_out => " + self.getNextTagName(),
-			", q => " + self.getOutputSignalName(),
-			");")	
+		file_handle.write("port map (clk => clk, sreset => sreset")
+		file_handle.write(", tag_in => " + self.getPreviousTagName())
+		file_handle.write(input_ports)
+		file_handle.write(", tag_out => " + self.getNextTagName())
+		file_handle.write(", q => " + self.getOutputSignalName())
+		file_handle.write(");\n")	
 
-	def printDeclarations(self):
-		print("signal", self.getOutputSignalName(), ":", )
+	def writeDeclarations(self, file_handle):
+		file_handle.write("signal ")
+		file_handle.write(self.getOutputSignalName())
+		file_handle.write(" : ")
+		file_handle.write(self.vhdl_decl.getTypeDeclarations(self.getDataWidth()))
+		file_handle.write(';\n')
 
 class InstanceContainer:
 	
@@ -140,15 +149,17 @@ class InstanceContainer:
 			self._addAssignmentInstruction(instruction)
 		elif instruction.opcode == "ret":
 			self._addReturnInstruction(instruction)
+		elif instruction.opcode == "alloca":
+			pass
 		else:
-			print("Unknown instruction:", instruction.opcode)
+			self.msg.error("Unknown instruction: " + str(instruction.opcode) + " (" + str(instruction) + ")")
 
-	def printInstances(self):
+	def writeInstances(self, file_handle):
 		for i in self.container:
-			i.printInstance()
-		print("return_value <= ", self.return_value, ";")
+			i.writeInstance(file_handle)
+		file_handle.write("return_value <= " + str(self.return_value) + ";\n")
 
-	def printDeclarations(self):
+	def writeDeclarations(self, file_handle):
 		for i in self.container:
-			i.printDeclarations()
+			i.writeDeclarations(file_handle)
 			

@@ -1,23 +1,25 @@
 
 
 from instance import InstanceContainer
-
+from llvm_declarations import LlvmDeclarations
+from vhdl_declarations import VhdlDeclarations
 
 class FunctionParser:
 
 	def __init__(self):
 		self.instance_container = InstanceContainer()
+		self.llvm_decl = LlvmDeclarations()
+		self.vhdl_decl = VhdlDeclarations()
 
 	def getPort(self, name, direction, data_width, default_value=None):
-		port_type = "std_ulogic" if data_width == 1 else "std_ulogic_vector(0 to " + str(data_width) + " - 1)"
+		port_type = self.vhdl_decl.getTypeDeclarations(data_width)
 		if default_value is not None:
 			port_type += " := " + default_value
 		return name + " : " + direction + " " + port_type
 
 	def getDataWidth(self, t):
-		data_types = {'i32': 32}
 		data_type = t.split(' ')[0]
-		return data_types[data_type]
+		return self.llvm_decl.getDataWidth(data_type)
 
 	def addArgument(self, name, type):
 		data_width = self.getDataWidth(str(type))
@@ -28,24 +30,25 @@ class FunctionParser:
 		if len(self.library) > 0:
 			library = self.library
 	
-	def printDeclarations(self, type, instances):
-		print(type, " (")
+	def writeDeclarations(self, type, instances, file_handle):
+		file_handle.write(type + " (\n")
 		delimiter = ""
 		for i in instances:
-			print(delimiter, i, end="")
+			file_handle.write(delimiter)
+			file_handle.write(i)
 			delimiter = ";\n"
-		print(");")
+		file_handle.write(");\n")
 
-	def printGenerics(self):
-		self.printDeclarations("generic", self.generics)
+	def writeGenerics(self, file_handle):
+		self.writeDeclarations("generic", self.generics, file_handle)
 		
-	def printPorts(self):
-		self.printDeclarations("port", self.ports)
+	def writePorts(self, file_handle):
+		self.writeDeclarations("port", self.ports, file_handle)
 
 
-	def parse(self, f):								
-		self.name = f.name
-		self.return_data_width = self.getDataWidth(str(f.type))
+	def parse(self, function, file_handle):								
+		self.name = function.name
+		self.return_data_width = self.getDataWidth(str(function.type))
 		self.return_name = "return_value"
 		tagInputName = "tag_in"
 		tagOutputName = "tag_out"
@@ -57,29 +60,30 @@ class FunctionParser:
 			self.getPort(self.return_name, "out", self.return_data_width)]
 		self.generics = [
 			"tag_width : positive := 1"]
-		print(f'Function attributes: {list(f.attributes)}')
-		for a in f.arguments:
+		for a in function.arguments:
 			self.addArgument(a.name, a.type)
-		for b in f.blocks:
+		for b in function.blocks:
 			for i in b.instructions:
 				self.instance_container.addInstruction(i)
-		print("entity " + f.name + " is")
-		self.printGenerics()
-		self.printPorts()
-		print("end entity " + f.name + ";")
-		print("architecture rtl of " + f.name + " is")
-		self.instance_container.printDeclarations()
-		print("begin")
-		self.instance_container.printInstances()
-		print("end architecture " + f.name + ";")
+		file_handle.write("library ieee;\n")
+		file_handle.write("use ieee.std_logic_1164.all;\n")
+		file_handle.write("entity " + function.name + " is\n")
+		self.writeGenerics(file_handle)
+		self.writePorts(file_handle)
+		file_handle.write("end entity " + function.name + ";\n")
+		file_handle.write("architecture rtl of " + function.name + " is\n")
+		self.instance_container.writeDeclarations(file_handle)
+		file_handle.write("begin\n")
+		self.instance_container.writeInstances(file_handle)
+		file_handle.write("end architecture " + function.name + ";\n")
 
 class VhdlGen:
 
-	def parse(self, m):
-		for f in m.functions:
+	def parse(self, module, file_handle):
+		for f in module.functions:
 			x = FunctionParser()
-			x.parse(f)
-		for g in m.global_variables:
+			x.parse(f, file_handle)
+		for g in module.global_variables:
 			print(f'Global: {g.name}/`{g.type}`')
 			assert g.is_global
 			print(f'Attributes: {list(g.attributes)}')
