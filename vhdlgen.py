@@ -67,7 +67,7 @@ class FunctionParser:
 		self.printGenerics()
 		self.printPorts()
 		print("end entity " + f.name + ";")
-		print("architecture rtl of " + f.name + " is)")
+		print("architecture rtl of " + f.name + " is")
 		print("begin")
 		self.instance_container.print()
 		print("end architecture " + f.name + ";")

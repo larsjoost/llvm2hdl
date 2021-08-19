@@ -5,7 +5,7 @@ from vhdlgen import VhdlGen
 
 def main():
 	parser = argparse.ArgumentParser(description='Process some integers.')
-	parser.add_argument('-f', dest='file_name', required=True,
+	parser.add_argument('-f', dest='file_name', required=False, default="test/cpp/add/add.ll",
     	                help='File name of the llvm ir file')
 	parser.add_argument('--llvm-tree', dest='llvm_tree', action='store_true', default=False,
     	                help='Displays the complete parsed llvm tree')
