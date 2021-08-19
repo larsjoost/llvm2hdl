@@ -1,8 +1,9 @@
-import sys
+from instance_statistics import InstanceStatistics
 import os
 import argparse
 import llvmlite.binding as llvm
 
+from file_writer import FileWriter
 from vhdlgen import VhdlGen
 
 def arguments():
@@ -11,6 +12,8 @@ def arguments():
     	                help='File name of the llvm ir file')
 	parser.add_argument('-o', dest='output_file_name', required=False, default=None,
     	                help='Output file name')
+	parser.add_argument('-v', dest='verbose', action='store_true', default=False,
+    	                help='Set verbosity on')
 	parser.add_argument('--llvm-tree', dest='llvm_tree', action='store_true', default=False,
     	                help='Displays the complete parsed llvm tree')
 	return parser.parse_args()
@@ -33,9 +36,14 @@ def main():
 		pre, ext = os.path.splitext(args.file_name)	
 		output_file_name = pre + ".vhd"
 	
+	statistics = InstanceStatistics()
+
 	with open(output_file_name, 'w') as fh:
-		c.parse(m, fh)
+		file_writer = FileWriter(fh)
+		c.parse(m, file_writer, statistics)
 	
+	if args.verbose:
+		statistics.print()
 
 if __name__ == "__main__":
     main()

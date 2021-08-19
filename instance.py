@@ -142,8 +142,9 @@ class InstanceContainer:
 		instance_reference = self._removeEmptyElements(str(instruction).split(' '))[2].strip()
 		self.return_value = self.instanceMap[instance_reference].getOutputSignalName()
 
-	def addInstruction(self, instruction):
+	def addInstruction(self, instruction, statistics):
 		if instruction.opcode in ["add"]:
+			statistics.increment(instruction.opcode)
 			self._addInstruction(instruction)
 		elif instruction.opcode in ["store", "load"]:
 			self._addAssignmentInstruction(instruction)

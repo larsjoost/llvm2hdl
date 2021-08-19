@@ -46,7 +46,7 @@ class FunctionParser:
 		self.writeDeclarations("port", self.ports, file_handle)
 
 
-	def parse(self, function, file_handle):								
+	def parse(self, function, file_handle, statistics):								
 		self.name = function.name
 		self.return_data_width = self.getDataWidth(str(function.type))
 		self.return_name = "return_value"
@@ -64,7 +64,7 @@ class FunctionParser:
 			self.addArgument(a.name, a.type)
 		for b in function.blocks:
 			for i in b.instructions:
-				self.instance_container.addInstruction(i)
+				self.instance_container.addInstruction(i, statistics)
 		file_handle.write("library ieee;\n")
 		file_handle.write("use ieee.std_logic_1164.all;\n")
 		file_handle.write("entity " + function.name + " is\n")
@@ -79,10 +79,10 @@ class FunctionParser:
 
 class VhdlGen:
 
-	def parse(self, module, file_handle):
+	def parse(self, module, file_handle, statistics):
 		for f in module.functions:
 			x = FunctionParser()
-			x.parse(f, file_handle)
+			x.parse(f, file_handle, statistics)
 		for g in module.global_variables:
 			print(f'Global: {g.name}/`{g.type}`')
 			assert g.is_global
