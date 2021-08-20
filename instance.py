@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from llvm_parser import LlvmParser
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
 from llvm_declarations import LlvmDeclarations
@@ -12,14 +12,13 @@ class Instance:
 		self.prev = None
 		self.llvm_decl = LlvmDeclarations()
 		self.vhdl_decl = VhdlDeclarations()
+		self.llvm_parser = LlvmParser()
 
 	def setInstruction(self, instruction):
 		self.instruction = instruction
-		# %add = add nsw i32 %0, %1
-		a = str(instruction).split("=")
-		self.opcode = self.parent._removeEmptyElements(a)[0].strip()
-		data_type = self.parent._removeEmptyElements(a[1].split(' '))[2]
-		self.data_width = self.llvm_decl.getDataWidth(data_type) 
+		a = self.llvm_parser.getInstruction(instruction)
+		self.opcode = a.opcode
+		self.data_width = a.data_width 
 
 	def getDataWidth(self):
 		return self.data_width
@@ -74,6 +73,7 @@ class InstanceContainer:
 	
 	def __init__(self):
 		self.msg = Messages()
+		self.llvm_parser = LlvmParser()
 		self.container = []
 		self.assignmentMap = {}
 		self.instanceMap = {}
@@ -103,44 +103,16 @@ class InstanceContainer:
 		self.instanceMap[instance.opcode] = instance
 		self.container.append(instance)
 
-	def _removeEmptyElements(self, x):
-		return [i for i in x if len(i) > 0]
-
-	@dataclass
-	class Assignment:
-		destination : str
-		source : str
-
 	def getAssignment(self, instruction : str):
-		x = None
-		if "store" in instruction:
-			# store i32 %a, i32* %a.addr, align 4
-			a = instruction.split(',')
-			b = a[0].split(' ')
-			source = self._removeEmptyElements(b)[2].strip()
-			b = a[1].split(' ')
-			destination = self._removeEmptyElements(b)[1].strip()
-			x = self.Assignment(destination=destination, source=source)
-		elif "load" in instruction:
-			# %0 = load i32, i32* %a.addr, align 4
-			a = instruction.split('=')
-			destination = self._removeEmptyElements(a)[0].strip()
-			c = a[1].split(',')
-			d = c[1].split(' ')
-			source = self._removeEmptyElements(d)[1].strip()
-			x = self.Assignment(destination=destination, source=source)
-		else:
-			self.msg.error("Unknown instruction: " + str(instruction))
-		return x
+		return self.llvm_parser.getAssignment(instruction)
 
 	def _addAssignmentInstruction(self, instruction):
 		x = self.getAssignment(str(instruction))
 		self.assignmentMap[x.destination] = x.source
 
 	def _addReturnInstruction(self, instruction):
-		# ret i32 %add
-		instance_reference = self._removeEmptyElements(str(instruction).split(' '))[2].strip()
-		self.return_value = self.instanceMap[instance_reference].getOutputSignalName()
+		return_instruction = self.llvm_parser.getReturnInstruction(instruction)
+		self.return_value = self.instanceMap[return_instruction.value].getOutputSignalName()
 
 	def addInstruction(self, instruction, statistics):
 		if instruction.opcode in ["add"]:
