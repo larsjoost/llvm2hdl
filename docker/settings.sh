@@ -1,3 +1,3 @@
 #!/bin/bash
 
-DOCKER_IMAGE_NAME="llvm2hdl_ubuntu_20_04"
+DOCKER_IMAGE_NAME="rustc_ubuntu_21_04"

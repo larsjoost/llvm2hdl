@@ -1,7 +1,9 @@
 #!/bin/bash
 
+set -x
+
 SCRIPT=$(readlink -f $0)
-SCRIPT_DIR=$(dirname $SCRIPT)
+SCRIPTPATH=$(dirname $SCRIPT)
 
 ALL_ARGUMENTS=$@
 
@@ -67,11 +69,11 @@ do
      esac
 done
 
-source $SCRIPT_DIR/start.sh
+source $SCRIPTPATH/start.sh
 
 if [ ! -w $INSTALL_DIR ]; then
     error "$INSTALL_DIR is not writable"
     exit 1
 fi
     
-docker run -it -e PATH --rm $WORKING_DIR $MOUNT_DIR $MOUNT_SCRIPT_DIR $DOCKER_IMAGE_NAME bash -c "$COMMAND"
+docker run -it -e PATH --rm $WORKING_DIR $MOUNT_DIR $DOCKER_IMAGE_NAME bash -c "$COMMAND"

@@ -1,27 +1,27 @@
+from dataclasses import dataclass
 from llvm_parser import LlvmParser
+from llvm_parser import Instruction
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
 from llvm_declarations import LlvmDeclarations
+
 
 class Instance:
 	
 	def __init__(self, parent):
 		self.parent = parent
-		self.library = "work"
+		self.library = "llvm"
 		self.next = None
 		self.prev = None
 		self.llvm_decl = LlvmDeclarations()
 		self.vhdl_decl = VhdlDeclarations()
 		self.llvm_parser = LlvmParser()
 
-	def setInstruction(self, instruction):
+	def setInstruction(self, instruction : Instruction):
 		self.instruction = instruction
-		a = self.llvm_parser.getInstruction(instruction)
-		self.opcode = a.opcode
-		self.data_width = a.data_width 
-
+	
 	def getDataWidth(self):
-		return self.data_width
+		return self.instruction.data_width
 
 	def getInstanceIndex(self):
 		if self.prev is None:
@@ -29,7 +29,7 @@ class Instance:
 		return self.prev.getInstanceIndex() + 1
 
 	def getInstanceName(self):
-		return "inst_" + self.instruction.name + "_" + str(self.getInstanceIndex())
+		return "inst_" + self.instruction.opcode + "_" + str(self.getInstanceIndex())
 		
 	def getTagName(self):
 		return self.getInstanceName() + "_tag_out_i"
@@ -51,10 +51,10 @@ class Instance:
 
 	def writeInstance(self, file_handle):
 		instance_name = self.getInstanceName()
-		file_handle.write(instance_name + " : entity " + self.library + "." + self.instruction.name + " is ")
+		file_handle.write(instance_name + " : entity " + self.library + "." + self.instruction.opcode + " is ")
 		input_ports = ""
 		for index, operand in enumerate(self.instruction.operands):
-			input_ports += ", " + chr(ord('a') + index) + " => " + str(self.parent.resolveOperand(operand))
+			input_ports += ", " + chr(ord('a') + index) + " => " + str(self.parent.getSource(operand))
 		file_handle.write("port map (clk => clk, sreset => sreset")
 		file_handle.write(", tag_in => " + self.getPreviousTagName())
 		file_handle.write(input_ports)
@@ -83,15 +83,15 @@ class InstanceContainer:
 			return self.resolveAssignment(self.assignmentMap[assignment])
 		return assignment
 
-	def _resolveOperand(self, operand):
+	def _resolveSource(self, operand):
 		x = self.getAssignment(str(operand))
 		return self.resolveAssignment(x.destination)
 
-	def resolveOperand(self, operand):
-		x = self._resolveOperand(operand)
+	def getSource(self, operand):
+		x = self.resolveAssignment(operand)
 		return x[1:] if x[0] == "%" else x
 
-	def _addInstruction(self, instruction):
+	def _addInstruction(self, destination : str, instruction : Instruction):
 		instance = Instance(self)
 		try:
 			last_instance = self.container[-1]
@@ -100,11 +100,15 @@ class InstanceContainer:
 		except IndexError:
 			pass
 		instance.setInstruction(instruction)
-		self.instanceMap[instance.opcode] = instance
+		self.instanceMap[destination] = instance
 		self.container.append(instance)
 
 	def getAssignment(self, instruction : str):
 		return self.llvm_parser.getAssignment(instruction)
+
+	def _addCallInstruction(self, instruction):
+		x = self.llvm_parser.getCallAssignment(instruction)
+		self.msg.note(str(instruction))
 
 	def _addAssignmentInstruction(self, instruction):
 		x = self.getAssignment(str(instruction))
@@ -117,11 +121,16 @@ class InstanceContainer:
 	def addInstruction(self, instruction, statistics):
 		if instruction.opcode in ["add"]:
 			statistics.increment(instruction.opcode)
-			self._addInstruction(instruction)
+			x = self.llvm_parser.getEqualAssignment(str(instruction))
+			a = self.llvm_parser.getInstruction(x.source)
+			self._addInstruction(x.destination, a)
+		elif instruction.opcode == "call":
+			x = self.llvm_parser.getEqualAssignment(str(instruction))
+			self._addCallInstruction(x.source) 
 		elif instruction.opcode in ["store", "load"]:
-			self._addAssignmentInstruction(instruction)
+			self._addAssignmentInstruction(str(instruction))
 		elif instruction.opcode == "ret":
-			self._addReturnInstruction(instruction)
+			self._addReturnInstruction(str(instruction))
 		elif instruction.opcode == "alloca":
 			pass
 		else:
