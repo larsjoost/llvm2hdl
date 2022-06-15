@@ -1,147 +1,165 @@
+from typing import List
+from llvmlite.binding import ValueRef
+
 from dataclasses import dataclass
-from llvm_parser import LlvmParser
-from llvm_parser import Instruction
+from file_writer import FileWriter
+from instance_statistics import InstanceStatistics
+from llvm_parser import Assignment, LlvmParser, Instruction
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
 from llvm_declarations import LlvmDeclarations
 
-
 class Instance:
-	
-	def __init__(self, parent):
-		self.parent = parent
-		self.library = "llvm"
-		self.next = None
-		self.prev = None
-		self.llvm_decl = LlvmDeclarations()
-		self.vhdl_decl = VhdlDeclarations()
-		self.llvm_parser = LlvmParser()
 
-	def setInstruction(self, instruction : Instruction):
-		self.instruction = instruction
-	
-	def getDataWidth(self):
-		return self.instruction.data_width
+    instruction: Instruction
 
-	def getInstanceIndex(self):
-		if self.prev is None:
-			return 1
-		return self.prev.getInstanceIndex() + 1
+    def __init__(self, parent):
+        self.parent = parent
+        self.library = "llvm"
+        self.next = None
+        self.prev = None
+        self.llvm_decl = LlvmDeclarations()
+        self.vhdl_decl = VhdlDeclarations()
+        self.llvm_parser = LlvmParser()
 
-	def getInstanceName(self):
-		return "inst_" + self.instruction.opcode + "_" + str(self.getInstanceIndex())
-		
-	def getTagName(self):
-		return self.getInstanceName() + "_tag_out_i"
+    def setInstruction(self, instruction : Instruction):
+        self.instruction = instruction
 
-	def getInstanceTagName(self, instance, default):
-		if instance is None:
-			return default
-		return instance.getTagName()	
+    def getDataWidth(self):
+        return self.instruction.data_width
 
-	def getPreviousTagName(self):
-		return self.getInstanceTagName(self.prev, "tag_in")	
+    def getInstanceIndex(self) -> int:
+        if self.prev is None:
+            return 1
+        return self.prev.getInstanceIndex() + 1
 
-	def getNextTagName(self):
-		return self.getInstanceTagName(self.next, "tag_out")	
+    def _get_component_name(self, opcode: str) -> str:
+        return "llvm_" + opcode
 
-	def getOutputSignalName(self):
-		instance_name = self.getInstanceName()
-		return instance_name + "_q_i"
+    def getInstanceName(self) -> str:
+        return "inst_" + self._get_component_name(self.instruction.opcode) + "_" + str(self.getInstanceIndex())
 
-	def writeInstance(self, file_handle):
-		instance_name = self.getInstanceName()
-		file_handle.write(instance_name + " : entity " + self.library + "." + self.instruction.opcode + " is ")
-		input_ports = ""
-		for index, operand in enumerate(self.instruction.operands):
-			input_ports += ", " + chr(ord('a') + index) + " => " + str(self.parent.getSource(operand))
-		file_handle.write("port map (clk => clk, sreset => sreset")
-		file_handle.write(", tag_in => " + self.getPreviousTagName())
-		file_handle.write(input_ports)
-		file_handle.write(", tag_out => " + self.getNextTagName())
-		file_handle.write(", q => " + self.getOutputSignalName())
-		file_handle.write(");\n")	
+    def getTagName(self) -> str:
+        return self.getInstanceName() + "_tag_out_i"
 
-	def writeDeclarations(self, file_handle):
-		file_handle.write("signal ")
-		file_handle.write(self.getOutputSignalName())
-		file_handle.write(" : ")
-		file_handle.write(self.vhdl_decl.getTypeDeclarations(self.getDataWidth()))
-		file_handle.write(';\n')
+    def getInstanceTagName(self, instance, default: str) -> str:
+        if instance is None:
+            return default
+        return instance.getTagName()	
+
+    def getPreviousTagName(self) -> str:
+        return self.getInstanceTagName(self.prev, "tag_in")	
+
+    def getNextTagName(self) -> str:
+        return self.getInstanceTagName(self.next, "tag_out")	
+
+    def getOutputSignalName(self) -> str:
+        instance_name = self.getInstanceName()
+        return instance_name + "_q_i"
+
+    def write_instance(self, file_handle: FileWriter):
+        instance_name = self.getInstanceName()
+        file_handle.write(instance_name + " : entity " + self.library + "." + self._get_component_name(self.instruction.opcode))
+        input_ports = ""
+        for index, operand in enumerate(self.instruction.operands):
+            input_ports += ", " + chr(ord('a') + index) + " => " + str(self.parent.getSource(operand))
+        file_handle.write("port map (clk => clk, sreset => sreset", end="")
+        file_handle.write(", tag_in => " + self.getPreviousTagName(), end="")
+        file_handle.write(input_ports, end="")
+        file_handle.write(", tag_out => " + self.getNextTagName(), end="")
+        file_handle.write(", q => " + self.getOutputSignalName(), end="")
+        file_handle.write(");")	
+
+    def write_declarations(self, file_handle):
+        file_handle.write("signal ", end="")
+        file_handle.write(self.getOutputSignalName(), end="")
+        file_handle.write(" : ", end="")
+        file_handle.write(self.vhdl_decl.get_type_declarations(self.getDataWidth()), end="")
+        file_handle.write(';')
 
 class InstanceContainer:
-	
-	def __init__(self):
-		self.msg = Messages()
-		self.llvm_parser = LlvmParser()
-		self.container = []
-		self.assignmentMap = {}
-		self.instanceMap = {}
+    
+    _container: List[Instance]
+    _return_value: str
 
-	def resolveAssignment(self, assignment):
-		if assignment in self.assignmentMap:
-			return self.resolveAssignment(self.assignmentMap[assignment])
-		return assignment
+    def __init__(self):
+        self._msg = Messages()
+        self._llvm_parser = LlvmParser()
+        self._container = []
+        self._assignment_map = {}
+        self._instance_map = {}
 
-	def _resolveSource(self, operand):
-		x = self.getAssignment(str(operand))
-		return self.resolveAssignment(x.destination)
+    def resolveAssignment(self, assignment: str) -> List[str]:
+        if assignment in self._assignment_map:
+            return self.resolveAssignment(self._assignment_map[assignment])
+        return assignment
 
-	def getSource(self, operand):
-		x = self.resolveAssignment(operand)
-		return x[1:] if x[0] == "%" else x
+    def _resolveSource(self, operand):
+        x = self.getAssignment(str(operand))
+        return self.resolveAssignment(x.destination)
 
-	def _addInstruction(self, destination : str, instruction : Instruction):
-		instance = Instance(self)
-		try:
-			last_instance = self.container[-1]
-			last_instance.next = instance
-			instance.prev = last_instance
-		except IndexError:
-			pass
-		instance.setInstruction(instruction)
-		self.instanceMap[destination] = instance
-		self.container.append(instance)
+    def getSource(self, operand):
+        x = self.resolveAssignment(operand)
+        return x[1:] if x[0] == "%" else x
 
-	def getAssignment(self, instruction : str):
-		return self.llvm_parser.getAssignment(instruction)
+    def _add_instruction(self, destination : str, instruction : Instruction):
+        instance = Instance(self)
+        try:
+            last_instance = self._container[-1]
+            last_instance.next = instance
+            instance.prev = last_instance
+        except IndexError:
+            pass
+        instance.setInstruction(instruction)
+        self._instance_map[destination] = instance
+        self._container.append(instance)
 
-	def _addCallInstruction(self, instruction):
-		x = self.llvm_parser.getCallAssignment(instruction)
-		self.msg.note(str(instruction))
+    def getAssignment(self, instruction : str):
+        return self._llvm_parser.get_assignment(instruction)
 
-	def _addAssignmentInstruction(self, instruction):
-		x = self.getAssignment(str(instruction))
-		self.assignmentMap[x.destination] = x.source
+    def _add_call_instruction(self, instruction: str):
+        x = self._llvm_parser.get_call_assignment(instruction)
+        self._msg.note(str(instruction))
 
-	def _addReturnInstruction(self, instruction):
-		return_instruction = self.llvm_parser.getReturnInstruction(instruction)
-		self.return_value = self.instanceMap[return_instruction.value].getOutputSignalName()
+    def _addAssignmentInstruction(self, instruction: str):
+        x = self.getAssignment(instruction)
+        self._assignment_map[x.destination] = x.source
 
-	def addInstruction(self, instruction, statistics):
-		if instruction.opcode in ["add"]:
-			statistics.increment(instruction.opcode)
-			x = self.llvm_parser.getEqualAssignment(str(instruction))
-			a = self.llvm_parser.getInstruction(x.source)
-			self._addInstruction(x.destination, a)
-		elif instruction.opcode == "call":
-			x = self.llvm_parser.getEqualAssignment(str(instruction))
-			self._addCallInstruction(x.source) 
-		elif instruction.opcode in ["store", "load"]:
-			self._addAssignmentInstruction(str(instruction))
-		elif instruction.opcode == "ret":
-			self._addReturnInstruction(str(instruction))
-		elif instruction.opcode == "alloca":
-			pass
-		else:
-			self.msg.error("Unknown instruction: " + str(instruction.opcode) + " (" + str(instruction) + ")")
+    def _add_return_instruction(self, instruction: str) -> str:
+        self._msg.function_start("add_return_instruction(instruction=" + str(instruction) + ")", True)
+        return_instruction = self._llvm_parser.get_return_instruction(instruction)
+        result = self._instance_map[return_instruction.value].getOutputSignalName()
+        self._msg.function_end("_add_return_instruction = " + str(result), True)
+        return result
 
-	def writeInstances(self, file_handle):
-		for i in self.container:
-			i.writeInstance(file_handle)
-		file_handle.write("return_value <= " + str(self.return_value) + ";\n")
+    def add_instruction(self, instruction: ValueRef, statistics: InstanceStatistics):
+        self._msg.function_start("add_instruction(instruction=" + str(instruction) + ")", True)
+        if instruction.opcode in ["add", "sub", "mul", "fadd", "icmp", "xor", "zext"]:
+            statistics.increment(instruction.opcode)
+            x: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))
+            a: Instruction = self._llvm_parser.get_instruction(x.source)
+            self._add_instruction(x.destination, a)
+        elif instruction.opcode == "call":
+            x: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))
+            self._add_call_instruction(x.source)
+        elif instruction.opcode in ["store", "load"]:
+            self._addAssignmentInstruction(str(instruction))
+        elif instruction.opcode == "ret":
+            self._return_value = self._add_return_instruction(str(instruction))
+        elif instruction.opcode == "alloca":
+            pass
+        else:
+            self._msg.error("Unknown instruction: " + str(instruction.opcode) + " (" + str(instruction) + ")")
+        self._msg.function_end("add_instruction", True)
 
-	def writeDeclarations(self, file_handle):
-		for i in self.container:
-			i.writeDeclarations(file_handle)
-			
+    def write_instances(self, file_handle):
+        self._msg.function_start("write_instance()", True)
+        for i in self._container:
+            i.write_instance(file_handle)
+        file_handle.write("return_value <= " + str(self._return_value) + ";")
+        self._msg.function_end("write_instance")
+
+    def write_declarations(self, file_handle):
+        for i in self._container:
+            i.write_declarations(file_handle)
+            

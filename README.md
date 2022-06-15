@@ -8,3 +8,8 @@ to VHDL or Verilog, so that the code can be synthesized to FPGA firmware. The cu
 Run unit tests by typing:
 
 ./unit_tests.sh
+
+Installation:
+
+pip3 install llvmlite
+

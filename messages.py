@@ -6,79 +6,72 @@ from color_text import ColorText
 
 class Messages:
 
-    verbose = False
-    note_enable = True
-    indent = 0
-    text_limit_size = 1000
+    _verbose: str = False
+    note_enable: str = True
+    indent: int = 0
+    text_limit_size: int = 1000
 
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    def __init__(self, verbose: bool = False):
+        self._verbose = verbose
         self.note_enable = True
         self.indent = 0
-        
-    def set_verbose(self, verbose):
-        self.verbose = verbose
 
-    def printFormatted(self, type, lineNumber, text, file_name):
-        t = text
+    def set_verbose(self, verbose):
+        self._verbose = verbose
+
+    def _print_formatted(self, color_text: ColorText, line_number: int, text: str, file_name: str):
+        _text = text
         if len(text) > self.text_limit_size:
-            t = text[:self.text_limit_size] + "<limit size exceeded>"
-        f = os.path.basename(file_name)
-        if len(f) == 0:
-            f = file_name
-        print(" "*self.indent + "[" + str(type) + ", " + f + \
-              "(" + str(lineNumber) + ")] " + t)
+            _text = text[:self.text_limit_size] + "<limit size exceeded>"
+        _file_name = os.path.basename(file_name)
+        if len(_file_name) == 0:
+            _file_name = file_name
+        print(" "*self.indent + "[" + str(color_text) + ", " + _file_name + \
+              "(" + str(line_number) + ")] " + _text)
         sys.stdout.flush()
 
     def debug(self, text, verbose=False):
-        if self.verbose or verbose:
-            lineNumber = inspect.currentframe().f_back.f_lineno
+        if self._verbose or verbose:
+            line_number = inspect.currentframe().f_back.f_lineno
             file_name = inspect.currentframe().f_back.f_code.co_filename
-            self.printFormatted(type="DEBUG", file_name=file_name,
-                                lineNumber=lineNumber, text=str(text))
+            self._print_formatted(color_text="DEBUG", file_name=file_name,
+                                line_number=line_number, text=str(text))
 
     def note(self, text):
-        if self.note_enable and self.verbose is not None:
-            lineNumber = inspect.currentframe().f_back.f_lineno
+        if self.note_enable and self._verbose is not None:
+            line_number = inspect.currentframe().f_back.f_lineno
             file_name = inspect.currentframe().f_back.f_code.co_filename
-            self.printFormatted(type=ColorText("NOTE", "note"), lineNumber=lineNumber,
+            self._print_formatted(color_text=ColorText("NOTE", "note"),
+                                line_number=line_number,
                                 text=text, file_name=file_name)
 
     def warning(self, text):
-        if self.verbose is not None:
-            lineNumber = inspect.currentframe().f_back.f_lineno
+        if self._verbose is not None:
+            line_number = inspect.currentframe().f_back.f_lineno
             file_name = inspect.currentframe().f_back.f_code.co_filename
-            self.printFormatted(type=ColorText("WARNING", "warning"), lineNumber=lineNumber,
+            self._print_formatted(color_text=ColorText("WARNING", "warning"),
+                                line_number=line_number,
                                 text=text, file_name=file_name)
 
     def error(self, text):
-        if self.verbose is not None:
-            lineNumber = inspect.currentframe().f_back.f_lineno
+        if self._verbose is not None:
+            line_number = inspect.currentframe().f_back.f_lineno
             file_name = inspect.currentframe().f_back.f_code.co_filename
-            self.printFormatted(type=ColorText("ERROR", "error"), lineNumber=lineNumber,
+            self._print_formatted(color_text=ColorText("ERROR", "error"), line_number=line_number,
                                 text=text, file_name=file_name)
 
-    def functionStart(self, text, verbose=False):
-        if self.verbose or verbose:
-            lineNumber = inspect.currentframe().f_back.f_lineno
+    def function_start(self, text, verbose=False):
+        if self._verbose or verbose:
+            line_number = inspect.currentframe().f_back.f_lineno
             file_name = inspect.currentframe().f_back.f_code.co_filename
-            self.printFormatted(type="FUNCTION START",
-                                lineNumber=lineNumber, text=text, file_name=file_name)
-            self.indent = self.indent + 2
+            self._print_formatted(color_text="FUNCTION START",
+                                line_number=line_number, text=text, file_name=file_name)
+            self.indent += 2
 
-    def functionEnd(self, text, verbose=False):
-        if self.verbose or verbose:
-            lineNumber = inspect.currentframe().f_back.f_lineno
+    def function_end(self, text, verbose=False):
+        if self._verbose or verbose:
+            line_number = inspect.currentframe().f_back.f_lineno
             file_name = inspect.currentframe().f_back.f_code.co_filename
             self.indent = self.indent - 2
-            self.printFormatted(type="FUNCTION END",
-                                lineNumber=lineNumber, text=text, file_name=file_name)
-
-    def functionArgument(self, text, verbose=False):
-        if self.verbose or verbose:
-            lineNumber = inspect.currentframe().f_back.f_lineno
-            file_name = inspect.currentframe().f_back.f_code.co_filename
-            self.printFormatted(type="FUNCTION ARGUMENT",
-                                lineNumber=lineNumber, text=text, file_name=file_name)
-
-
+            self._print_formatted(color_text="FUNCTION END",
+                                line_number=line_number, text=text, file_name=file_name)

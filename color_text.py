@@ -1,5 +1,10 @@
-
+"""
+Adds color codes to text
+"""
 class ColorText:
+    """
+    Adds color codes to text
+    """
 
     def __init__(self, text, color=None):
         colors = {
@@ -24,8 +29,8 @@ class ColorText:
         self.text = text
         self.color = color
 
-    def add_color(self, text):
-        color = self.color;
+    def add_color(self, text: str) -> str:
+        color = self.color
         if color is not None:
             if not isinstance(color, list):
                 color = [color]
@@ -34,16 +39,16 @@ class ColorText:
         else:
             result = text
         return result
-        
+
     def get_text(self):
         return self.add_color(self.text)
 
     def center(self, size):
         return self.add_color(self.text.center(size))
-    
+
     def __len__(self):
         return len(self.text)
-    
+
     def __str__(self):
         return self.get_text()
 
