@@ -12,4 +12,5 @@ Run unit tests by typing:
 Installation:
 
 pip3 install llvmlite
+
 apt install clang ghdl
