@@ -6,8 +6,8 @@ from color_text import ColorText
 
 class Messages:
 
-    _verbose: str = False
-    note_enable: str = True
+    _verbose: bool = False
+    note_enable: bool = True
     indent: int = 0
     text_limit_size: int = 1000
 

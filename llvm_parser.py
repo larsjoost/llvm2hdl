@@ -3,14 +3,75 @@ from typing import List, Tuple, Optional, Union
 
 from messages import Messages
 from llvm_declarations import LlvmDeclarations
+from vhdl_declarations import VhdlDeclarations
 
 @dataclass
-class Instruction:
+class InstructionPosition:
+    opcode: int
+    operands: List[int]
+    data_type: int
+
+@dataclass
+class InstructionArgument:
+    signal_name: str
+    data_width : int
+    port_name: Optional[str] = None
+    def get_port_map(self) -> str:
+        result = "conv_std_ulogic_vector(" + self.signal_name + ", " + str(self.data_width) + ")"
+        if self.port_name is not None:
+            result = self.port_name + " => " + result
+        return result
+
+@dataclass
+class OutputPort:
+    data_width : int
+    port_name: Optional[str] = None
+    def get_type_declarations(self) -> str:
+        return VhdlDeclarations(data_width=self.data_width).get_type_declarations()
+    def get_port_map(self) -> str:
+        port_map = "q_i"
+        if self.port_name is not None:
+            port_map = self.port_name + " => " + port_map
+        return port_map
+
+class InstructionParser:
     source : str
     opcode : str
-    operands : list
+    operands : List[str]
     data_type : str
+    def __init__(self, instruction: List[str], position: InstructionPosition):
+        self.source = instruction
+        self.opcode = instruction[position.opcode]
+        self.data_type = instruction[position.data_type]
+        self.operands = [self._parse_operand(instruction[item], index) for index, item in enumerate(position.operands)]
+    def _parse_operand(self, operand: str, index: int) -> InstructionArgument:
+        signal_name = operand.replace(",", "")
+        port_name = chr(ord('a') + index)
+        data_width = LlvmDeclarations(self.data_type).get_data_width()
+        return InstructionArgument(port_name=port_name, signal_name=signal_name, data_width=data_width)
+    def __str__(self) -> str:
+        return str(vars(self))
+
+class Instruction:
+    source : str
+    library: str
+    opcode : str
+    operands : List[InstructionArgument]
+    data_type : LlvmDeclarations
     data_width : int
+    def __init__(self, source: str, library: str, opcode: str, operands: List[InstructionArgument], data_type: LlvmDeclarations, output_port_name: str):
+        self.source = source
+        self.library = library
+        self.opcode = opcode
+        self.operands = operands
+        self.data_type = data_type
+        self.output_port_name = output_port_name
+        self.data_width = data_type.get_data_width()
+    def get_output_port(self) -> OutputPort:
+        return OutputPort(data_width=self.data_width, port_name=self.output_port_name)
+    def __str__(self) -> str:
+        return str(vars(self))
+
 
 class LlvmParserException(Exception):
     pass
@@ -26,18 +87,11 @@ class ReturnInstruction:
     data_type : str
     data_width : int
     
-@dataclass
-class CallAssignment:
-    reference : str
-    name : str
-    arguments : list
-
 class LlvmParser:
 
     def __init__(self):
         self._msg = Messages()
-        self.llvm_decl = LlvmDeclarations()
-
+    
     def _remove_empty_elements(self, x: List[str]) -> List[str]:
         return [i for i in x if len(i) > 0]
 
@@ -54,9 +108,9 @@ class LlvmParser:
         return self._split(x, ',')
 
     def _get_list_element(self, x : Union[List[str], Tuple[str, str, str]], index : int) -> str:
-        self._msg.function_start("_get_list_element(x=" + str(x) + ", index=" + str(index), True)
+        self._msg.function_start("_get_list_element(x=" + str(x) + ", index=" + str(index))
         result = x[index].strip()
-        self._msg.function_end("_get_list_element = " + str(result), True)
+        self._msg.function_end("_get_list_element = " + str(result))
         return result
 
     def _remove_first_word(self, x : str) -> str:
@@ -118,29 +172,23 @@ class LlvmParser:
         a = self._remove_empty_elements(instruction.split(' '))
         value = a[2].strip()
         data_type = a[1].strip()
-        data_width = self.llvm_decl.get_data_width(data_type)
+        data_width = LlvmDeclarations(data_type).get_data_width()
         return ReturnInstruction(value=value, data_type=data_type, data_width=data_width)
     
-    def get_call_assignment(self, instruction: str) -> CallAssignment:
-        self._msg.function_start("get_call_assignment(instruction=" + str(instruction) + ")", True)
-        # 1) instruction = "%call = call i32 @_Z3addii(i32 2, i32 3)"
-        # 2) instruction = "call i32 @_Z3addii(i32 2, i32 3)"
-        if "=" in instruction:
-            a = self._split_equal_sign(instruction)
-            reference = self._get_list_element(a, 0)
-            # reference = "%call"
-            # a = ["%call", "call i32 @_Z3addii(i32 2, i32 3)"]
-            a = self._get_list_element(a, 1)
-        else:
-            a = instruction
-            reference = None
-        b = self._remove_first_word(a)
+    def get_entity_name(self, name: str) -> str:
+        return "entity" + name.replace("@", "")
+
+    def get_call_assignment(self, instruction: str) -> Instruction:
+        self._msg.function_start("get_call_assignment(instruction=" + str(instruction) + ")")
+        # instruction = "call i32 @_Z3addii(i32 2, i32 3)"
+        b = self._remove_first_word(instruction)
         # b = "i32 @_Z3addii(i32 2, i32 3)"
+        data_type = LlvmDeclarations(b.split()[0])
         c = self._remove_first_word(b)
         # c = "@_Z3addii(i32 2, i32 3)"
         d = c.partition('(')
         # d = ["@_Z3addii", "(", "i32 2, i32 3)"]
-        name = d[0]
+        name = self.get_entity_name(d[0])
         # name = "@_Z3addii"
         e = d[2].partition(')')
         # e = ["i32 2, i32 3", ")", ""]
@@ -151,44 +199,33 @@ class LlvmParser:
             # i = "i32 2"
             g = self._split_space(i) 
             # g = ["i32", "2"]
-            h = self._get_list_element(g, 1)
+            data_width = LlvmDeclarations(self._get_list_element(g, 0))
+            signal_name = self._get_list_element(g, 1)
             # h = "2"
-            arguments.append(h)
-        result = CallAssignment(reference=reference, name=name, arguments=arguments)
-        self._msg.function_end("get_call_assignment = " + str(result), True)
+            arguments.append(InstructionArgument(signal_name=signal_name, data_width=data_width))
+        result = Instruction(source=instruction, library="work", opcode=name, 
+        operands=arguments, data_type=data_type, output_port_name=None)
+        self._msg.function_end("get_call_assignment = " + str(result))
         return result
 
     def get_instruction(self, instruction: str) -> Instruction:
+        self._msg.function_start("get_instruction(instruction=" + instruction + ")")
         # 1) add nsw i32 %0, %1
         # 2) fadd float %0, %1
         # 3) icmp eq i32 %call, 5
         # 4) zext i1 %cmp to i32
         a = self._split_space(instruction)
-        # 1) a = ["add", "nsw", "i32", "%0,", "%1"]
-        # 2) a = ["fadd", "float", "%0,", "%1"]
-        # 3) a = ["icmp", "eq", "i32", "%call", "5"]
-        # 4) a = ["zext", "i1" , "%cmp", "to", "i32"]
+        position: dict = {
+            "add": InstructionPosition(opcode=0, data_type=2, operands=[3, 4]),
+            "sub": InstructionPosition(opcode=0, data_type=2, operands=[3, 4]),
+            "mul": InstructionPosition(opcode=0, data_type=2, operands=[3, 4]),
+            "fadd": InstructionPosition(opcode=0, data_type=1, operands=[2, 3]),
+            "icmp": InstructionPosition(opcode=1, data_type=2, operands=[3, 4]),
+            "xor": InstructionPosition(opcode=0, data_type=1, operands=[2, 3]),
+            "zext": InstructionPosition(opcode=0, data_type=1, operands=[2])}
         opcode = self._get_list_element(a, 0)
-        opcode_position: dict = {"icmp": 1}
-        if opcode in opcode_position:
-            opcode = a[opcode_position[opcode]]
-        # 1) opcode = "add"
-        # 2) opcode = "fadd"
-        # 3) opcode = "eq"
-        # 4) opcode = "zext"
-        operand_position: dict = {"add": 2, "fadd": 1, "eq": 2, "ne": 2, "xor": 1, "zext": 1}
-        position = operand_position[opcode]
-        a = a[position:]
-        # 1) a = ["i32", "%0,", "%1"]
-        # 2) a = ["float", "%0,", "%1"]
-        # 3) a = ["i32", "%call,", "5"]
-        # 4) a = ["i1", "%cmp,", "to", "i32"]
-        data_type: str = self._get_list_element(a, 0)
-        # data_type = "i32"
-        data_width: int = self.llvm_decl.get_data_width(data_type)
-        # data_width = 32
-        operands_position = {"zext": range(1, 1)}
-        operands_range = operands_position.get(opcode, range(1, 2))
-        operands = [self._get_list_element(a, i).replace(',', '') for i in operands_range]
-        return Instruction(source=instruction, opcode=opcode,
-        operands=operands, data_type=data_type, data_width=data_width)
+        instruction = InstructionParser(instruction=a, position=position[opcode])
+        result = Instruction(source=instruction.source, library="llvm", opcode="llvm_" + instruction.opcode, 
+        operands=instruction.operands, data_type=LlvmDeclarations(instruction.data_type), output_port_name="q")
+        self._msg.function_end("get_instruction = " + str(result))
+        return result

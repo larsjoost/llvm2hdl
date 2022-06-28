@@ -15,7 +15,7 @@ entity llvm_add is
     a       : in  std_ulogic_vector(0 to 32 - 1);
     b       : in  std_ulogic_vector(0 to 32 - 1)
     );
-end entity add;
+end entity llvm_add;
 
 architecture rtl of llvm_add is
 

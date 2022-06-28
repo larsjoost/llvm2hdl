@@ -38,9 +38,9 @@ def main():
 
     statistics = InstanceStatistics()
 
-    with open(output_file_name, 'w') as file_handle:
-        file_writer = FileWriter(file_handle)
-        _vhdlgen.parse(_llvm, file_writer, statistics)
+    file_writer = FileWriter(file_name=output_file_name)
+    VhdlGen().parse(_llvm, file_writer, statistics)
+    file_writer.close()
 
     if args.verbose:
         statistics.print()
