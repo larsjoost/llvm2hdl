@@ -22,9 +22,11 @@ architecture rtl of llvm_mul is
 begin
 
   process (clk)
+    variable x : std_ulogic_vector(63 downto 0);
   begin
     if rising_edge(clk) then
-      q       <= std_ulogic_vector(unsigned'(unsigned(a) * unsigned(b)));
+      x       := std_ulogic_vector(unsigned'(unsigned(a) * unsigned(b)));
+      q       <= x(31 downto 0);
       tag_out <= tag_in;
     end if;
   end process;

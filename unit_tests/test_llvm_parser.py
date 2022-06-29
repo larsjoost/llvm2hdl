@@ -1,6 +1,7 @@
 import unittest
+from llvm_declarations import LlvmDeclarations
 
-from llvm_parser import LlvmParser
+from llvm_parser import InstructionArgument, LlvmParser
 
 class TestSourceParser(unittest.TestCase):
 
@@ -28,11 +29,12 @@ class TestSourceParser(unittest.TestCase):
     
     def test_getCallAssignment(self):
         x = LlvmParser()
-        a = "%call = call i32 @_Z3addii(i32 2, i32 3)"
+        a = "call i32 @_Z3addii(i32 2, i32 3)"
         b = x.get_call_assignment(a)
-        self.assertEqual(b.reference, "%call")
-        self.assertEqual(b.name, "@_Z3addii")
-        self.assertEqual(b.arguments, ["2", "3"])
+        self.assertEqual(b.opcode, "entity_Z3addii")
+        data_width = LlvmDeclarations(data_type="i32")
+        self.assertEqual(b.operands, [InstructionArgument(signal_name="2", data_width=data_width),
+        InstructionArgument(signal_name="3", data_width=data_width)])
 
     def test_getReturnInstruction(self):
         x = LlvmParser()
@@ -57,11 +59,11 @@ class TestSourceParser(unittest.TestCase):
         x = LlvmParser()
         a = "add nsw i32 %0, %1"
         b = x.get_instruction(a)
-        self.assertEqual(b.opcode, "add")
-        self.assertEqual(b.data_type, "i32")
+        self.assertEqual(b.opcode, "llvm_add")
+        self.assertEqual(b.data_type, LlvmDeclarations(data_type="i32"))
         self.assertEqual(b.data_width, 32)
-        self.assertEqual(b.operands[0], "%0")
-        self.assertEqual(b.operands[1], "%1")
+        self.assertEqual(b.operands[0], InstructionArgument(signal_name="%0", data_width=32, port_name="a"))
+        self.assertEqual(b.operands[1], InstructionArgument(signal_name="%1", data_width=32, port_name="b"))
         
 if __name__ == "__main__":
     unittest.main()
