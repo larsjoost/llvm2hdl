@@ -1,9 +1,8 @@
 from typing import Dict, List
 from llvmlite.binding import ValueRef
 
-from dataclasses import dataclass
-from file_writer import FileWriter
-from instance import Instance
+from instance import DeclarationData, Instance
+from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
 from llvm_parser import Assignment, LlvmParser, Instruction, ReturnInstruction
@@ -91,17 +90,16 @@ class InstanceContainer(InstanceContainerInterface):
             self._add_instruction(assignment.destination, instruction)
         self._msg.function_end("add_instruction")
 
-    def write_instances(self, file_handle: FileWriter):
-        self._msg.function_start("write_instance()")
-        file_handle.write_body("tag_in_i.tag <= tag_in;")
-        for i in self._container:
-            i.write_instance(file_handle)
+    def get_instances(self) -> InstanceContainerData:
+        self._msg.function_start("get_instances()")
+        instances = [i.get_instance_data() for i in self._container]
         return_instruction_driver = self._get_return_instruction_driver(return_instruction=self._return_value)
-        file_handle.write_body("return_value <= conv_std_ulogic_vector(tag_out_i." + str(return_instruction_driver) + ", " + str(self._return_value.data_width) + ");")
-        file_handle.write_body("tag_out <= tag_out_i.tag;")
-        self._msg.function_end("write_instance")
+        return_data_width = self._return_value.data_width
+        result = InstanceContainerData(instances=instances, return_instruction_driver=return_instruction_driver,
+        return_data_width=return_data_width)
+        self._msg.function_end("get_instances = " + str(result))
+        return result
 
-    def write_declarations(self, file_handle: FileWriter):
-        for i in self._container:
-            i.write_declarations(file_handle)
+    def get_declarations(self) -> List[DeclarationData]:
+        return [i.get_declaration_data() for i in self._container]
             

@@ -1,10 +1,8 @@
 from typing import List, Optional
 from llvmlite.binding import ValueRef
 
-from dataclasses import dataclass
-from file_writer import FileWriter
 from instance_container_interface import InstanceContainerInterface
-from instance_statistics import InstanceStatistics
+from instance_data import DeclarationData, InstanceData
 from llvm_parser import Assignment, InstructionArgument, LlvmParser, Instruction, OutputPort
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
@@ -64,19 +62,21 @@ class Instance:
         self._msg.function_end("_get_input_ports = " + str(input_ports))
         return input_ports
 
-    def write_instance(self, file_handle: FileWriter):
+    def get_instance_data(self) -> InstanceData:
         instance_name = self.get_instance_name()
         entity_name = self.instruction.opcode
         output_port = self.instruction.get_output_port()
         tag_name = self._get_output_tag_name()
         previous_tag_name = self.get_previous_tag_name()
         input_ports = self._get_input_ports(operands=self.instruction.operands, data_width=self.instruction.data_width)
-        file_handle.write_instance(instance_name=instance_name, entity_name=entity_name, library=self.instruction.library,
+        data = InstanceData(instance_name=instance_name, entity_name=entity_name, library=self.instruction.library,
         output_port=output_port,tag_name=tag_name, input_ports=input_ports, 
         previous_tag_name=previous_tag_name)
+        return data
 
-    def write_declarations(self, file_handle: FileWriter):
+    def get_declaration_data(self) -> DeclarationData:
         vhdl_decl = VhdlDeclarations(self.get_data_width())
-        file_handle.write_signal(instance_name=self.get_instance_name(), entity_name=self.get_tag_name(), 
+        data = DeclarationData(instance_name=self.get_instance_name(), entity_name=self.get_tag_name(), 
         type=vhdl_decl)
+        return data
 

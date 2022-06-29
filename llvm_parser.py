@@ -178,6 +178,19 @@ class LlvmParser:
     def get_entity_name(self, name: str) -> str:
         return "entity" + name.replace("@", "")
 
+    def _get_call_arguments(self, arguments: str) -> List[InstructionArgument]:
+        # arguments = "i32 2, i32 3"
+        result = []
+        for i in self._split_comma(arguments):
+            # i = "i32 2"
+            g = self._split_space(i) 
+            # g = ["i32", "2"]
+            data_width = LlvmDeclarations(self._get_list_element(g, 0))
+            signal_name = self._get_list_element(g, 1)
+            # h = "2"
+            result.append(InstructionArgument(signal_name=signal_name, data_width=data_width))
+        return result
+
     def get_call_assignment(self, instruction: str) -> Instruction:
         self._msg.function_start("get_call_assignment(instruction=" + str(instruction) + ")")
         # instruction = "call i32 @_Z3addii(i32 2, i32 3)"
@@ -194,15 +207,7 @@ class LlvmParser:
         # e = ["i32 2, i32 3", ")", ""]
         f = e[0]
         # f = "i32 2, i32 3"
-        arguments = []
-        for i in self._split_comma(f):
-            # i = "i32 2"
-            g = self._split_space(i) 
-            # g = ["i32", "2"]
-            data_width = LlvmDeclarations(self._get_list_element(g, 0))
-            signal_name = self._get_list_element(g, 1)
-            # h = "2"
-            arguments.append(InstructionArgument(signal_name=signal_name, data_width=data_width))
+        arguments = self._get_call_arguments(arguments=f)
         result = Instruction(source=instruction, library="work", opcode=name, 
         operands=arguments, data_type=data_type, output_port_name=None)
         self._msg.function_end("get_call_assignment = " + str(result))

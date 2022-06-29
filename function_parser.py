@@ -12,7 +12,6 @@ class FunctionParser:
 
     def __init__(self):
         self._msg = Messages()
-        self._instance_container = InstanceContainer()
         
     def _get_port(self, name: str, direction: str, data_width: Union[int, str], 
     default_value: Optional[str] = None) -> str:
@@ -21,24 +20,13 @@ class FunctionParser:
             port_type += " := " + default_value
         return name + " : " + direction + " " + port_type
 
-    def _get_data_width(self, t):
-        data_type = t.split(' ')[0]
+    def _get_data_width(self, type: str) -> LlvmDeclarations:
+        data_type = type.split(' ')[0]
         return LlvmDeclarations(data_type).get_data_width()
 
     def _add_argument(self, name: str, type: TypeRef, ports: List[str]):
         data_width = self._get_data_width(str(type))
         ports.append(self._get_port(name, "in", data_width))
-
-    def _write_declarations(self, type: str, instances: List[str], file_handle: FileWriter):
-        file_handle.write_header(type + " (")
-        file_handle.write_header(";\n".join(instances))
-        file_handle.write_header(");")
-
-    def _write_generics(self, file_handle: FileWriter, generics: List[str]):
-        self._write_declarations("generic", generics, file_handle)
-        
-    def _write_ports(self, file_handle: FileWriter, ports: List[str]):
-        self._write_declarations("port", ports, file_handle)
 
     def _get_entity_name(self, name: str) -> str:
         return LlvmParser().get_entity_name(name)
@@ -62,22 +50,13 @@ class FunctionParser:
             "sreset : in std_ulogic",
             self._get_port(tag_input_name, "in", "tag_width", "(others => '0')"),
             self._get_port(tag_output_name, "out", "tag_width")])
+        instance_container = InstanceContainer()
         for block in function.blocks:
             for i in block.instructions:
-                self._instance_container.add_instruction(i, statistics)
-        file_handle.write_header("library ieee;")
-        file_handle.write_header("use ieee.std_logic_1164.all;")
-        file_handle.write_header("library llvm;")
-        file_handle.write_header("use llvm.llvm_pkg.conv_std_ulogic_vector;")
-        file_handle.write_header("library work;")
+                instance_container.add_instruction(i, statistics)
         entity_name = self._get_entity_name(function.name)
-        file_handle.write_header("entity " + entity_name + " is")
-        self._write_generics(file_handle, generics)
-        self._write_ports(file_handle, ports)
-        file_handle.write_header("begin")
-        file_handle.write_header("end entity " + entity_name + ";")
-        file_handle.write_header("architecture rtl of " + entity_name + " is")
-        self._instance_container.write_declarations(file_handle)
-        self._instance_container.write_instances(file_handle)
-        file_handle.write_trailer("end architecture rtl;")
+        instances = instance_container.get_instances()
+        declarations = instance_container.get_declarations()
+        file_handle.write_function(entity_name=entity_name, instances=instances, declarations=declarations,
+        ports=ports, generics=generics)
         self._msg.function_end("parse")
