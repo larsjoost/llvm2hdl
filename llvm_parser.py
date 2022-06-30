@@ -52,26 +52,18 @@ class InstructionParser:
     def __str__(self) -> str:
         return str(vars(self))
 
+@dataclass
 class Instruction:
     source : str
     library: str
-    opcode : str
-    operands : List[InstructionArgument]
-    data_type : LlvmDeclarations
-    data_width : int
-    def __init__(self, source: str, library: str, opcode: str, operands: List[InstructionArgument], data_type: LlvmDeclarations, output_port_name: str):
-        self.source = source
-        self.library = library
-        self.opcode = opcode
-        self.operands = operands
-        self.data_type = data_type
-        self.output_port_name = output_port_name
-        self.data_width = data_type.get_data_width()
+    opcode: str
+    operands: List[InstructionArgument]
+    data_type: LlvmDeclarations
+    output_port_name: str
     def get_output_port(self) -> OutputPort:
-        return OutputPort(data_width=self.data_width, port_name=self.output_port_name)
-    def __str__(self) -> str:
-        return str(vars(self))
-
+        return OutputPort(data_width=self.get_data_width(), port_name=self.output_port_name)
+    def get_data_width(self) -> int:
+        return self.data_type.get_data_width()
 
 class LlvmParserException(Exception):
     pass
@@ -87,6 +79,11 @@ class ReturnInstruction:
     data_type : str
     data_width : int
     
+@dataclass
+class Alloca:
+    size : int
+    data_type : str
+
 class LlvmParser:
 
     def __init__(self):
@@ -113,8 +110,11 @@ class LlvmParser:
         self._msg.function_end("_get_list_element = " + str(result))
         return result
 
-    def _remove_first_word(self, x : str) -> str:
-        return x.strip().partition(' ')[2]
+    def _remove_first_word(self, text : str) -> str:
+        return text.strip().partition(' ')[2]
+
+    def _first_word(self, text: str) -> str:
+        return text.split()[0]
 
     def get_equal_assignment(self, instruction : str) -> Assignment:
         # 1) instruction = "%0 = load i32, i32* %a.addr, align 4"
@@ -157,12 +157,42 @@ class LlvmParser:
         # source = "%a.addr"
         return Assignment(destination=destination, source=source)
 
+    def get_bitcast_assignment(self, instruction : str) -> Assignment:
+        # %0 = bitcast [3 x i32]* %n to i8*
+        a = self._split_equal_sign(instruction)
+        # a = ["%0", "bitcast [3 x i32]* %n to i8*"]
+        destination = self._get_list_element(a, 0)
+        # destination = "%0"
+        c = self._split_space(a[1])
+        # c = ["bitcast", "[3", "x", "i32]*", "%n", "to", "i8*"]
+        source = c[-3]
+        # source = "%n"
+        return Assignment(destination=destination, source=source)
+
+    def get_getelementptr_assignment(self, instruction : str) -> Assignment:
+        # %arraydecay = getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
+        a = self._split_equal_sign(instruction)
+        # a = ["%arraydecay", "getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0"]
+        destination = self._get_list_element(a, 0)
+        # destination = "%0"
+        c = self._split_comma(a[1])
+        # c = ["getelementptr inbounds [3 x i32]", "[3 x i32]* %n", "i64 0", "i64 0"]
+        d = self._split_space(c[-3])
+        # c = ["[3", "x", "i32]*", "%n"]
+        source = d[-1]
+        # source = "%n"
+        return Assignment(destination=destination, source=source)
+
     def get_assignment(self, instruction : str) -> Optional[Assignment]:
         x = None
         if "store" in instruction:
             x = self.get_store_assignment(instruction)
         elif "load" in instruction:
             x = self.get_load_assignment(instruction)
+        elif "bitcast" in instruction:
+            x = self.get_bitcast_assignment(instruction)
+        elif "getelementptr" in instruction:
+            x = self.get_getelementptr_assignment(instruction)
         else:
             raise LlvmParserException("Unknown instruction: " + str(instruction))
         return x
@@ -179,35 +209,62 @@ class LlvmParser:
         return "entity" + name.replace("@", "")
 
     def _get_call_arguments(self, arguments: str) -> List[InstructionArgument]:
-        # arguments = "i32 2, i32 3"
+        # arguments = "i32 2, i32* nonnull %n"
         result = []
         for i in self._split_comma(arguments):
-            # i = "i32 2"
+            # 1) i = "i32 2"
+            # 2) i = "i32* nonnull %n"
             g = self._split_space(i) 
-            # g = ["i32", "2"]
+            # 1) g = ["i32", "2"]
+            # 2) b = ["i32*", "nonnull",  "%n"]
             data_width = LlvmDeclarations(self._get_list_element(g, 0))
-            signal_name = self._get_list_element(g, 1)
-            # h = "2"
+            signal_name = self._get_list_element(g, -1)
+            # 1) signal_name = "2"
+            # 2) signal_name = "%n"
             result.append(InstructionArgument(signal_name=signal_name, data_width=data_width))
+        return result
+
+    def _get_within(self, text: str, left: str, right: str) -> str:
+        # text = alloca [3 x i32], align 4
+        split_text = text.partition(left)
+        # split_text = ["alloca ", "[", "3 x i32], align 4"]
+        within = split_text[2].partition(right)
+        # within = ["3 x i32", "]", ",align 4"]
+        return within[0]
+
+    def get_alloca_assignment(self, instruction: str) -> Alloca:
+        # instruction = "alloca [3 x i32], align 4"
+        dimension = self._get_within(instruction, "[", "]")
+        # dimension = "3 x i32"
+        dimension_elements = dimension.partition("x")
+        # dimension_elements = ["3", "x", "i32"]
+        size = int(dimension_elements[0])
+        data_type = dimension_elements[2]
+        return Alloca(size=size, data_type=data_type)
+
+    def _split_parenthesis(self, text: str) -> Tuple[str, str]:
+        self._msg.function_start("_split_parenthesis(text=" + text + ")")
+        # text = "call i32 @_Z3addii(i32 2, i32 3)"
+        split_text = text.partition('(')
+        # split_text = ["call i32 @_Z3addii", "(", "i32 2, i32 3)"]
+        head = split_text[0]
+        tail = split_text[2].partition(')')[0]
+        result = (head, tail)
+        self._msg.function_end("_split_parenthesis = " + str(result))
         return result
 
     def get_call_assignment(self, instruction: str) -> Instruction:
         self._msg.function_start("get_call_assignment(instruction=" + str(instruction) + ")")
-        # instruction = "call i32 @_Z3addii(i32 2, i32 3)"
-        b = self._remove_first_word(instruction)
-        # b = "i32 @_Z3addii(i32 2, i32 3)"
-        data_type = LlvmDeclarations(b.split()[0])
-        c = self._remove_first_word(b)
-        # c = "@_Z3addii(i32 2, i32 3)"
-        d = c.partition('(')
-        # d = ["@_Z3addii", "(", "i32 2, i32 3)"]
-        name = self.get_entity_name(d[0])
-        # name = "@_Z3addii"
-        e = d[2].partition(')')
-        # e = ["i32 2, i32 3", ")", ""]
-        f = e[0]
-        # f = "i32 2, i32 3"
-        arguments = self._get_call_arguments(arguments=f)
+        # 1) instruction = "call i32 @_Z3addii(i32 2, i32 3)"
+        # 2) instruction = "tail call i32 @_Z3addii(i32 2, i32 3)"
+        head, tail = self._split_parenthesis(instruction)
+        # 1) head = "call i32 @_Z3addii"
+        # 2) head = "tail call i32 @_Z3addii"
+        # tail = "i32 2, i32 3"
+        head_split = head.split()
+        name = self.get_entity_name(head_split[-1])
+        data_type = LlvmDeclarations(head_split[-2])
+        arguments = self._get_call_arguments(arguments=tail)
         result = Instruction(source=instruction, library="work", opcode=name, 
         operands=arguments, data_type=data_type, output_port_name=None)
         self._msg.function_end("get_call_assignment = " + str(result))

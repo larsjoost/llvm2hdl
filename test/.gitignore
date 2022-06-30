@@ -2,3 +2,5 @@
 *.inc
 *.ll
 *~
+llvm-obj08.cf
+work-obj08.cf

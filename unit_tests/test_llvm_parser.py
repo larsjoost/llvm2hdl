@@ -33,8 +33,9 @@ class TestSourceParser(unittest.TestCase):
         b = x.get_call_assignment(a)
         self.assertEqual(b.opcode, "entity_Z3addii")
         data_width = LlvmDeclarations(data_type="i32")
-        self.assertEqual(b.operands, [InstructionArgument(signal_name="2", data_width=data_width),
-        InstructionArgument(signal_name="3", data_width=data_width)])
+        first_argument = InstructionArgument(signal_name="2", data_width=data_width)
+        second_argument = InstructionArgument(signal_name="3", data_width=data_width)
+        self.assertEqual(b.operands, [first_argument, second_argument])
 
     def test_getReturnInstruction(self):
         x = LlvmParser()
@@ -61,7 +62,7 @@ class TestSourceParser(unittest.TestCase):
         b = x.get_instruction(a)
         self.assertEqual(b.opcode, "llvm_add")
         self.assertEqual(b.data_type, LlvmDeclarations(data_type="i32"))
-        self.assertEqual(b.data_width, 32)
+        self.assertEqual(b.get_data_width(), 32)
         self.assertEqual(b.operands[0], InstructionArgument(signal_name="%0", data_width=32, port_name="a"))
         self.assertEqual(b.operands[1], InstructionArgument(signal_name="%1", data_width=32, port_name="b"))
         

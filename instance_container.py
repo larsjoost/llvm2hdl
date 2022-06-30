@@ -5,18 +5,18 @@ from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
-from llvm_parser import Assignment, LlvmParser, Instruction, ReturnInstruction
+from llvm_parser import Assignment, LlvmParser, Instruction, ReturnInstruction, Alloca
 from messages import Messages
 
 class InstanceContainer(InstanceContainerInterface):
     
-    _container: List[Instance]
+    _container: List[Instance] = []
+    _alloca_map: Dict[str, Alloca] = {}
     _return_value: ReturnInstruction
     
     def __init__(self):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
-        self._container = []
         self._assignment_map = {}
         self._instance_map = {}
 
@@ -60,6 +60,11 @@ class InstanceContainer(InstanceContainerInterface):
         self._add_instruction(assignment.destination, instruction)
         self._msg.function_end("_add_call_instruction")
 
+    def _add_alloca(self, instruction: str):
+        assignment: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))
+        alloca: Alloca = self._llvm_parser.get_alloca_assignment(assignment.source)
+        self._alloca_map[assignment.destination] = alloca
+
     def _add_assignment_instruction(self, instruction: str):
         x = self.get_assignment(instruction)
         self._assignment_map[x.destination] = x.source
@@ -73,16 +78,20 @@ class InstanceContainer(InstanceContainerInterface):
         self._msg.function_end("_add_return_instruction = " + str(result))
         return result
 
+    def _internal_llvm_call(self, instruction: str) -> bool:
+        return "@llvm" in instruction
+
     def add_instruction(self, instruction: ValueRef, statistics: InstanceStatistics):
         self._msg.function_start("add_instruction(instruction=" + str(instruction) + ")")
         if instruction.opcode == "call":
-            self._add_call_instruction(str(instruction))
-        elif instruction.opcode in ["store", "load"]:
+            if not self._internal_llvm_call(str(instruction)):
+                self._add_call_instruction(str(instruction))  
+        elif instruction.opcode in ["store", "load", "bitcast", "getelementptr"]:
             self._add_assignment_instruction(str(instruction))
         elif instruction.opcode == "ret":
             self._return_value = self._add_return_instruction(str(instruction))
         elif instruction.opcode == "alloca":
-            pass
+            self._add_alloca(str(instruction))
         else:
             statistics.increment(instruction.opcode)
             assignment: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))

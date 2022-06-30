@@ -2,6 +2,7 @@ from typing import List, Optional, Union
 from llvmlite.binding import ValueRef, TypeRef
 
 from file_writer import FileWriter
+from global_variables import GlobalVariables
 from instance_container import InstanceContainer
 from llvm_declarations import LlvmDeclarations
 from llvm_parser import LlvmParser
@@ -31,7 +32,8 @@ class FunctionParser:
     def _get_entity_name(self, name: str) -> str:
         return LlvmParser().get_entity_name(name)
 
-    def parse(self, function: ValueRef, file_handle: FileWriter, statistics):								
+    def parse(self, function: ValueRef, global_variables: GlobalVariables,
+    file_handle: FileWriter, statistics):								
         self._msg.function_start("parse(function=" + str(function) + ")")
         if function.is_declaration:
             return

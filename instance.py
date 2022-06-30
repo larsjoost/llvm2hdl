@@ -1,9 +1,8 @@
-from typing import List, Optional
-from llvmlite.binding import ValueRef
+from typing import List
 
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
-from llvm_parser import Assignment, InstructionArgument, LlvmParser, Instruction, OutputPort
+from llvm_parser import InstructionArgument, LlvmParser, Instruction
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
 
@@ -24,7 +23,7 @@ class Instance:
         self.instruction = instruction
 
     def get_data_width(self):
-        return self.instruction.data_width
+        return self.instruction.get_data_width()
 
     def get_instance_index(self) -> int:
         if self._prev is None:
@@ -68,8 +67,10 @@ class Instance:
         output_port = self.instruction.get_output_port()
         tag_name = self._get_output_tag_name()
         previous_tag_name = self.get_previous_tag_name()
-        input_ports = self._get_input_ports(operands=self.instruction.operands, data_width=self.instruction.data_width)
-        data = InstanceData(instance_name=instance_name, entity_name=entity_name, library=self.instruction.library,
+        input_ports = self._get_input_ports(operands=self.instruction.operands, 
+        data_width=self.instruction.get_data_width())
+        data = InstanceData(instance_name=instance_name, entity_name=entity_name, 
+        library=self.instruction.library,
         output_port=output_port,tag_name=tag_name, input_ports=input_ports, 
         previous_tag_name=previous_tag_name)
         return data

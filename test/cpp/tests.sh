@@ -7,13 +7,22 @@ test_files=$(find $SCRIPTPATH -name *.cpp | grep -v "_test.cpp")
 
 vhdl_path=$(realpath $SCRIPTPATH/../../vhdl)
 
+RETURN_CODE=0
+
 for i in $test_files; do
-    $vhdl_path/compile.sh $(realpath $i) > /dev/null || exit 1
+    echo -n "Compile $i: "
+    $vhdl_path/compile.sh $(realpath $i) > /dev/null
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 0 ]; then
+	echo "OK"
+    else
+	echo "FAILED"
+	echo $TEST_OUTPUT
+	RETURN_CODE=1
+    fi
 done
 
 test_files=$(find $SCRIPTPATH -name *.cpp | grep "_test.cpp")
-
-RETURN_CODE=0
 
 for i in $test_files; do
     echo -n "Testing $i: "

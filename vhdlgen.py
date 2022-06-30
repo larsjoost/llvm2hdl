@@ -3,21 +3,22 @@ from llvmlite.binding import ModuleRef
 
 from file_writer import FileWriter
 from function_parser import FunctionParser
+from global_variables import GlobalVariables
 from instance_statistics import InstanceStatistics
 
 class VhdlGen:
 
     def parse(self, module: ModuleRef, file_handle: FileWriter, statistics: InstanceStatistics):
+        global_variables = GlobalVariables()
+        for global_variable in module.global_variables:
+            global_variables.add(name=global_variable.name, data_type=global_variable.type,
+            definition=str(global_variable))
         for function in module.functions:
             function_parser = FunctionParser()
-            function_parser.parse(function, file_handle, statistics)
-        for global_variable in module.global_variables:
-            print(f'Global: {global_variable.name}/`{global_variable.type}`')
-            assert global_variable.is_global
-            print(f'Attributes: {list(global_variable.attributes)}')
-            print(global_variable)
-
-    def print_tree(self, m):
+            function_parser.parse(function=function, global_variables=global_variables, 
+            file_handle=file_handle, statistics=statistics)
+        
+    def print_tree(self, m: ModuleRef):
         for function in m.functions:
             print(f'Function: {function.name}/`{function.type}`')
             assert function.module is m
