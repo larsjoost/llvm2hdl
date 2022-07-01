@@ -39,6 +39,8 @@ class InstructionArgument:
         return self.data_type.single_dimension()
     def is_pointer(self) -> bool:
         return self.data_type.is_pointer()
+    def get_signal_name(self) -> str:
+        return self.signal_name.replace("%", "")
 
 @dataclass
 class OutputPort:

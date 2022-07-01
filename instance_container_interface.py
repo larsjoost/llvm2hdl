@@ -9,10 +9,6 @@ from instance_statistics import InstanceStatistics
 class InstanceContainerInterface(ABC):
     
     @abstractmethod
-    def resolve_assignment(self, assignment: str) -> List[str]:
-        pass
-
-    @abstractmethod
     def get_source(self, operand):
         pass
 

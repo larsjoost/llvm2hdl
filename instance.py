@@ -3,7 +3,7 @@ from typing import List
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
 from llvm_declarations import LlvmDeclaration
-from llvm_parser import InstructionArgument, LlvmParser, Instruction
+from llvm_parser import Assignment, InstructionArgument, LlvmParser, Instruction
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
 
@@ -54,8 +54,8 @@ class Instance:
         self._msg.function_start("_get_input_ports(operands=" + str(operands) + ")")
         input_ports: List[InstructionArgument] = []
         for operand in operands:
-            signal_name = self._parent.get_source(operand.signal_name)
-            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=signal_name, data_type=data_type))
+            source: Assignment = self._parent.get_source(operand)
+            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=source.source, data_type=source.source_type))
         self._msg.function_end("_get_input_ports = " + str(input_ports))
         return input_ports
 
