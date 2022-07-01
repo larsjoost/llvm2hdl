@@ -2,16 +2,19 @@ from dataclasses import dataclass
 import inspect
 import io
 import os
-from typing import List
+from typing import List, Tuple
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
+from llvm_parser import ConstantDeclaration, InstructionArgument
 from vhdl_declarations import VhdlDeclarations
+from ports import Port
+from messages import Messages
 
 @dataclass
 class Signal:
-    instance: str
-    name: str
-    type: VhdlDeclarations
+    instance : str
+    name : str
+    type : VhdlDeclarations
     def write_signal(self, file_handle):
         print("signal " + self.name + " : tag_t;", file=file_handle)
     def write_record_item(self, file_handle):
@@ -19,17 +22,29 @@ class Signal:
     def get_data_width(self) -> str:
         return self.type.get_data_width()
 
+@dataclass
+class Constant:
+    constant : ConstantDeclaration
+    def write_constant(self, file_handle):
+        vhdl_declaration = VhdlDeclarations(self.constant.type)
+        type_declaration = vhdl_declaration.get_type_declarations()
+        initialization = vhdl_declaration.get_initialization(values=self.constant.get_values())
+        name = self.constant.get_name()
+        print("constant " + name + " : " + type_declaration + " := " + initialization + ";", file=file_handle)
+
 class FileWriter:
 
-    _debug: bool = False
-    _file_name: str
-    _header: List[str] = []
-    _signals: List[Signal] = []
-    _body: List[str] = []
-    _trailer: List[str] = []
-    _instances: List[str] = []
+    _debug : bool = False
+    _file_name : str
+    _header : List[str] = []
+    _signals : List[Signal] = []
+    _constants : List[Constant] = []
+    _body : List[str] = []
+    _trailer : List[str] = []
+    _instances : List[str] = []
 
     def __init__(self, file_name: str):
+        self._msg = Messages()
         self._file_name = file_name
 
     def _print_declarations(self, file_handle):
@@ -57,6 +72,8 @@ class FileWriter:
         assign_arg = ["arg." + i for i in record_items]
         print("return " + " & ". join(assign_arg) + ";", file=file_handle)
         print("end function tag_to_std_ulogic_vector;", file=file_handle)
+        for i in self._constants:
+            i.write_constant(file_handle=file_handle)
         print("signal tag_in_i, tag_out_i : tag_t;", file=file_handle)
         for i in self._signals:
             i.write_signal(file_handle=file_handle)
@@ -117,10 +134,22 @@ class FileWriter:
     def _write_signal(self, declaration: DeclarationData):
         self._signals.append(Signal(instance=declaration.instance_name, name=declaration.entity_name, type=declaration.type))
     
+    def _get_port_map(self, input_port: InstructionArgument) -> str:
+        self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")", True)
+        if input_port.single_dimension() and not input_port.is_pointer():
+            dimensions: Tuple[int, str] = input_port.get_dimensions()
+            result = "conv_std_ulogic_vector(" + input_port.signal_name + ", " + dimensions[1] + ")"
+        else:
+            result = input_port.signal_name
+        if input_port.port_name is not None:
+            result = input_port.port_name + " => " + result
+        self._msg.function_end("_get_port_map = " + result, True)
+        return result
+
     def _write_instance(self, instance: InstanceData):
         if instance.library != "work":
             self._instances.append(instance.entity_name)
-        _input_ports = [i.get_port_map() for i in instance.input_ports] 
+        _input_ports = [self._get_port_map(input_port=i) for i in instance.input_ports] 
         block_name = instance.instance_name + "_b"
         local_tag_in = "local_tag_in_i"
         local_tag_out = "local_tag_out_i"
@@ -152,26 +181,40 @@ class FileWriter:
     def _write_generics(self, generics: List[str]):
         self._write_declaration("generic", generics)
         
-    def _write_ports(self, ports: List[str]):
-        self._write_declaration("port", ports)
+    def _get_port(self, port: Port) -> str:
+        port_type: str = VhdlDeclarations(port.data_type).get_type_declarations()
+        direction = "in" if port.is_input() else "out"
+        return port.name + " : " + direction + " " + port_type
+
+    def _write_ports(self, ports: List[Port]):
+        self.write_header("port (")
+        x = [self._get_port(i) for i in ports]
+        self.write_header(";\n".join(x))
+        self.write_header(");")
 
     def _write_instances(self, instances: InstanceContainerData):
         self.write_body("tag_in_i.tag <= tag_in;")
         for i in instances.instances:
             self._write_instance(instance=i)
-        self.write_body("return_value <= conv_std_ulogic_vector(tag_out_i." + instances.return_instruction_driver + ", " + str(instances.return_data_width) + ");")
+        return_data_width: str = instances.get_return_data_width()
+        self.write_body("return_value <= conv_std_ulogic_vector(tag_out_i." + instances.return_instruction_driver + ", " + return_data_width + ");")
         self.write_body("tag_out <= tag_out_i.tag;")
 
     def _write_declarations(self, declarations: List[DeclarationData]):
         for i in declarations:
             self._write_signal(declaration=i)
 
+    def write_constant(self, constant: ConstantDeclaration):
+        self._constants.append(Constant(constant))
+
     def write_function(self, entity_name: str, instances: InstanceContainerData, 
-    declarations: List[DeclarationData], ports: List[str], generics: List[str]):
+    declarations: List[DeclarationData], ports: List[Port], generics: List[str]):
         self.write_header("library ieee;")
         self.write_header("use ieee.std_logic_1164.all;")
         self.write_header("library llvm;")
         self.write_header("use llvm.llvm_pkg.conv_std_ulogic_vector;")
+        self.write_header("use llvm.llvm_pkg.memory_i32;")
+        self.write_header("use llvm.llvm_pkg.set_memory_i32;")
         self.write_header("library work;")
         self.write_header("entity " + entity_name + " is")
         self._write_generics(generics)

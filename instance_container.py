@@ -5,7 +5,7 @@ from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
-from llvm_parser import Assignment, LlvmParser, Instruction, ReturnInstruction, Alloca
+from llvm_parser import EqualAssignment, LlvmParser, Instruction, ReturnInstruction, Alloca
 from messages import Messages
 
 class InstanceContainer(InstanceContainerInterface):
@@ -55,13 +55,13 @@ class InstanceContainer(InstanceContainerInterface):
 
     def _add_call_instruction(self, instruction: str):
         self._msg.function_start("_add_call_instruction(instruction=" + instruction + ")")
-        assignment: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))
+        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
         instruction: Instruction = self._llvm_parser.get_call_assignment(assignment.source)
         self._add_instruction(assignment.destination, instruction)
         self._msg.function_end("_add_call_instruction")
 
     def _add_alloca(self, instruction: str):
-        assignment: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))
+        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
         alloca: Alloca = self._llvm_parser.get_alloca_assignment(assignment.source)
         self._alloca_map[assignment.destination] = alloca
 
@@ -94,7 +94,7 @@ class InstanceContainer(InstanceContainerInterface):
             self._add_alloca(str(instruction))
         else:
             statistics.increment(instruction.opcode)
-            assignment: Assignment = self._llvm_parser.get_equal_assignment(str(instruction))
+            assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
             instruction: Instruction = self._llvm_parser.get_instruction(assignment.source)
             self._add_instruction(assignment.destination, instruction)
         self._msg.function_end("add_instruction")
@@ -103,9 +103,8 @@ class InstanceContainer(InstanceContainerInterface):
         self._msg.function_start("get_instances()")
         instances = [i.get_instance_data() for i in self._container]
         return_instruction_driver = self._get_return_instruction_driver(return_instruction=self._return_value)
-        return_data_width = self._return_value.data_width
         result = InstanceContainerData(instances=instances, return_instruction_driver=return_instruction_driver,
-        return_data_width=return_data_width)
+        return_data_type=self._return_value.data_type)
         self._msg.function_end("get_instances = " + str(result))
         return result
 

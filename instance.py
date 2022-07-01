@@ -2,6 +2,7 @@ from typing import List
 
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
+from llvm_declarations import LlvmDeclaration
 from llvm_parser import InstructionArgument, LlvmParser, Instruction
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
@@ -21,9 +22,6 @@ class Instance:
 
     def set_instruction(self, instruction : Instruction):
         self.instruction = instruction
-
-    def get_data_width(self):
-        return self.instruction.get_data_width()
 
     def get_instance_index(self) -> int:
         if self._prev is None:
@@ -52,12 +50,12 @@ class Instance:
             return "tag_out_i"
         return self.get_tag_name()	
 
-    def _get_input_ports(self, operands: List[InstructionArgument], data_width: int) -> List[InstructionArgument]:
+    def _get_input_ports(self, operands: List[InstructionArgument], data_type: LlvmDeclaration) -> List[InstructionArgument]:
         self._msg.function_start("_get_input_ports(operands=" + str(operands) + ")")
         input_ports: List[InstructionArgument] = []
         for operand in operands:
             signal_name = self._parent.get_source(operand.signal_name)
-            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=signal_name, data_width=data_width))
+            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=signal_name, data_type=data_type))
         self._msg.function_end("_get_input_ports = " + str(input_ports))
         return input_ports
 
@@ -68,7 +66,7 @@ class Instance:
         tag_name = self._get_output_tag_name()
         previous_tag_name = self.get_previous_tag_name()
         input_ports = self._get_input_ports(operands=self.instruction.operands, 
-        data_width=self.instruction.get_data_width())
+        data_type=self.instruction.data_type)
         data = InstanceData(instance_name=instance_name, entity_name=entity_name, 
         library=self.instruction.library,
         output_port=output_port,tag_name=tag_name, input_ports=input_ports, 
@@ -76,7 +74,7 @@ class Instance:
         return data
 
     def get_declaration_data(self) -> DeclarationData:
-        vhdl_decl = VhdlDeclarations(self.get_data_width())
+        vhdl_decl = VhdlDeclarations(self.instruction.data_type)
         data = DeclarationData(instance_name=self.get_instance_name(), entity_name=self.get_tag_name(), 
         type=vhdl_decl)
         return data

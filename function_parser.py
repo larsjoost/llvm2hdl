@@ -4,30 +4,19 @@ from llvmlite.binding import ValueRef, TypeRef
 from file_writer import FileWriter
 from global_variables import GlobalVariables
 from instance_container import InstanceContainer
-from llvm_declarations import LlvmDeclarations
+from llvm_declarations import LlvmDeclaration, VectorDeclaration, BooleanDeclaration
 from llvm_parser import LlvmParser
 from messages import Messages
-from vhdl_declarations import VhdlDeclarations
+from ports import OutputPort, InputPort, Port
 
 class FunctionParser:
 
     def __init__(self):
         self._msg = Messages()
         
-    def _get_port(self, name: str, direction: str, data_width: Union[int, str], 
-    default_value: Optional[str] = None) -> str:
-        port_type: str = VhdlDeclarations(data_width).get_type_declarations()
-        if default_value is not None:
-            port_type += " := " + default_value
-        return name + " : " + direction + " " + port_type
-
-    def _get_data_width(self, type: str) -> LlvmDeclarations:
+    def _get_data_type(self, type: str) -> LlvmDeclaration:
         data_type = type.split(' ')[0]
-        return LlvmDeclarations(data_type).get_data_width()
-
-    def _add_argument(self, name: str, type: TypeRef, ports: List[str]):
-        data_width = self._get_data_width(str(type))
-        ports.append(self._get_port(name, "in", data_width))
+        return LlvmDeclaration(data_type)
 
     def _get_entity_name(self, name: str) -> str:
         return LlvmParser().get_entity_name(name)
@@ -37,21 +26,16 @@ class FunctionParser:
         self._msg.function_start("parse(function=" + str(function) + ")")
         if function.is_declaration:
             return
-        return_data_width = self._get_data_width(str(function.type))
-        return_name = "return_value"
-        tag_input_name = "tag_in"
-        tag_output_name = "tag_out"
+        return_data_type = self._get_data_type(str(function.type))
         generics = [
             "tag_width : positive := 1"]
-        ports = []
-        for argument in function.arguments:
-            self._add_argument(argument.name, argument.type, ports)
+        ports: List[Port] = [InputPort(name=i.name, data_type=LlvmDeclaration(str(i.type))) for i in function.arguments]
         ports.extend([
-            self._get_port(return_name, "out", return_data_width),
-            "clk : in std_ulogic",
-            "sreset : in std_ulogic",
-            self._get_port(tag_input_name, "in", "tag_width", "(others => '0')"),
-            self._get_port(tag_output_name, "out", "tag_width")])
+            OutputPort(name="return_value", data_type=return_data_type),
+            InputPort(name="clk", data_type=BooleanDeclaration()),
+            InputPort(name="sreset", data_type=BooleanDeclaration()),
+            InputPort(name="tag_in", data_type=VectorDeclaration("tag_width")),
+            OutputPort(name="tag_out", data_type=VectorDeclaration("tag_width"))])
         instance_container = InstanceContainer()
         for block in function.blocks:
             for i in block.instructions:

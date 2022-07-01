@@ -13,6 +13,7 @@ class VhdlGen:
         for global_variable in module.global_variables:
             global_variables.add(name=global_variable.name, data_type=global_variable.type,
             definition=str(global_variable))
+        global_variables.write(file_writer=file_handle)
         for function in module.functions:
             function_parser = FunctionParser()
             function_parser.parse(function=function, global_variables=global_variables, 
