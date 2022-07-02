@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union
+from assignment_resolution import AssignmentItem
 
 from messages import Messages
-from llvm_declarations import LlvmDeclaration, VectorDeclaration
+from llvm_declarations import LlvmDeclaration, LlvmName
 from vhdl_declarations import VhdlDeclarations
 
 @dataclass
@@ -30,7 +31,7 @@ class InstructionPosition:
 
 @dataclass
 class InstructionArgument:
-    signal_name: str
+    signal_name: LlvmName
     data_type : LlvmDeclaration
     port_name: Optional[str] = None
     def get_dimensions(self) -> Tuple[int, int]:
@@ -40,7 +41,7 @@ class InstructionArgument:
     def is_pointer(self) -> bool:
         return self.data_type.is_pointer()
     def get_signal_name(self) -> str:
-        return self.signal_name.replace("%", "")
+        return self.signal_name.get_value()
 
 @dataclass
 class OutputPort:
@@ -65,7 +66,7 @@ class InstructionParser:
         self.data_type = instruction[position.data_type]
         self.operands = [self._parse_operand(instruction[item], index) for index, item in enumerate(position.operands)]
     def _parse_operand(self, operand: str, index: int) -> InstructionArgument:
-        signal_name = operand.replace(",", "")
+        signal_name = LlvmName(operand.replace(",", ""))
         port_name = chr(ord('a') + index)
         data_type = LlvmDeclaration(self.data_type)
         return InstructionArgument(port_name=port_name, signal_name=signal_name, data_type=data_type)
@@ -91,11 +92,6 @@ class EqualAssignment:
     destination : str
     source : str
 
-@dataclass
-class Assignment:
-    destination : Optional[str]
-    source : str
-    source_type : LlvmDeclaration
     
 @dataclass
 class ReturnInstruction:
@@ -152,65 +148,68 @@ class LlvmParser:
             source = self._get_list_element(a, 2)
         return EqualAssignment(destination=destination, source=source)
  
-    def get_store_assignment(self, instruction : str) -> Assignment:
+    def get_store_assignment(self, instruction : str) -> AssignmentItem:
         # store i32 %a, i32* %a.addr, align 4
         a = self._split_comma(instruction)
         # a = ["store i32 %a", "i32* %a.addr", "align 4"]
         b = self._split_space(a[0])
         # b = ["store", "i32", "%a"]
-        source = self._get_list_element(b, 2)
+        source = LlvmName(self._get_list_element(b, 2))
         # source = "%a"
         b = self._split_space(a[1])
         # b = ["i32*", "%a.addr"]
-        source_type = LlvmDeclaration(b[0])
-        destination = b[1]
+        data_type = LlvmDeclaration(b[0])
+        destination = LlvmName(b[1])
         # destination = "%a.addr"
-        return Assignment(destination=destination, source=source, source_type=source_type)
+        return AssignmentItem(destination=destination, source=source, data_type=data_type, endpoint=False)
 
-    def get_load_assignment(self, instruction : str) -> Assignment:
+    def get_load_assignment(self, instruction : str) -> AssignmentItem:
         # %0 = load i32, i32* %a.addr, align 4
         a = self._split_equal_sign(instruction)
         # a = ["%0", "load i32, i32* %a.addr, align 4"]
-        destination = self._get_list_element(a, 0)
+        destination = LlvmName(self._get_list_element(a, 0))
         # destination = "%0"
         c = self._split_comma(a[1])
         # c = ["load i32", "i32* %a.addr", "align 4"]
         d = self._split_space(c[1])
         # d = ["i32*", "%a.addr"]
-        source_type = LlvmDeclaration(d[0])
-        source = d[1]
+        data_type = LlvmDeclaration(d[0])
+        source = LlvmName(d[1])
         # source = "%a.addr"
-        return Assignment(destination=destination, source=source, source_type=source_type)
+        return AssignmentItem(destination=destination, source=source, data_type=data_type, endpoint=False)
 
-    def get_bitcast_assignment(self, instruction : str) -> Assignment:
+    def get_bitcast_assignment(self, instruction : str) -> AssignmentItem:
         # %0 = bitcast [3 x i32]* %n to i8*
         a = self._split_equal_sign(instruction)
         # a = ["%0", "bitcast [3 x i32]* %n to i8*"]
-        destination = self._get_list_element(a, 0)
+        destination = LlvmName(self._get_list_element(a, 0))
         # destination = "%0"
         c = self._split_space(a[1])
         # c = ["bitcast", "[3", "x", "i32]*", "%n", "to", "i8*"]
-        source_type = LlvmDeclaration(c[-4])
-        source = c[-3]
+        data_type = LlvmDeclaration(c[-4])
+        source = LlvmName(c[-3])
         # source = "%n"
-        return Assignment(destination=destination, source=source, source_type=source_type)
+        return AssignmentItem(destination=destination, source=source, data_type=data_type, endpoint=False)
 
-    def get_getelementptr_assignment(self, instruction : str) -> Assignment:
-        # %arraydecay = getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
+    def get_getelementptr_assignment(self, instruction : str) -> AssignmentItem:
+        # 1) %arraydecay = getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
+        # 2) %arrayidx.1 = getelementptr inbounds i32, i32* %a, i64 1
         a = self._split_equal_sign(instruction)
-        # a = ["%arraydecay", "getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0"]
-        destination = self._get_list_element(a, 0)
-        # destination = "%0"
+        # 1) a = ["%arraydecay", "getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0"]
+        destination = LlvmName(self._get_list_element(a, 0))
+        # 1) destination = "%arraydecay"
+        # 2) destination = "%arrayidx.1"
         c = self._split_comma(a[1])
-        # c = ["getelementptr inbounds [3 x i32]", "[3 x i32]* %n", "i64 0", "i64 0"]
-        d = c[-3].rsplit(maxsplit=1)
-        # d = ["[3 x i32]*", "%n"]
-        source_type = LlvmDeclaration(d[0])
-        source = d[1]
-        # source = "%n"
-        return Assignment(destination=destination, source=source, source_type=source_type)
+        # 1) c = ["getelementptr inbounds [3 x i32]", "[3 x i32]* %n", "i64 0", "i64 0"]
+        # 2) c = ["getelementptr inbounds i32" , "i32* %a", "i64 1"]
+        d = c[1].rsplit(maxsplit=1)
+        # 1) d = ["[3 x i32]*", "%n"]
+        # 2) d = ["i32*", "%a"]
+        data_type = LlvmDeclaration(d[0])
+        source = LlvmName(d[1])
+        return AssignmentItem(destination=destination, source=source, data_type=data_type, endpoint=False)
 
-    def get_assignment(self, instruction : str) -> Optional[Assignment]:
+    def get_assignment(self, instruction : str) -> AssignmentItem:
         x = None
         if "store" in instruction:
             x = self.get_store_assignment(instruction)
@@ -245,7 +244,7 @@ class LlvmParser:
             # 1) g = ["i32", "2"]
             # 2) b = ["i32*", "nonnull",  "%n"]
             data_type = LlvmDeclaration(self._get_list_element(g, 0))
-            signal_name = self._get_list_element(g, -1)
+            signal_name = LlvmName(self._get_list_element(g, -1))
             # 1) signal_name = "2"
             # 2) signal_name = "%n"
             result.append(InstructionArgument(signal_name=signal_name, data_type=data_type))

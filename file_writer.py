@@ -138,9 +138,9 @@ class FileWriter:
         self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")", True)
         if input_port.single_dimension() and not input_port.is_pointer():
             dimensions: Tuple[int, str] = input_port.get_dimensions()
-            result = "conv_std_ulogic_vector(" + input_port.signal_name + ", " + dimensions[1] + ")"
+            result = "conv_std_ulogic_vector(" + input_port.get_signal_name() + ", " + dimensions[1] + ")"
         else:
-            result = input_port.signal_name
+            result = input_port.get_signal_name()
         if input_port.port_name is not None:
             result = input_port.port_name + " => " + result
         self._msg.function_end("_get_port_map = " + result, True)

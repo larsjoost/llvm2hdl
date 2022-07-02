@@ -1,9 +1,10 @@
 from typing import List
 
+from assignment_resolution import AssignmentItem
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
 from llvm_declarations import LlvmDeclaration
-from llvm_parser import Assignment, InstructionArgument, LlvmParser, Instruction
+from llvm_parser import InstructionArgument, LlvmParser, Instruction
 from messages import Messages
 from vhdl_declarations import VhdlDeclarations
 
@@ -37,6 +38,10 @@ class Instance:
     def get_output_signal_name(self) -> str:
         return self.get_tag_name() + "." + self.get_instance_name()	
 
+    def get_assignment(self, destination: str) -> AssignmentItem:
+        return AssignmentItem(destination=destination, source=self.get_output_signal_name(), 
+        data_type=self.instruction.data_type, endpoint=True)
+
     def get_instance_tag_name(self, instance, default: str) -> str:
         if instance is None:
             return default
@@ -54,8 +59,9 @@ class Instance:
         self._msg.function_start("_get_input_ports(operands=" + str(operands) + ")")
         input_ports: List[InstructionArgument] = []
         for operand in operands:
-            source: Assignment = self._parent.get_source(operand)
-            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=source.source, data_type=source.source_type))
+            assignment = AssignmentItem(destination=operand.signal_name, source=operand.signal_name, data_type=operand.data_type, endpoint=False)
+            source: AssignmentItem = self._parent.get_source(assignment=assignment)
+            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=source.source, data_type=source.data_type))
         self._msg.function_end("_get_input_ports = " + str(input_ports))
         return input_ports
 

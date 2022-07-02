@@ -33,8 +33,8 @@ class TestSourceParser(unittest.TestCase):
         b = x.get_call_assignment(a)
         self.assertEqual(b.opcode, "entity_Z3addii")
         data_type = LlvmDeclaration(data_type="i32")
-        first_argument = InstructionArgument(signal_name="2", data_type=data_type)
-        second_argument = InstructionArgument(signal_name="3", data_type=data_type)
+        first_argument = InstructionArgument(signal_name=LlvmName("2"), data_type=data_type)
+        second_argument = InstructionArgument(signal_name=LlvmName("3"), data_type=data_type)
         self.assertEqual(b.operands, [first_argument, second_argument])
 
     def test_getReturnInstruction(self):
@@ -64,8 +64,8 @@ class TestSourceParser(unittest.TestCase):
         data_type = LlvmDeclaration(data_type="i32")
         self.assertEqual(b.data_type, data_type)
         self.assertEqual(b.get_data_width(), 32)
-        self.assertEqual(b.operands[0], InstructionArgument(signal_name="%0", data_type=data_type, port_name="a"))
-        self.assertEqual(b.operands[1], InstructionArgument(signal_name="%1", data_type=data_type, port_name="b"))
+        self.assertEqual(b.operands[0], InstructionArgument(signal_name=LlvmName("%0"), data_type=data_type, port_name="a"))
+        self.assertEqual(b.operands[1], InstructionArgument(signal_name=LlvmName("%1"), data_type=data_type, port_name="b"))
         
 if __name__ == "__main__":
     unittest.main()

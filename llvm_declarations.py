@@ -1,6 +1,7 @@
 
 from abc import ABC, abstractmethod
-from typing import Tuple, Optional
+from typing import Tuple
+from dataclasses import dataclass
 
 class TypeDeclaration(ABC):
     @abstractmethod
@@ -56,6 +57,15 @@ class LlvmDeclaration(TypeDeclaration):
 
     def __repr__(self) -> str:
         return str(vars(self))
+
+@dataclass(frozen=True)
+class LlvmName:
+    """
+    Example %0, %a
+    """
+    name: str
+    def get_value(self) -> str:
+        return self.name.replace("%", "")
 
 class VectorDeclaration(TypeDeclaration):
     

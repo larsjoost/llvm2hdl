@@ -1,11 +1,12 @@
 from typing import Dict, List
 from llvmlite.binding import ValueRef
 
+from assignment_resolution import AssignmentItem, AssignmentResolution
 from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
-from llvm_parser import Assignment, EqualAssignment, InstructionArgument, LlvmParser, Instruction, ReturnInstruction, Alloca
+from llvm_parser import EqualAssignment, LlvmParser, Instruction, ReturnInstruction, Alloca
 from messages import Messages
 
 class InstanceContainer(InstanceContainerInterface):
@@ -13,25 +14,15 @@ class InstanceContainer(InstanceContainerInterface):
     _container: List[Instance] = []
     _alloca_map: Dict[str, Alloca] = {}
     _return_value: ReturnInstruction
-    _assignment_map : Dict[str, Assignment] = {}
+    _assignment_resolution : AssignmentResolution = AssignmentResolution()
     
     def __init__(self):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
         self._instance_map = {}
 
-    def _resolve_assignment(self, assignment: Assignment) -> Assignment:
-        self._msg.function_start("resolve_assignment(assignment=" + str(assignment) + ")")
-        x = assignment.destination
-        if x in self._assignment_map:
-            return self._resolve_assignment(self._assignment_map[x])
-        self._msg.function_end("resolve_assignment = " + str(assignment))
-        return assignment
-
-    def get_source(self, operand: InstructionArgument) -> Assignment:
-        x = operand.signal_name
-        assignment = Assignment(destination=x, source=x, source_type=operand.data_type)
-        return self._resolve_assignment(assignment)
+    def get_source(self, assignment: AssignmentItem) -> AssignmentItem:
+        return self._assignment_resolution.get_source(assignment)
 
     def _add_instruction(self, destination : str, instruction : Instruction):
         self._msg.function_start("_add_instruction(destination=" + destination + ", instruction=" + str(instruction) + ")")
@@ -44,11 +35,12 @@ class InstanceContainer(InstanceContainerInterface):
             pass
         instance.set_instruction(instruction)
         self._instance_map[destination] = instance
-        self._assignment_map[destination] = instance.get_output_signal_name()
+        assignment = instance.get_assignment(destination=destination)
+        self._assignment_resolution.add_assignment(assignment = assignment)
         self._container.append(instance)
         self._msg.function_end("_add_instruction")
 
-    def get_assignment(self, instruction : str) -> Assignment:
+    def get_assignment(self, instruction : str) -> AssignmentItem:
         return self._llvm_parser.get_assignment(instruction)
 
     def _add_call_instruction(self, instruction: str):
@@ -64,8 +56,8 @@ class InstanceContainer(InstanceContainerInterface):
         self._alloca_map[assignment.destination] = alloca
 
     def _add_assignment_instruction(self, instruction: str):
-        x: Assignment = self.get_assignment(instruction)
-        self._assignment_map[x.source] = x
+        assignment: AssignmentItem = self.get_assignment(instruction)
+        self._assignment_resolution.add_assignment(assignment=assignment)
 
     def _get_return_instruction_driver(self, return_instruction: ReturnInstruction) -> str:
         return self._instance_map[return_instruction.value].get_instance_name()
