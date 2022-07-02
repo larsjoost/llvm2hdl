@@ -5,9 +5,10 @@ import os
 from typing import List, Tuple
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
+from llvm_declarations import BooleanDeclaration, VectorDeclaration
 from llvm_parser import ConstantDeclaration, InstructionArgument
 from vhdl_declarations import VhdlDeclarations
-from ports import Port
+from ports import InputPort, OutputPort, Port
 from messages import Messages
 
 @dataclass
@@ -42,6 +43,7 @@ class FileWriter:
     _body : List[str] = []
     _trailer : List[str] = []
     _instances : List[str] = []
+    _ports: List[Port]
 
     def __init__(self, file_name: str):
         self._msg = Messages()
@@ -53,6 +55,10 @@ class FileWriter:
         print("constant c_tag_width : positive := " + " + ".join(total_data_width) + ";", file=file_handle)
         print("type tag_t is record", file=file_handle)
         print("tag : std_ulogic_vector(0 to tag_width - 1);", file=file_handle)
+        for i in self._ports:
+            if i.is_input():
+                type_declaration = VhdlDeclarations(i.data_type).get_type_declarations()
+                print(i.name + " : " + type_declaration + "(0 to " + i.name + "'length - 1);", file=file_handle)
         for i in self._signals:
             i.write_record_item(file_handle=file_handle)
         print("end record;", file=file_handle)
@@ -135,7 +141,7 @@ class FileWriter:
         self._signals.append(Signal(instance=declaration.instance_name, name=declaration.entity_name, type=declaration.type))
     
     def _get_port_map(self, input_port: InstructionArgument) -> str:
-        self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")", True)
+        self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
         if input_port.single_dimension() and not input_port.is_pointer():
             dimensions: Tuple[int, str] = input_port.get_dimensions()
             result = "conv_std_ulogic_vector(" + input_port.get_signal_name() + ", " + dimensions[1] + ")"
@@ -143,7 +149,7 @@ class FileWriter:
             result = input_port.get_signal_name()
         if input_port.port_name is not None:
             result = input_port.port_name + " => " + result
-        self._msg.function_end("_get_port_map = " + result, True)
+        self._msg.function_end("_get_port_map = " + result)
         return result
 
     def _write_instance(self, instance: InstanceData):
@@ -178,7 +184,9 @@ class FileWriter:
         self.write_header(";\n".join(instances))
         self.write_header(");")
 
-    def _write_generics(self, generics: List[str]):
+    def _write_generics(self):
+        generics = [
+            "tag_width : positive := 1"]
         self._write_declaration("generic", generics)
         
     def _get_port(self, port: Port) -> str:
@@ -187,13 +195,21 @@ class FileWriter:
         return port.name + " : " + direction + " " + port_type
 
     def _write_ports(self, ports: List[Port]):
+        standard_ports = [
+            InputPort(name="clk", data_type=BooleanDeclaration()),
+            InputPort(name="sreset", data_type=BooleanDeclaration()),
+            InputPort(name="tag_in", data_type=VectorDeclaration("tag_width")),
+            OutputPort(name="tag_out", data_type=VectorDeclaration("tag_width"))]
         self.write_header("port (")
-        x = [self._get_port(i) for i in ports]
+        x = [self._get_port(i) for i in ports + standard_ports]
         self.write_header(";\n".join(x))
         self.write_header(");")
 
     def _write_instances(self, instances: InstanceContainerData):
         self.write_body("tag_in_i.tag <= tag_in;")
+        for i in self._ports:
+            if i.is_input():
+                self.write_body("tag_in_i." + i.name + " <= " + i.name + ";")
         for i in instances.instances:
             self._write_instance(instance=i)
         return_data_width: str = instances.get_return_data_width()
@@ -208,7 +224,8 @@ class FileWriter:
         self._constants.append(Constant(constant))
 
     def write_function(self, entity_name: str, instances: InstanceContainerData, 
-    declarations: List[DeclarationData], ports: List[Port], generics: List[str]):
+    declarations: List[DeclarationData], ports: List[Port]):
+        self._ports = ports
         self.write_header("library ieee;")
         self.write_header("use ieee.std_logic_1164.all;")
         self.write_header("library llvm;")
@@ -217,7 +234,7 @@ class FileWriter:
         self.write_header("use llvm.llvm_pkg.set_memory_i32;")
         self.write_header("library work;")
         self.write_header("entity " + entity_name + " is")
-        self._write_generics(generics)
+        self._write_generics()
         self._write_ports(ports)
         self.write_header("begin")
         self.write_header("end entity " + entity_name + ";")

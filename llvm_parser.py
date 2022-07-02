@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional, Union
 from assignment_resolution import AssignmentItem
 
 from messages import Messages
-from llvm_declarations import LlvmDeclaration, LlvmName
+from llvm_declarations import LlvmArrayDeclaration, LlvmDeclaration, LlvmName
 from vhdl_declarations import VhdlDeclarations
 
 @dataclass
@@ -41,7 +41,8 @@ class InstructionArgument:
     def is_pointer(self) -> bool:
         return self.data_type.is_pointer()
     def get_signal_name(self) -> str:
-        return self.signal_name.get_value()
+        name = self.signal_name.get_value()
+        return self.data_type.get_name(name)
 
 @dataclass
 class OutputPort:
@@ -194,6 +195,7 @@ class LlvmParser:
     def get_getelementptr_assignment(self, instruction : str) -> AssignmentItem:
         # 1) %arraydecay = getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
         # 2) %arrayidx.1 = getelementptr inbounds i32, i32* %a, i64 1
+        array_index = instruction.rsplit(maxsplit=1)[-1]
         a = self._split_equal_sign(instruction)
         # 1) a = ["%arraydecay", "getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0"]
         destination = LlvmName(self._get_list_element(a, 0))
@@ -205,7 +207,7 @@ class LlvmParser:
         d = c[1].rsplit(maxsplit=1)
         # 1) d = ["[3 x i32]*", "%n"]
         # 2) d = ["i32*", "%a"]
-        data_type = LlvmDeclaration(d[0])
+        data_type = LlvmArrayDeclaration(data_type=LlvmDeclaration(d[0]), index=array_index)
         source = LlvmName(d[1])
         return AssignmentItem(destination=destination, source=source, data_type=data_type, endpoint=False)
 

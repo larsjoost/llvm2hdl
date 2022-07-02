@@ -20,6 +20,9 @@ class TypeDeclaration(ABC):
     def is_boolean(self) -> bool:
         return False
 
+    def get_name(self, name: str) -> str:
+        return name
+
 class LlvmDeclaration(TypeDeclaration):
     """
     data_type is one of i1, i32, i64, i32*, float, 3 x i32 
@@ -28,7 +31,7 @@ class LlvmDeclaration(TypeDeclaration):
 
     def __init__(self, data_type: str) -> None:
         self.data_type = data_type
-
+        
     def _get_data_width(self, data_type: str) -> str:
         x = data_type.strip()
         x = x.replace("*", "")
@@ -52,11 +55,43 @@ class LlvmDeclaration(TypeDeclaration):
         x = self.data_type.split("x")
         return (int(x[0]), self._get_data_width(data_type=x[1]))
 
+    def get_name(self, name) -> str:
+        if self.single_dimension():
+            return name
+        return name + "(0)"
+        
     def __str__(self) -> str:
         return str(vars(self))
 
     def __repr__(self) -> str:
         return str(vars(self))
+
+class LlvmArrayDeclaration(TypeDeclaration):
+    
+    data_type : LlvmDeclaration
+    index : str
+
+    def __init__(self, data_type: LlvmDeclaration, index: str):
+        self.data_type = data_type
+        self.index = index
+
+    def get_dimensions(self) -> Tuple[int, str]:
+        return self.data_type.get_dimensions()
+
+    def single_dimension(self) -> bool:
+        return False
+
+    def is_array(self) -> bool:
+        return True
+
+    def __str__(self) -> str:
+        return str(vars(self))
+
+    def __repr__(self) -> str:
+        return str(vars(self))
+
+    def get_name(self, name: str) -> str:
+        return name + "(" + str(self.index) + ")"
 
 @dataclass(frozen=True)
 class LlvmName:

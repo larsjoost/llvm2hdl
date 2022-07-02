@@ -27,15 +27,8 @@ class FunctionParser:
         if function.is_declaration:
             return
         return_data_type = self._get_data_type(str(function.type))
-        generics = [
-            "tag_width : positive := 1"]
+        output_port = [OutputPort(name="return_value", data_type=return_data_type)]
         ports: List[Port] = [InputPort(name=i.name, data_type=LlvmDeclaration(str(i.type))) for i in function.arguments]
-        ports.extend([
-            OutputPort(name="return_value", data_type=return_data_type),
-            InputPort(name="clk", data_type=BooleanDeclaration()),
-            InputPort(name="sreset", data_type=BooleanDeclaration()),
-            InputPort(name="tag_in", data_type=VectorDeclaration("tag_width")),
-            OutputPort(name="tag_out", data_type=VectorDeclaration("tag_width"))])
         instance_container = InstanceContainer()
         for block in function.blocks:
             for i in block.instructions:
@@ -44,5 +37,5 @@ class FunctionParser:
         instances = instance_container.get_instances()
         declarations = instance_container.get_declarations()
         file_handle.write_function(entity_name=entity_name, instances=instances, declarations=declarations,
-        ports=ports, generics=generics)
+        ports=ports + output_port)
         self._msg.function_end("parse")
