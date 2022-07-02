@@ -11,6 +11,6 @@ Run unit tests by typing:
 
 Installation:
 
-pip3 install llvmlite
+conda install --channel=numba llvmlite
 
-apt install clang ghdl
+apt install clang ghdl 
