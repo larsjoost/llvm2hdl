@@ -88,14 +88,44 @@ class LlvmArrayDeclaration(TypeDeclaration):
     def get_array_index(self) -> str:
         return self.index
 
+
+@dataclass
+class LlvmType:
+    def __str__(self) -> str:
+        pass
+    def is_integer(self) -> bool:
+        return False
+
 @dataclass(frozen=True)
-class LlvmName:
+class LlvmName(LlvmType):
     """
     Example %0, %a
     """
     name: str
-    def get_variable_name(self) -> str:
+    def __str__(self) -> str:
         return self.name.replace("%", "")
+
+@dataclass(frozen=True)
+class LlvmInteger(LlvmType):
+    value: int
+    def __str__(self) -> str:
+        return str(self.value)
+    def is_integer(self) -> bool:
+        return True
+
+class LlvmTypeFactory:
+    text: str
+    def __init__(self, text: str):
+        self.text = text
+    def resolve(self) -> LlvmType:
+        if "%" in self.text:
+            return LlvmName(self.text)
+        try:
+            value = int(self.text)
+            return LlvmInteger(value)
+        except ValueError:
+            pass
+        raise ValueError("Unknown LlvmType")
 
 class VectorDeclaration(TypeDeclaration):
     

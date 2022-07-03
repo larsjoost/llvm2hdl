@@ -1,5 +1,5 @@
 
 
-#define SIZE 8
+#define SIZE 3
 
 int for_loop(int a[SIZE]);

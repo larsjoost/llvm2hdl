@@ -161,7 +161,10 @@ class FileWriter:
     
     def _get_port_map(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
-        signal_name = "tag_i." + input_port.signal_name
+        if input_port.is_integer():
+            signal_name = str(input_port.signal_name)
+        else:
+            signal_name = "tag_i." + str(input_port.signal_name)
         array_index: Optional[str] = input_port.get_array_index()
         dimensions: Tuple[int, str] = input_port.get_dimensions()
         array_index_argument = "" if array_index in [None, "0"] else ", " + array_index

@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional, Union
 from assignment_resolution import AssignmentItem
 
 from messages import Messages
-from llvm_declarations import LlvmArrayDeclaration, LlvmDeclaration, LlvmName
+from llvm_declarations import LlvmArrayDeclaration, LlvmDeclaration, LlvmName, LlvmType, LlvmTypeFactory
 from vhdl_declarations import VhdlDeclarations
 
 @dataclass
@@ -31,7 +31,7 @@ class InstructionPosition:
 
 @dataclass
 class InstructionArgument:
-    signal_name: str
+    signal_name: Union[str, LlvmType]
     data_type : LlvmDeclaration
     port_name: Optional[str] = None
     def get_dimensions(self) -> Tuple[int, int]:
@@ -42,7 +42,10 @@ class InstructionArgument:
         return self.data_type.is_pointer()
     def get_array_index(self) -> str:
         return self.data_type.get_array_index()
-
+    def is_integer(self) -> bool:
+        if isinstance(self.signal_name, LlvmType):
+            return self.signal_name.is_integer()
+        return False
 
 @dataclass
 class OutputPort:
@@ -231,10 +234,10 @@ class LlvmParser:
             # 1) g = ["i32", "2"]
             # 2) b = ["i32*", "nonnull",  "%n"]
             data_type = LlvmDeclaration(self._get_list_element(g, 0))
-            signal_name = LlvmName(self._get_list_element(g, -1))
+            argument = LlvmTypeFactory(self._get_list_element(g, -1)).resolve()
             # 1) signal_name = "2"
             # 2) signal_name = "%n"
-            result.append(InstructionArgument(signal_name=signal_name, data_type=data_type))
+            result.append(InstructionArgument(signal_name=argument, data_type=data_type))
         self._msg.function_end("_get_call_argument = " + str(result))
         return result
 

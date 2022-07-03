@@ -19,7 +19,7 @@ class AssignmentItem:
     source: Optional[LlvmName] = None
     def get_driver(self) -> str:
         if self.driver is None:
-            return self.source.get_variable_name()
+            return str(self.source)
         return self.driver
 
 class SourceNotFound(Exception):
