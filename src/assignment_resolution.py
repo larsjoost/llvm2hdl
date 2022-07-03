@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 from llvm_declarations import LlvmName, TypeDeclaration
 from messages import Messages
@@ -9,15 +9,18 @@ class AssignmentItem:
     """
     AssignmentItem contains all elements needed to resolve the original signal driver
     Examples:
-    "%0 = load i32, i32* %a, align 4, !tbaa !2"
-    AssignmentItem(destination="%0", source="%a", data_type=TypeDeclaration("i32*"), endpoint=False)
-    %add.1 = add nsw i32 %1, %0
-    AssignmentItem(destination="%add.1", source=<output port of add>, data_type=TypeDeclaration("i32"), endpoint=True)
+    "load i32, i32* %a, align 4, !tbaa !2"
+    AssignmentItem(source="%a", data_type=TypeDeclaration("i32*"))
+    "add nsw i32 %1, %0"
+    AssignmentItem(driver=<output port of add>, data_type=TypeDeclaration("i32"))
     """
-    destination: LlvmName
-    source: LlvmName
     data_type: TypeDeclaration
-    endpoint : bool
+    driver: Optional[str] = None
+    source: Optional[LlvmName] = None
+    def get_driver(self) -> str:
+        if self.driver is None:
+            return self.source.get_variable_name()
+        return self.driver
 
 class SourceNotFound(Exception):
     pass
@@ -31,12 +34,16 @@ class AssignmentResolution:
 
     def get_source(self, assignment: AssignmentItem) -> AssignmentItem:
         self._msg.function_start("get_source(assignment=" + str(assignment) + ")")
-        if assignment.endpoint or assignment.source not in self._assignment_map:
-            result = assignment
-        else:
-            result = self.get_source(self._assignment_map[assignment.source])
+        result = assignment
+        if assignment.source is not None:
+            assignment_search = assignment.source
+            if assignment_search in self._assignment_map:
+                result = self.get_source(self._assignment_map[assignment_search])
         self._msg.function_end("get_source = " + str(result))
         return result
 
-    def add_assignment(self, assignment: AssignmentItem):
-        self._assignment_map[assignment.destination] = assignment
+    def add_assignment(self, destination: LlvmName, assignment: AssignmentItem):
+        self._msg.function_start("add_assignment(destination=" + str(destination) +
+        ", assignment=" + str(assignment) + ")")
+        self._assignment_map[destination] = assignment
+        self._msg.function_end("add_assignment")

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import inspect
 import io
 import os
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from llvm_declarations import BooleanDeclaration, VectorDeclaration
@@ -49,29 +49,48 @@ class FileWriter:
         self._msg = Messages()
         self._file_name = file_name
 
-    def _print_declarations(self, file_handle):
+    def _print_total_data_width(self, file_handle) -> None:
         total_data_width = [i.get_data_width() for i in self._signals]
         total_data_width.append("tag_width")
+        for i in self._ports:
+            if i.is_input():
+                total_data_width.append(i.name + "'length")
         print("constant c_tag_width : positive := " + " + ".join(total_data_width) + ";", file=file_handle)
+
+    def _print_tag_record(self, file_handle):
         print("type tag_t is record", file=file_handle)
         print("tag : std_ulogic_vector(0 to tag_width - 1);", file=file_handle)
         for i in self._ports:
             if i.is_input():
                 type_declaration = VhdlDeclarations(i.data_type).get_type_declarations()
-                print(i.name + " : " + type_declaration + "(0 to " + i.name + "'length - 1);", file=file_handle)
+                print(i.name + " : std_ulogic_vector(0 to " + i.name + "'length - 1);", file=file_handle)
         for i in self._signals:
             i.write_record_item(file_handle=file_handle)
         print("end record;", file=file_handle)
+        
+    def _print_function_conv_tag(self, file_handle, record_items: List[str]) -> None:
+        assign_items = ["result_v." + i for i in record_items]
         print("function conv_tag (", file=file_handle)
         print("arg : std_ulogic_vector(0 to c_tag_width - 1)) return tag_t is", file=file_handle)
         print("variable result_v : tag_t;", file=file_handle)
         print("begin", file=file_handle)
-        record_items = [i.instance for i in self._signals]
-        record_items.append("tag")
-        assign_items = ["result_v." + i for i in record_items]
         print("(" + ", ".join(assign_items) + ") := arg;", file=file_handle)
         print("return result_v;", file=file_handle)
         print("end function conv_tag;", file=file_handle)
+        
+    def _get_record_items(self) -> List[str]:
+        record_items = [i.instance for i in self._signals]
+        record_items.append("tag")
+        for i in self._ports:
+            if i.is_input():
+                record_items.append(i.name)
+        return record_items
+
+    def _print_declarations(self, file_handle):
+        self._print_total_data_width(file_handle=file_handle)
+        self._print_tag_record(file_handle=file_handle)
+        record_items = self._get_record_items()
+        self._print_function_conv_tag(file_handle=file_handle, record_items=record_items)
         print("function tag_to_std_ulogic_vector (", file=file_handle)
         print("arg : tag_t) return std_ulogic_vector is", file=file_handle)
         print("begin", file=file_handle)
@@ -98,14 +117,14 @@ class FileWriter:
         self._print_list(file_handle, self._trailer)
 
     def close(self):
-        with open(self._file_name, 'w') as file_handle:
+        with open(self._file_name, 'w', encoding="utf-8") as file_handle:
             self._print_header(file_handle=file_handle)
             self._print_declarations(file_handle=file_handle)
             print("begin", file=file_handle)
             self._print_body(file_handle=file_handle)
             self._print_trailer(file_handle=file_handle)
         instance_file_name = os.path.splitext(self._file_name)[0]+'.inc'
-        with open(instance_file_name, 'w') as file_handle:
+        with open(instance_file_name, 'w', encoding="utf-8") as file_handle:
             for i in self._instances:
                 print(i, file=file_handle)
 
@@ -142,11 +161,11 @@ class FileWriter:
     
     def _get_port_map(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
-        if input_port.single_dimension() and not input_port.is_pointer():
-            dimensions: Tuple[int, str] = input_port.get_dimensions()
-            result = "conv_std_ulogic_vector(" + input_port.get_signal_name() + ", " + dimensions[1] + ")"
-        else:
-            result = input_port.get_signal_name()
+        signal_name = "tag_i." + input_port.signal_name
+        array_index: Optional[str] = input_port.get_array_index()
+        dimensions: Tuple[int, str] = input_port.get_dimensions()
+        array_index_argument = "" if array_index in [None, "0"] else ", " + array_index
+        result = "get(" + signal_name + ", " + dimensions[1] + array_index_argument + ")"
         if input_port.port_name is not None:
             result = input_port.port_name + " => " + result
         self._msg.function_end("_get_port_map = " + result)
@@ -160,12 +179,14 @@ class FileWriter:
         local_tag_in = "local_tag_in_i"
         local_tag_out = "local_tag_out_i"
         self.write_body(f"{block_name} : block")
+        self.write_body("signal tag_i : tag_t;")
         self.write_body(f"signal {local_tag_in}, {local_tag_out} : std_ulogic_vector(0 to c_tag_width - 1);")
         self.write_body("signal q_i : " + instance.output_port.get_type_declarations() + ";")
         self.write_body("begin")
-        self.write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(" + instance.previous_tag_name + ");")
+        self.write_body("tag_i <= " + instance.previous_tag_name + ";")
+        self.write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
         self.write_body(instance.instance_name + " : entity " + instance.library + "." + instance.entity_name)
-        self.write_body("generic map (tag_width => c_tag_width) port map (", end="")
+        self.write_body("port map (", end="")
         self.write_body(", ".join(_input_ports), end="")
         self.write_body(", "+ instance.output_port.get_port_map(), end="")
         self.write_body(", clk => clk, sreset => sreset", end="")
@@ -179,27 +200,16 @@ class FileWriter:
         self.write_body("end process;")
         self.write_body("end block " + block_name + ";")
 
-    def _write_declaration(self, type: str, instances: List[str]):
-        self.write_header(type + " (")
-        self.write_header(";\n".join(instances))
-        self.write_header(");")
-
-    def _write_generics(self):
-        generics = [
-            "tag_width : positive := 1"]
-        self._write_declaration("generic", generics)
-        
     def _get_port(self, port: Port) -> str:
-        port_type: str = VhdlDeclarations(port.data_type).get_type_declarations()
         direction = "in" if port.is_input() else "out"
-        return port.name + " : " + direction + " " + port_type
+        return port.name + " : " + direction + " std_ulogic_vector"
 
     def _write_ports(self, ports: List[Port]):
         standard_ports = [
             InputPort(name="clk", data_type=BooleanDeclaration()),
             InputPort(name="sreset", data_type=BooleanDeclaration()),
-            InputPort(name="tag_in", data_type=VectorDeclaration("tag_width")),
-            OutputPort(name="tag_out", data_type=VectorDeclaration("tag_width"))]
+            InputPort(name="tag_in", data_type=VectorDeclaration()),
+            OutputPort(name="tag_out", data_type=VectorDeclaration())]
         self.write_header("port (")
         x = [self._get_port(i) for i in ports + standard_ports]
         self.write_header(";\n".join(x))
@@ -212,8 +222,7 @@ class FileWriter:
                 self.write_body("tag_in_i." + i.name + " <= " + i.name + ";")
         for i in instances.instances:
             self._write_instance(instance=i)
-        return_data_width: str = instances.get_return_data_width()
-        self.write_body("return_value <= conv_std_ulogic_vector(tag_out_i." + instances.return_instruction_driver + ", " + return_data_width + ");")
+        self.write_body("return_value <= conv_std_ulogic_vector(tag_out_i." + instances.return_instruction_driver + ", return_value'length);")
         self.write_body("tag_out <= tag_out_i.tag;")
 
     def _write_declarations(self, declarations: List[DeclarationData]):
@@ -230,11 +239,9 @@ class FileWriter:
         self.write_header("use ieee.std_logic_1164.all;")
         self.write_header("library llvm;")
         self.write_header("use llvm.llvm_pkg.conv_std_ulogic_vector;")
-        self.write_header("use llvm.llvm_pkg.memory_i32;")
-        self.write_header("use llvm.llvm_pkg.set_memory_i32;")
+        self.write_header("use llvm.llvm_pkg.get;")
         self.write_header("library work;")
         self.write_header("entity " + entity_name + " is")
-        self._write_generics()
         self._write_ports(ports)
         self.write_header("begin")
         self.write_header("end entity " + entity_name + ";")

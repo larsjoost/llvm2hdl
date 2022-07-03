@@ -8,10 +8,12 @@ from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
 from llvm_parser import EqualAssignment, LlvmParser, Instruction, ReturnInstruction, Alloca
 from messages import Messages
+from llvm_declarations import LlvmName
 
 class InstanceContainer(InstanceContainerInterface):
     
     _container: List[Instance] = []
+    _instance_map: Dict[LlvmName, Instance] = {}
     _alloca_map: Dict[str, Alloca] = {}
     _return_value: ReturnInstruction
     _assignment_resolution : AssignmentResolution = AssignmentResolution()
@@ -19,13 +21,12 @@ class InstanceContainer(InstanceContainerInterface):
     def __init__(self):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
-        self._instance_map = {}
 
     def get_source(self, assignment: AssignmentItem) -> AssignmentItem:
         return self._assignment_resolution.get_source(assignment)
 
-    def _add_instruction(self, destination : str, instruction : Instruction):
-        self._msg.function_start("_add_instruction(destination=" + destination + ", instruction=" + str(instruction) + ")")
+    def _add_instruction(self, destination : LlvmName, instruction : Instruction):
+        self._msg.function_start("_add_instruction(destination=" + str(destination) + ", instruction=" + str(instruction) + ")")
         instance = Instance(self)
         try:
             last_instance = self._container[-1]
@@ -35,8 +36,8 @@ class InstanceContainer(InstanceContainerInterface):
             pass
         instance.set_instruction(instruction)
         self._instance_map[destination] = instance
-        assignment = instance.get_assignment(destination=destination)
-        self._assignment_resolution.add_assignment(assignment = assignment)
+        assignment = instance.get_assignment()
+        self._assignment_resolution.add_assignment(destination=destination, assignment = assignment)
         self._container.append(instance)
         self._msg.function_end("_add_instruction")
 
@@ -51,13 +52,19 @@ class InstanceContainer(InstanceContainerInterface):
         self._msg.function_end("_add_call_instruction")
 
     def _add_alloca(self, instruction: str):
-        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
+        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(instruction)
         alloca: Alloca = self._llvm_parser.get_alloca_assignment(assignment.source)
         self._alloca_map[assignment.destination] = alloca
 
+    def _add_store_instruction(self, instruction: str):
+        destination, assignment = self._llvm_parser.get_store_assignment(instruction)
+        self._assignment_resolution.add_assignment(destination=destination, assignment=assignment)
+
     def _add_assignment_instruction(self, instruction: str):
-        assignment: AssignmentItem = self.get_assignment(instruction)
-        self._assignment_resolution.add_assignment(assignment=assignment)
+        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(instruction)
+        assignment_item: AssignmentItem = self.get_assignment(assignment.source)
+        self._assignment_resolution.add_assignment(destination=assignment.destination, 
+        assignment=assignment_item)
 
     def _get_return_instruction_driver(self, return_instruction: ReturnInstruction) -> str:
         return self._instance_map[return_instruction.value].get_instance_name()
@@ -76,7 +83,9 @@ class InstanceContainer(InstanceContainerInterface):
         if instruction.opcode == "call":
             if not self._internal_llvm_call(str(instruction)):
                 self._add_call_instruction(str(instruction))  
-        elif instruction.opcode in ["store", "load", "bitcast", "getelementptr"]:
+        elif instruction.opcode == "store":
+            self._add_store_instruction(str(instruction))
+        elif instruction.opcode in ["load", "bitcast", "getelementptr"]:
             self._add_assignment_instruction(str(instruction))
         elif instruction.opcode == "ret":
             self._return_value = self._add_return_instruction(str(instruction))

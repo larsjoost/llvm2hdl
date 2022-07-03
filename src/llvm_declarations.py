@@ -1,6 +1,6 @@
 
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Optional, Tuple
 from dataclasses import dataclass
 
 class TypeDeclaration(ABC):
@@ -20,8 +20,8 @@ class TypeDeclaration(ABC):
     def is_boolean(self) -> bool:
         return False
 
-    def get_name(self, name: str) -> str:
-        return name
+    def get_array_index(self) -> Optional[str]:
+        return None
 
 class LlvmDeclaration(TypeDeclaration):
     """
@@ -55,11 +55,6 @@ class LlvmDeclaration(TypeDeclaration):
         x = self.data_type.split("x")
         return (int(x[0]), self._get_data_width(data_type=x[1]))
 
-    def get_name(self, name) -> str:
-        if self.single_dimension():
-            return name
-        return name + "(0)"
-        
     def __str__(self) -> str:
         return str(vars(self))
 
@@ -90,8 +85,8 @@ class LlvmArrayDeclaration(TypeDeclaration):
     def __repr__(self) -> str:
         return str(vars(self))
 
-    def get_name(self, name: str) -> str:
-        return name + "(" + str(self.index) + ")"
+    def get_array_index(self) -> str:
+        return self.index
 
 @dataclass(frozen=True)
 class LlvmName:
@@ -99,14 +94,14 @@ class LlvmName:
     Example %0, %a
     """
     name: str
-    def get_value(self) -> str:
+    def get_variable_name(self) -> str:
         return self.name.replace("%", "")
 
 class VectorDeclaration(TypeDeclaration):
     
-    data_width: str
+    data_width: Optional[str]
 
-    def __init__(self, data_width: str) -> None:
+    def __init__(self, data_width: Optional[str] = None) -> None:
         self.data_width = data_width
 
     def get_dimensions(self) -> Tuple[int, str]:

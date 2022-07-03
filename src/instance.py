@@ -36,11 +36,11 @@ class Instance:
         return self.get_instance_name() + "_tag_out_i"
 
     def get_output_signal_name(self) -> str:
-        return self.get_tag_name() + "." + self.get_instance_name()	
+        return self.get_instance_name()	
 
-    def get_assignment(self, destination: str) -> AssignmentItem:
-        return AssignmentItem(destination=destination, source=self.get_output_signal_name(), 
-        data_type=self.instruction.data_type, endpoint=True)
+    def get_assignment(self,) -> AssignmentItem:
+        return AssignmentItem(driver=self.get_output_signal_name(), 
+        data_type=self.instruction.data_type)
 
     def get_instance_tag_name(self, instance, default: str) -> str:
         if instance is None:
@@ -59,9 +59,10 @@ class Instance:
         self._msg.function_start("_get_input_ports(operands=" + str(operands) + ")")
         input_ports: List[InstructionArgument] = []
         for operand in operands:
-            assignment = AssignmentItem(destination=operand.signal_name, source=operand.signal_name, data_type=operand.data_type, endpoint=False)
+            assignment = AssignmentItem(source=operand.signal_name, data_type=operand.data_type)
             source: AssignmentItem = self._parent.get_source(assignment=assignment)
-            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=source.source, data_type=source.data_type))
+            signal_name: str = source.get_driver()
+            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=signal_name, data_type=source.data_type))
         self._msg.function_end("_get_input_ports = " + str(input_ports))
         return input_ports
 
