@@ -3,14 +3,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity llvm_mul is
-  generic (
-    tag_width : positive := 1
-    );
   port (
     clk     : in  std_ulogic;
     sreset  : in  std_ulogic;
-    tag_in  : in  std_ulogic_vector(0 to tag_width - 1) := (others => '0');
-    tag_out : out std_ulogic_vector(0 to tag_width - 1);
+    tag_in  : in  std_ulogic_vector;
+    tag_out : out std_ulogic_vector;
     q       : out std_ulogic_vector(0 to 32 - 1);
     a       : in  std_ulogic_vector(0 to 32 - 1);
     b       : in  std_ulogic_vector(0 to 32 - 1)

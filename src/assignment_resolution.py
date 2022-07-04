@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
-from llvm_declarations import LlvmName, TypeDeclaration
+from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
 from messages import Messages
 
 @dataclass
@@ -17,9 +17,9 @@ class AssignmentItem:
     data_type: TypeDeclaration
     driver: Optional[str] = None
     source: Optional[LlvmName] = None
-    def get_driver(self) -> str:
+    def get_driver(self) -> Union[LlvmType, str]:
         if self.driver is None:
-            return str(self.source)
+            return self.source
         return self.driver
 
 class SourceNotFound(Exception):

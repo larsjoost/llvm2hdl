@@ -22,8 +22,6 @@ architecture behavior of test_main is
 begin
 
   entitymain_1 : entity work.entitymain
-    generic map (
-      tag_width => tag_width)
     port map (
       return_value => return_value,
       clk          => clk,

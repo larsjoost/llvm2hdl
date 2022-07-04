@@ -70,7 +70,7 @@ class InstructionParser:
         self.data_type = instruction[position.data_type]
         self.operands = [self._parse_operand(instruction[item], index) for index, item in enumerate(position.operands)]
     def _parse_operand(self, operand: str, index: int) -> InstructionArgument:
-        signal_name = LlvmName(operand.replace(",", ""))
+        signal_name = LlvmTypeFactory(operand.replace(",", "")).resolve()
         port_name = chr(ord('a') + index)
         data_type = LlvmDeclaration(self.data_type)
         return InstructionArgument(port_name=port_name, signal_name=signal_name, data_type=data_type)

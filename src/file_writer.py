@@ -51,7 +51,7 @@ class FileWriter:
 
     def _print_total_data_width(self, file_handle) -> None:
         total_data_width = [i.get_data_width() for i in self._signals]
-        total_data_width.append("tag_width")
+        total_data_width.append("tag_in'length")
         for i in self._ports:
             if i.is_input():
                 total_data_width.append(i.name + "'length")
@@ -59,7 +59,7 @@ class FileWriter:
 
     def _print_tag_record(self, file_handle):
         print("type tag_t is record", file=file_handle)
-        print("tag : std_ulogic_vector(0 to tag_width - 1);", file=file_handle)
+        print("tag : std_ulogic_vector(0 to tag_in'length - 1);", file=file_handle)
         for i in self._ports:
             if i.is_input():
                 type_declaration = VhdlDeclarations(i.data_type).get_type_declarations()
@@ -159,12 +159,18 @@ class FileWriter:
     def _write_signal(self, declaration: DeclarationData):
         self._signals.append(Signal(instance=declaration.instance_name, name=declaration.entity_name, type=declaration.type))
     
-    def _get_port_map(self, input_port: InstructionArgument) -> str:
-        self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
+    def _get_input_port_name(self, input_port: InstructionArgument) -> str:
+        self._msg.function_start("_get_input_port_name(input_port=" + str(input_port) + ")")
         if input_port.is_integer():
             signal_name = str(input_port.signal_name)
         else:
             signal_name = "tag_i." + str(input_port.signal_name)
+        self._msg.function_end("_get_input_port_name = " + signal_name)
+        return signal_name
+
+    def _get_port_map(self, input_port: InstructionArgument) -> str:
+        self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
+        signal_name = self._get_input_port_name(input_port)
         array_index: Optional[str] = input_port.get_array_index()
         dimensions: Tuple[int, str] = input_port.get_dimensions()
         array_index_argument = "" if array_index in [None, "0"] else ", " + array_index
@@ -208,14 +214,11 @@ class FileWriter:
         return port.name + " : " + direction + " std_ulogic_vector"
 
     def _write_ports(self, ports: List[Port]):
-        standard_ports = [
-            InputPort(name="clk", data_type=BooleanDeclaration()),
-            InputPort(name="sreset", data_type=BooleanDeclaration()),
-            InputPort(name="tag_in", data_type=VectorDeclaration()),
-            OutputPort(name="tag_out", data_type=VectorDeclaration())]
         self.write_header("port (")
-        x = [self._get_port(i) for i in ports + standard_ports]
-        self.write_header(";\n".join(x))
+        x = [self._get_port(i) for i in ports]
+        standard_ports = ["clk : IN std_ulogic", "sreset : IN std_ulogic",
+        "tag_in : IN std_ulogic_vector", "tag_out : out std_ulogic_vector"] 
+        self.write_header(";\n".join(x + standard_ports))
         self.write_header(");")
 
     def _write_instances(self, instances: InstanceContainerData):
