@@ -21,8 +21,10 @@ architecture rtl of llvm_zext is
 
 begin
 
-    q       <= std_ulogic_vector(resize(a_i, q'length));
+  a_i <= unsigned(a);
 
-    tag_out <= tag_in;
+  q <= std_ulogic_vector(resize(a_i, q'length));
+
+  tag_out <= tag_in;
 
 end architecture rtl;

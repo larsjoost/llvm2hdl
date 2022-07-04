@@ -188,6 +188,7 @@ class LlvmParser:
         return AssignmentItem(source=source, data_type=data_type)
 
     def get_getelementptr_assignment(self, instruction : str) -> AssignmentItem:
+        self._msg.function_start("get_getelementptr_assignment(instruction=" + instruction + ")", True)
         # 1) getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
         # 2) getelementptr inbounds i32, i32* %a, i64 1
         array_index = instruction.rsplit(maxsplit=1)[-1]
@@ -199,7 +200,9 @@ class LlvmParser:
         # 2) d = ["i32*", "%a"]
         data_type = LlvmArrayDeclaration(data_type=LlvmDeclaration(d[0]), index=array_index)
         source = LlvmName(d[1])
-        return AssignmentItem(source=source, data_type=data_type)
+        result = AssignmentItem(source=source, data_type=data_type)
+        self._msg.function_end("get_getelementptr_assignment = " + str(result), True)
+        return result
 
     def get_assignment(self, instruction : str) -> AssignmentItem:
         x = None

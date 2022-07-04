@@ -1,11 +1,14 @@
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 
 entity test_main is
 end entity test_main;
 
 use std.env.finish;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.numeric_std.to_signed;
+use ieee.numeric_std.to_integer;
 
 architecture behavior of test_main is
 
@@ -37,7 +40,9 @@ begin
     wait until rising_edge(clk) and sreset = '0';
     tag_in <= (others => '1');
     wait until rising_edge(clk) and tag_out(0) = '1';
-    assert unsigned(return_value) = 0 report "Test failed" severity failure;
+    assert (unsigned(return_value) = 0) 
+    report "Test failed. return_value = " & to_string(return_value) & ", but expected 0" 
+    severity failure;
     finish;
     wait;
   end process;

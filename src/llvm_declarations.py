@@ -52,7 +52,8 @@ class LlvmDeclaration(TypeDeclaration):
     def get_dimensions(self) -> Tuple[int, str]:
         if not self.is_array():
             return (1, self._get_data_width(data_type=self.data_type))
-        x = self.data_type.split("x")
+        # self.data_type = "[3 x i32]*"
+        x = self.data_type.replace("[", "").replace("]", "").replace("*", "").split("x")
         return (int(x[0]), self._get_data_width(data_type=x[1]))
 
     def __str__(self) -> str:

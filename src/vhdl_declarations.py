@@ -26,4 +26,6 @@ class VhdlDeclarations:
         scale = "" if x == 1 else str(x) + "*"
         return scale + dimensions[1]
 
+    def get_initialization(self, values: List[str]) -> str:
+        return "get(integer_array_t'(" + ", ".join(values) + "), " + self.get_data_width() + ")"
 
