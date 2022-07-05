@@ -12,6 +12,8 @@ class Port(ABC):
     @abstractmethod
     def is_input(self) -> bool:
         pass
+    def get_data_width(self) -> str:
+        return self.data_type.get_data_width()
 
 class InputPort(Port):
     def is_input(self) -> bool:

@@ -42,6 +42,8 @@ class InstructionArgument:
         return self.data_type.is_pointer()
     def get_array_index(self) -> str:
         return self.data_type.get_array_index()
+    def get_data_width(self) -> str:
+        return self.data_type.get_data_width()
     def is_integer(self) -> bool:
         if isinstance(self.signal_name, LlvmType):
             return self.signal_name.is_integer()

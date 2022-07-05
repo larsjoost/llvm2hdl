@@ -158,8 +158,9 @@ class FileWriter:
     def _write_signal(self, declaration: DeclarationData):
         self._signals.append(Signal(instance=declaration.instance_name, name=declaration.entity_name, type=declaration.type))
     
-    def _is_tag_element(self, name: str) -> bool:
-        self._msg.function_start("_is_tag_element(name=" + name + ")")
+    def _is_tag_element(self, input_port: InstructionArgument) -> bool:
+        self._msg.function_start("_is_tag_element(input_port=" + str(input_port) + ")")
+        name = str(input_port.signal_name)
         tag_item_names = self._get_tag_item_names() 
         result = name in tag_item_names
         self._msg.function_end("_is_tag_element = " + str(result))
@@ -168,39 +169,79 @@ class FileWriter:
     def _get_input_port_name(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_input_port_name(input_port=" + str(input_port) + ")")
         signal_name = str(input_port.signal_name)
-        if self._is_tag_element(signal_name):
+        if self._is_tag_element(input_port):
             signal_name = "tag_i." + signal_name
         self._msg.function_end("_get_input_port_name = " + signal_name)
         return signal_name
 
+    def _get_input_port_signal_name(self, input_port: InstructionArgument) -> str:
+        self._msg.function_start("_get_input_port_signal_name(input_port=" + str(input_port) + ")")
+        signal_name = str(input_port.signal_name)
+        array_index = input_port.get_array_index()
+        if array_index is not None:
+            signal_name += "_" + array_index
+        signal_name += "_i"
+        if input_port.is_integer():
+            signal_name = "integer_" + signal_name
+        self._msg.function_end("_get_input_port_signal_name = " + signal_name)
+        return signal_name
+
+    def _get_port_map_arguments(self, input_port: InstructionArgument) -> List[str]:
+        signal_name = self._get_input_port_name(input_port)
+        data_width = input_port.get_data_width()
+        arguments = [signal_name, data_width]
+        array_index = input_port.get_array_index()
+        if array_index is not None:
+            arguments.append(array_index)
+        return arguments
+
     def _get_port_map(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
-        signal_name = self._get_input_port_name(input_port)
-        data_width, array_index = input_port.get_reference_arguments()
-        array_index_argument = "" if array_index is None else ", " + array_index
-        result = "get(" + signal_name + ", " + data_width + array_index_argument + ")"
+        result = self._get_input_port_signal_name(input_port)
         if input_port.port_name is not None:
             result = input_port.port_name + " => " + result
         self._msg.function_end("_get_port_map = " + result)
         return result
 
+    def _get_port_signal(self, input_port: InstructionArgument) -> str:
+        self._msg.function_start("_get_port_signal(input_port=" + str(input_port) + ")")
+        signal_name = self._get_input_port_signal_name(input_port)
+        data_width = input_port.get_data_width()
+        result = "signal " + signal_name + " : std_ulogic_vector(0 to " + data_width + " - 1);"
+        self._msg.function_end("_get_port_signal = " + result)
+        return result
+
+    def _get_port_signal_assignment(self, input_port: InstructionArgument) -> str:
+        self._msg.function_start("_get_port_signal_assignment(input_port=" + str(input_port) + ")")
+        signal_name = self._get_input_port_signal_name(input_port)
+        arguments = self._get_port_map_arguments(input_port)
+        result = signal_name + " <= get(" + ", ".join(arguments) + ");"
+        self._msg.function_end("_get_port_signal_assignment = " + result)
+        return result
+
     def _write_instance(self, instance: InstanceData):
         if instance.library != "work":
             self._instances.append(instance.entity_name)
-        _input_ports = [self._get_port_map(input_port=i) for i in instance.input_ports] 
+        _input_ports_map = [self._get_port_map(input_port=i) for i in instance.input_ports] 
+        _input_ports_signals = [self._get_port_signal(input_port=i) for i in instance.input_ports]
+        _input_ports_signal_assignment = [self._get_port_signal_assignment(input_port=i) for i in instance.input_ports]
         block_name = instance.instance_name + "_b"
         local_tag_in = "local_tag_in_i"
         local_tag_out = "local_tag_out_i"
         self.write_body(f"{block_name} : block")
         self.write_body("signal tag_i : tag_t;")
         self.write_body(f"signal {local_tag_in}, {local_tag_out} : std_ulogic_vector(0 to c_tag_width - 1);")
+        for i in _input_ports_signals:
+            self.write_body(i)
         self.write_body("signal q_i : " + instance.output_port.get_type_declarations() + ";")
         self.write_body("begin")
         self.write_body("tag_i <= " + instance.previous_tag_name + ";")
         self.write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
+        for i in _input_ports_signal_assignment:
+            self.write_body(i)
         self.write_body(instance.instance_name + " : entity " + instance.library + "." + instance.entity_name)
         self.write_body("port map (", end="")
-        self.write_body(", ".join(_input_ports), end="")
+        self.write_body(", ".join(_input_ports_map), end="")
         self.write_body(", "+ instance.output_port.get_port_map(), end="")
         self.write_body(", clk => clk, sreset => sreset", end="")
         self.write_body(f", tag_in => {local_tag_in}", end="")

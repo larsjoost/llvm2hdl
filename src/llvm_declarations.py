@@ -23,10 +23,7 @@ class TypeDeclaration(ABC):
     def get_array_index(self) -> Optional[str]:
         return None
 
-    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
-        """
-        Return tuple consisting of data_width and pointer index
-        """        
+    def get_data_width(self) -> str:
         pass
 
 class LlvmDeclaration(TypeDeclaration):
@@ -68,11 +65,6 @@ class LlvmDeclaration(TypeDeclaration):
             data_width = str(x) + "*" + data_width
         return data_width
 
-    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
-        data_width = self.get_data_width()
-        array_index = None
-        return data_width, array_index
-
     def __str__(self) -> str:
         return str(vars(self))
 
@@ -107,9 +99,8 @@ class LlvmArrayDeclaration(TypeDeclaration):
     def get_array_index(self) -> str:
         return self.index
 
-    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
-        data_width, _ = self.data_type.get_reference_arguments()
-        return data_width, self.get_array_index()
+    def get_data_width(self) -> str:
+        return self.data_type.get_data_width()
 
 @dataclass
 class LlvmType:
