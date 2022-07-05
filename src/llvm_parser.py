@@ -26,7 +26,7 @@ class ConstantDeclaration:
 @dataclass
 class InstructionPosition:
     opcode: int
-    operands: List[int]
+    operands: List[Tuple[int, int]]
     data_type: int
 
 @dataclass
@@ -72,11 +72,13 @@ class InstructionParser:
         self.source = instruction
         self.opcode = instruction[position.opcode]
         self.data_type = instruction[position.data_type]
-        self.operands = [self._parse_operand(instruction[item], index) for index, item in enumerate(position.operands)]
-    def _parse_operand(self, operand: str, index: int) -> InstructionArgument:
-        signal_name = LlvmTypeFactory(operand.replace(",", "")).resolve()
+        self.operands = [self._parse_operand(instruction, item, index) for index, item in enumerate(position.operands)]
+    def _parse_operand(self, instruction: List[str], item: Tuple[int, int], index: int) -> InstructionArgument:
+        type_index, value_index = item
+        value = instruction[value_index]
+        signal_name = LlvmTypeFactory(value.replace(",", "")).resolve()
         port_name = chr(ord('a') + index)
-        data_type = LlvmDeclaration(self.data_type)
+        data_type = LlvmDeclaration(instruction[type_index])
         return InstructionArgument(port_name=port_name, signal_name=signal_name, data_type=data_type)
     def __str__(self) -> str:
         return str(vars(self))
@@ -318,15 +320,19 @@ class LlvmParser:
         # 2) fadd float %0, %1
         # 3) icmp eq i32 %call, 5
         # 4) zext i1 %cmp to i32
+        # 5) select i1 %cmp, i32 1, i32 2
+        # 6) or i1 %cmp, %cmp2
         a = self._split_space(instruction)
         position: dict = {
-            "add": InstructionPosition(opcode=0, data_type=2, operands=[3, 4]),
-            "sub": InstructionPosition(opcode=0, data_type=2, operands=[3, 4]),
-            "mul": InstructionPosition(opcode=0, data_type=2, operands=[3, 4]),
-            "fadd": InstructionPosition(opcode=0, data_type=1, operands=[2, 3]),
-            "icmp": InstructionPosition(opcode=1, data_type=2, operands=[3, 4]),
-            "xor": InstructionPosition(opcode=0, data_type=1, operands=[2, 3]),
-            "zext": InstructionPosition(opcode=0, data_type=1, operands=[2])}
+            "add": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
+            "sub": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
+            "mul": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
+            "fadd": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
+            "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
+            "xor": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
+            "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
+            "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
+            "or": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)])}
         opcode = self._get_list_element(a, 0)
         instruction = InstructionParser(instruction=a, position=position[opcode])
         result = Instruction(source=instruction.source, library="llvm", opcode="llvm_" + instruction.opcode, 
