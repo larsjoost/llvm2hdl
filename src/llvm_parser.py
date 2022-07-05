@@ -322,6 +322,7 @@ class LlvmParser:
         # 4) zext i1 %cmp to i32
         # 5) select i1 %cmp, i32 1, i32 2
         # 6) or i1 %cmp, %cmp2
+        # 7) ashr i32 %a, %b 
         a = self._split_space(instruction)
         position: dict = {
             "add": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
@@ -333,7 +334,8 @@ class LlvmParser:
             "and": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
             "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
             "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
-            "or": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)])}
+            "or": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
+            "ashr": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)])}
         opcode = self._get_list_element(a, 0)
         instruction = InstructionParser(instruction=a, position=position[opcode])
         result = Instruction(source=instruction.source, library="llvm", opcode="llvm_" + instruction.opcode, 
