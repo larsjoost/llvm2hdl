@@ -46,6 +46,8 @@ class InstructionArgument:
         if isinstance(self.signal_name, LlvmType):
             return self.signal_name.is_integer()
         return False
+    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
+        return self.data_type.get_reference_arguments()
 
 @dataclass
 class OutputPort:
@@ -188,7 +190,7 @@ class LlvmParser:
         return AssignmentItem(source=source, data_type=data_type)
 
     def get_getelementptr_assignment(self, instruction : str) -> AssignmentItem:
-        self._msg.function_start("get_getelementptr_assignment(instruction=" + instruction + ")", True)
+        self._msg.function_start("get_getelementptr_assignment(instruction=" + instruction + ")")
         # 1) getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
         # 2) getelementptr inbounds i32, i32* %a, i64 1
         array_index = instruction.rsplit(maxsplit=1)[-1]
@@ -201,7 +203,7 @@ class LlvmParser:
         data_type = LlvmArrayDeclaration(data_type=LlvmDeclaration(d[0]), index=array_index)
         source = LlvmName(d[1])
         result = AssignmentItem(source=source, data_type=data_type)
-        self._msg.function_end("get_getelementptr_assignment = " + str(result), True)
+        self._msg.function_end("get_getelementptr_assignment = " + str(result))
         return result
 
     def get_assignment(self, instruction : str) -> AssignmentItem:

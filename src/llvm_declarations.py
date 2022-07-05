@@ -23,6 +23,12 @@ class TypeDeclaration(ABC):
     def get_array_index(self) -> Optional[str]:
         return None
 
+    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
+        """
+        Return tuple consisting of data_width and pointer index
+        """        
+        pass
+
 class LlvmDeclaration(TypeDeclaration):
     """
     data_type is one of i1, i32, i64, i32*, float, 3 x i32 
@@ -56,11 +62,23 @@ class LlvmDeclaration(TypeDeclaration):
         x = self.data_type.replace("[", "").replace("]", "").replace("*", "").split("x")
         return (int(x[0]), self._get_data_width(data_type=x[1]))
 
+    def get_data_width(self) -> str:
+        x, data_width = self.get_dimensions()
+        if x > 1:
+            data_width = str(x) + "*" + data_width
+        return data_width
+
+    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
+        data_width = self.get_data_width()
+        array_index = None
+        return data_width, array_index
+
     def __str__(self) -> str:
         return str(vars(self))
 
     def __repr__(self) -> str:
         return str(vars(self))
+
 
 class LlvmArrayDeclaration(TypeDeclaration):
     
@@ -89,6 +107,9 @@ class LlvmArrayDeclaration(TypeDeclaration):
     def get_array_index(self) -> str:
         return self.index
 
+    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
+        data_width, _ = self.data_type.get_reference_arguments()
+        return data_width, self.get_array_index()
 
 @dataclass
 class LlvmType:

@@ -54,7 +54,7 @@ package body llvm_pkg is
     variable x : std_ulogic_vector(0 to data'length * data_width);
   begin
     for i in data'range loop
-      x(i*data_width to (i+1)*data_width) := std_ulogic_vector(to_signed(data(i), data_width));
+      x(i*data_width to (i+1)*data_width - 1) := std_ulogic_vector(to_signed(data(i), data_width));
     end loop;
     return x;
   end function get;

@@ -80,9 +80,9 @@ class FileWriter:
         print("end function conv_tag;", file=file_handle)
         
     def _get_tag_item_names(self) -> List[str]:
-        self._msg.function_start("_get_tag_item_names()", True)
+        self._msg.function_start("_get_tag_item_names()")
         record_items = [name for name, _ in self._get_tag_elements()]
-        self._msg.function_end("_get_tag_item_names = " + str(record_items), True)
+        self._msg.function_end("_get_tag_item_names = " + str(record_items))
         return record_items
 
     def _print_declarations(self, file_handle):
@@ -159,10 +159,10 @@ class FileWriter:
         self._signals.append(Signal(instance=declaration.instance_name, name=declaration.entity_name, type=declaration.type))
     
     def _is_tag_element(self, name: str) -> bool:
-        self._msg.function_start("_is_tag_element(name=" + name + ")", True)
+        self._msg.function_start("_is_tag_element(name=" + name + ")")
         tag_item_names = self._get_tag_item_names() 
         result = name in tag_item_names
-        self._msg.function_end("_is_tag_element = " + str(result), True)
+        self._msg.function_end("_is_tag_element = " + str(result))
         return result
 
     def _get_input_port_name(self, input_port: InstructionArgument) -> str:
@@ -176,13 +176,9 @@ class FileWriter:
     def _get_port_map(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_port_map(input_port=" + str(input_port) + ")")
         signal_name = self._get_input_port_name(input_port)
-        array_index: Optional[str] = input_port.get_array_index()
-        dimensions: Tuple[int, str] = input_port.get_dimensions()
-        if array_index is not None:
-            result = "get(" + signal_name + ", " + dimensions[1] + ", " + array_index + ")"
-        else:
-            data_width = VhdlDeclarations(input_port.data_type).get_data_width()
-            result = "get(" + signal_name + ", " + data_width + ")"
+        data_width, array_index = input_port.get_reference_arguments()
+        array_index_argument = "" if array_index is None else ", " + array_index
+        result = "get(" + signal_name + ", " + data_width + array_index_argument + ")"
         if input_port.port_name is not None:
             result = input_port.port_name + " => " + result
         self._msg.function_end("_get_port_map = " + result)
