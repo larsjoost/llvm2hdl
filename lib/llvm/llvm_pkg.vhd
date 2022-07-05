@@ -50,11 +50,12 @@ package body llvm_pkg is
   end function get;
 
   function get(data : integer_array_t; data_width: positive) 
-  return std_ulogic_vector is
-    variable x : std_ulogic_vector(0 to data'length * data_width);
+    return std_ulogic_vector is
+    constant c_data_width  : positive := data_width / data'length;
+    variable x : std_ulogic_vector(0 to data_width - 1);
   begin
     for i in data'range loop
-      x(i*data_width to (i+1)*data_width - 1) := std_ulogic_vector(to_signed(data(i), data_width));
+      x(i*c_data_width to (i+1)*c_data_width - 1) := std_ulogic_vector(to_signed(data(i), c_data_width));
     end loop;
     return x;
   end function get;

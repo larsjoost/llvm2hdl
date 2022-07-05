@@ -16,6 +16,8 @@ $SCRIPTPATH/compile.sh $file_name
 
 file_path=$(dirname $file_name)
 
+vcd_file_name=${file_path}/output.vcd
+
 ghdl_arguments="--std=08"
 
 cd $file_path
@@ -26,7 +28,7 @@ ghdl -m $ghdl_arguments test_main
 
 ghdl -e $ghdl_arguments test_main
 
-ghdl -r $ghdl_arguments test_main
+ghdl -r $ghdl_arguments test_main  --vcd=${vcd_file_name}
 
 EXIT_CODE=$?
 
