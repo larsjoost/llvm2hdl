@@ -330,6 +330,7 @@ class LlvmParser:
             "fadd": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
             "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
             "xor": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
+            "and": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]),
             "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
             "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
             "or": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)])}
