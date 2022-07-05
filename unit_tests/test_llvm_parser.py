@@ -1,7 +1,7 @@
 import unittest
-from src.llvm_declarations import LlvmDeclaration
+from llvm_declarations import LlvmDeclaration
 
-from src.llvm_parser import InstructionArgument, LlvmParser
+from llvm_parser import InstructionArgument, LlvmParser
 
 class TestSourceParser(unittest.TestCase):
 
