@@ -3,7 +3,12 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
+from messages import Messages
+
 class TypeDeclaration(ABC):
+    
+    data_type: str
+
     @abstractmethod
     def get_dimensions(self) -> Tuple[int, str]:
         pass
@@ -30,8 +35,7 @@ class LlvmDeclaration(TypeDeclaration):
     """
     data_type is one of i1, i32, i64, i32*, float, 3 x i32 
     """
-    data_type: str
-
+    
     def __init__(self, data_type: str) -> None:
         self.data_type = data_type
         
@@ -41,7 +45,9 @@ class LlvmDeclaration(TypeDeclaration):
         if x[0] == "i":
             return x[1:]
         data_types = {'float': "32"}
-        return data_types[x]
+        if x in data_types:
+            return data_types[x]
+        return x
 
     def is_pointer(self) -> bool:
         return "*" in self.data_type
@@ -74,10 +80,9 @@ class LlvmDeclaration(TypeDeclaration):
 
 class LlvmArrayDeclaration(TypeDeclaration):
     
-    data_type : LlvmDeclaration
     index : str
 
-    def __init__(self, data_type: LlvmDeclaration, index: str):
+    def __init__(self, data_type: str, index: str):
         self.data_type = data_type
         self.index = index
 
@@ -100,11 +105,13 @@ class LlvmArrayDeclaration(TypeDeclaration):
         return self.index
 
     def get_data_width(self) -> str:
-        return self.data_type.get_data_width()
+        return LlvmDeclaration(self.data_type).get_data_width()
 
 @dataclass
 class LlvmType:
-    def __str__(self) -> str:
+    def get_name(self) -> str:
+        pass
+    def get_value(self) -> str:
         pass
     def is_integer(self) -> bool:
         return False
@@ -115,14 +122,20 @@ class LlvmName(LlvmType):
     Example %0, %a
     """
     name: str
-    def __str__(self) -> str:
+    def _to_string(self) -> str:
         return self.name.replace("%", "")
+    def get_name(self) -> str:
+        return self._to_string()
+    def get_value(self) -> str:
+        return self._to_string()
 
 @dataclass(frozen=True)
 class LlvmInteger(LlvmType):
     value: int
-    def __str__(self) -> str:
+    def get_name(self) -> str:
         return str(self.value)
+    def get_value(self) -> str:
+        return f'x"{self.value:x}"'
     def is_integer(self) -> bool:
         return True
 
@@ -130,7 +143,10 @@ class LlvmTypeFactory:
     text: str
     def __init__(self, text: str):
         self.text = text
+        self._msg = Messages()
     def resolve(self) -> LlvmType:
+        self._msg.function_start("resolve", False)
+        self._msg.debug("self.text = " + self.text, False)
         if "%" in self.text:
             return LlvmName(self.text)
         try:

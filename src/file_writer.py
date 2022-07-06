@@ -168,7 +168,7 @@ class FileWriter:
 
     def _get_input_port_name(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_input_port_name(input_port=" + str(input_port) + ")")
-        signal_name = str(input_port.signal_name)
+        signal_name = input_port.get_value()
         if self._is_tag_element(input_port):
             signal_name = "tag_i." + signal_name
         self._msg.function_end("_get_input_port_name = " + signal_name)
@@ -176,7 +176,7 @@ class FileWriter:
 
     def _get_input_port_signal_name(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("_get_input_port_signal_name(input_port=" + str(input_port) + ")")
-        signal_name = str(input_port.signal_name)
+        signal_name = input_port.get_name()
         array_index = input_port.get_array_index()
         if array_index is not None:
             signal_name += "_" + array_index
@@ -187,12 +187,14 @@ class FileWriter:
         return signal_name
 
     def _get_port_map_arguments(self, input_port: InstructionArgument) -> List[str]:
+        self._msg.function_start("_get_port_map_arguments(input_port=" + str(input_port) + ")")
         signal_name = self._get_input_port_name(input_port)
         data_width = input_port.get_data_width()
         arguments = [signal_name, data_width]
         array_index = input_port.get_array_index()
         if array_index is not None:
             arguments.append(array_index)
+        self._msg.function_end("_get_port_map_arguments = " + str(arguments))
         return arguments
 
     def _get_port_map(self, input_port: InstructionArgument) -> str:
@@ -207,7 +209,8 @@ class FileWriter:
         self._msg.function_start("_get_port_signal(input_port=" + str(input_port) + ")")
         signal_name = self._get_input_port_signal_name(input_port)
         data_width = input_port.get_data_width()
-        result = "signal " + signal_name + " : std_ulogic_vector(0 to " + data_width + " - 1);"
+        vector_range = "(0 to " + data_width + " - 1)"
+        result = "signal " + signal_name + " : std_ulogic_vector" + vector_range + ";"
         self._msg.function_end("_get_port_signal = " + result)
         return result
 

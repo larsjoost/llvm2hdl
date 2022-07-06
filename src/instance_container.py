@@ -22,8 +22,8 @@ class InstanceContainer(InstanceContainerInterface):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
 
-    def get_source(self, assignment: AssignmentItem) -> AssignmentItem:
-        return self._assignment_resolution.get_source(assignment)
+    def get_source(self, search_source: LlvmName) -> List[AssignmentItem]:
+        return self._assignment_resolution.get_source(search_source)
 
     def _add_instruction(self, destination : LlvmName, instruction : Instruction):
         self._msg.function_start("_add_instruction(destination=" + str(destination) + ", instruction=" + str(instruction) + ")")

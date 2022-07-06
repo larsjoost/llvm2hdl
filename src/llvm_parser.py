@@ -42,6 +42,14 @@ class InstructionArgument:
         return self.data_type.is_pointer()
     def get_array_index(self) -> str:
         return self.data_type.get_array_index()
+    def get_name(self) -> str:
+        if isinstance(self.signal_name, str):
+            return self.signal_name
+        return self.signal_name.get_name()
+    def get_value(self) -> str:
+        if isinstance(self.signal_name, str):
+            return self.signal_name
+        return self.signal_name.get_value()
     def get_data_width(self) -> str:
         return self.data_type.get_data_width()
     def is_integer(self) -> bool:
@@ -110,7 +118,6 @@ class ReturnInstruction:
     
 @dataclass
 class Alloca:
-    size : int
     data_type : str
 
 class LlvmParser:
@@ -159,12 +166,15 @@ class LlvmParser:
         return EqualAssignment(destination=destination, source=source)
  
     def get_store_assignment(self, instruction : str) -> Tuple[LlvmName, AssignmentItem]:
-        # store i32 %a, i32* %a.addr, align 4
+        # 1) store i32 %a, i32* %a.addr, align 4
+        # 2) store i64 8589934593, i64* %a, align 8
         a = self._split_comma(instruction)
-        # a = ["store i32 %a", "i32* %a.addr", "align 4"]
+        # 1) a = ["store i32 %a", "i32* %a.addr", "align 4"]
+        # 2) a = ["store i64 8589934593", "i64* %a", "align 8"]
         b = self._split_space(a[0])
-        # b = ["store", "i32", "%a"]
-        source = LlvmName(self._get_list_element(b, 2))
+        # 1) b = ["store", "i32", "%a"]
+        # 2) a = ["store", "i64" "8589934593"]
+        source = LlvmTypeFactory(self._get_list_element(b, 2)).resolve()
         # source = "%a"
         b = self._split_space(a[1])
         # b = ["i32*", "%a.addr"]
@@ -197,6 +207,7 @@ class LlvmParser:
         self._msg.function_start("get_getelementptr_assignment(instruction=" + instruction + ")")
         # 1) getelementptr inbounds [3 x i32], [3 x i32]* %n, i64 0, i64 0
         # 2) getelementptr inbounds i32, i32* %a, i64 1
+        # 3) getelementptr inbounds %struct.StructTest, %struct.StructTest* %x, i64 0, i32 0
         array_index = instruction.rsplit(maxsplit=1)[-1]
         c = self._split_comma(instruction)
         # 1) c = ["getelementptr inbounds [3 x i32]", "[3 x i32]* %n", "i64 0", "i64 0"]
@@ -204,7 +215,7 @@ class LlvmParser:
         d = c[1].rsplit(maxsplit=1)
         # 1) d = ["[3 x i32]*", "%n"]
         # 2) d = ["i32*", "%a"]
-        data_type = LlvmArrayDeclaration(data_type=LlvmDeclaration(d[0]), index=array_index)
+        data_type = LlvmArrayDeclaration(data_type=d[0], index=array_index)
         source = LlvmName(d[1])
         result = AssignmentItem(source=source, data_type=data_type)
         self._msg.function_end("get_getelementptr_assignment = " + str(result))
@@ -250,14 +261,6 @@ class LlvmParser:
         self._msg.function_end("_get_call_argument = " + str(result))
         return result
 
-    def _get_within(self, text: str, left: str, right: str) -> str:
-        # text = alloca [3 x i32], align 4
-        split_text = text.partition(left)
-        # split_text = ["alloca ", "[", "3 x i32], align 4"]
-        within = split_text[2].partition(right)
-        # within = ["3 x i32", "]", ",align 4"]
-        return within[0]
-
     def get_constant_declaration(self, instruction: str) -> ConstantDeclaration:
         # @__const.main.n = private unnamed_addr constant [3 x i32] [i32 1, i32 2, i32 3], align 4
         assignment = instruction.split("=")
@@ -277,14 +280,12 @@ class LlvmParser:
         return ConstantDeclaration(name=name, type=type, values=definitions)
 
     def get_alloca_assignment(self, instruction: str) -> Alloca:
-        # instruction = "alloca [3 x i32], align 4"
-        dimension = self._get_within(instruction, "[", "]")
-        # dimension = "3 x i32"
-        dimension_elements = dimension.partition("x")
-        # dimension_elements = ["3", "x", "i32"]
-        size = int(dimension_elements[0])
-        data_type = dimension_elements[2]
-        return Alloca(size=size, data_type=data_type)
+        # 1) instruction = "alloca [3 x i32], align 4"
+        # 2) instruction = "alloca i64, align 8"
+        x = instruction.split()
+        data_type_position = x[1].replace(",", "")
+        data_type = LlvmDeclaration(data_type=data_type_position)
+        return Alloca(data_type=data_type)
 
     def _split_parenthesis(self, text: str) -> Tuple[str, str]:
         self._msg.function_start("_split_parenthesis(text=" + text + ")")

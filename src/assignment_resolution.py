@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Optional, Union
+from typing import Dict, Generator, List, Optional, Union
 
 from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
 from messages import Messages
@@ -14,7 +14,7 @@ class AssignmentItem:
     "add nsw i32 %1, %0"
     AssignmentItem(driver=<output port of add>, data_type=TypeDeclaration("i32"))
     """
-    data_type: TypeDeclaration
+    data_type: Optional[TypeDeclaration] = None
     driver: Optional[str] = None
     source: Optional[LlvmName] = None
     def get_driver(self) -> Union[LlvmType, str]:
@@ -32,13 +32,13 @@ class AssignmentResolution:
     def __init__(self):
         self._msg = Messages()
 
-    def get_source(self, assignment: AssignmentItem) -> AssignmentItem:
-        self._msg.function_start("get_source(assignment=" + str(assignment) + ")")
-        result = assignment
-        if assignment.source is not None:
-            assignment_search = assignment.source
-            if assignment_search in self._assignment_map:
-                result = self.get_source(self._assignment_map[assignment_search])
+    def get_source(self, search_source: LlvmName) -> List[AssignmentItem]:
+        self._msg.function_start("get_source(assignment=" + str(search_source) + ")")
+        result = []
+        while search_source in self._assignment_map:
+            found_source = self._assignment_map[search_source]
+            result.append(found_source)
+            search_source = found_source.source
         self._msg.function_end("get_source = " + str(result))
         return result
 

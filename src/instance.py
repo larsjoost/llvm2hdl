@@ -55,14 +55,19 @@ class Instance:
             return "tag_out_i"
         return self.get_tag_name()	
 
+    def _resolve_operand(self, operand: InstructionArgument) -> InstructionArgument:
+        source: List[AssignmentItem] = self._parent.get_source(search_source=operand.signal_name)
+        if len(source) > 0:
+            operand.signal_name = source[-1].get_driver()
+            operand.data_type = source[-1].data_type
+            operand.data_type.data_type = source[0].data_type.data_type    
+        return operand
+
     def _get_input_ports(self, operands: List[InstructionArgument], data_type: LlvmDeclaration) -> List[InstructionArgument]:
         self._msg.function_start("_get_input_ports(operands=" + str(operands) + ")")
         input_ports: List[InstructionArgument] = []
         for operand in operands:
-            assignment = AssignmentItem(source=operand.signal_name, data_type=operand.data_type)
-            source: AssignmentItem = self._parent.get_source(assignment=assignment)
-            signal_name: str = source.get_driver()
-            input_ports.append(InstructionArgument(port_name=operand.port_name, signal_name=signal_name, data_type=source.data_type))
+            input_ports.append(self._resolve_operand(operand))
         self._msg.function_end("_get_input_ports = " + str(input_ports))
         return input_ports
 

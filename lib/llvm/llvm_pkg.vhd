@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.to_signed;
 use ieee.numeric_std.signed;
+use ieee.numeric_std.unsigned;
 use ieee.numeric_std.resize;
 
 package llvm_pkg is
@@ -37,10 +38,12 @@ end package llvm_pkg;
 package body llvm_pkg is
   
   function get(data : std_ulogic_vector; data_width: positive; index: natural := 0) 
-  return std_ulogic_vector is
-  alias x : std_ulogic_vector(0 to data'length - 1) is data;
+    return std_ulogic_vector is
+    constant c_data_width : positive := data_width * (index + 1);
+    variable x : std_ulogic_vector(c_data_width - 1 downto 0);
   begin
-    return x(index*data_width to (index + 1)*data_width - 1);
+    x := std_ulogic_vector(resize(unsigned(data), c_data_width)); 
+    return x((index + 1)*data_width - 1 downto index*data_width);
   end function get;
 
   function get(data : integer; data_width: positive) 
