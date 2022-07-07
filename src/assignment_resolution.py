@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Generator, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
 from messages import Messages

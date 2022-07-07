@@ -7,6 +7,6 @@ struct StructTest {
   int b;
 };
 
-int struct_func(StructTest* x);
+int struct_func(StructTest x);
 
 #endif

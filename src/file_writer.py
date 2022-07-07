@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import inspect
 import io
 import os
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from llvm_parser import ConstantDeclaration, InstructionArgument
@@ -52,14 +52,14 @@ class FileWriter:
         total_data_width.append("tag_in'length")
         for i in self._ports:
             if i.is_input():
-                total_data_width.append(i.name + "'length")
+                total_data_width.append(i.get_name() + "'length")
         print("constant c_tag_width : positive := " + " + ".join(total_data_width) + ";", file=file_handle)
 
     def _get_tag_elements(self) -> Tuple[str, str]:
         yield ("tag", ": std_ulogic_vector(0 to tag_in'length - 1);")
         for i in self._ports:
             if i.is_input():
-                yield (i.name, ": std_ulogic_vector(0 to " + i.name + "'length - 1);")
+                yield (i.get_name(), ": std_ulogic_vector(0 to " + i.get_name() + "'length - 1);")
         for i in self._signals:
             yield i.get_record_item()
 
@@ -259,7 +259,7 @@ class FileWriter:
 
     def _get_port(self, port: Port) -> str:
         direction = "in" if port.is_input() else "out"
-        return port.name + " : " + direction + " std_ulogic_vector"
+        return port.get_name() + " : " + direction + " std_ulogic_vector"
 
     def _write_ports(self, ports: List[Port]):
         self.write_header("port (")
@@ -273,7 +273,7 @@ class FileWriter:
         self.write_body("tag_in_i.tag <= tag_in;")
         for i in self._ports:
             if i.is_input():
-                self.write_body("tag_in_i." + i.name + " <= " + i.name + ";")
+                self.write_body("tag_in_i." + i.get_name() + " <= " + i.get_name() + ";")
         for i in instances.instances:
             self._write_instance(instance=i)
         self.write_body("return_value <= conv_std_ulogic_vector(tag_out_i." + instances.return_instruction_driver + ", return_value'length);")

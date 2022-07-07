@@ -1,10 +1,11 @@
 
 from abc import ABC, abstractmethod
+from typing import Union
 
-from llvm_declarations import TypeDeclaration
+from llvm_declarations import LlvmName, TypeDeclaration
 
 class Port(ABC):
-    name: str
+    name: Union[LlvmName, str]
     data_type: TypeDeclaration
     def __init__(self, name: str, data_type: TypeDeclaration):
         self.name = name
@@ -14,6 +15,10 @@ class Port(ABC):
         pass
     def get_data_width(self) -> str:
         return self.data_type.get_data_width()
+    def get_name(self) -> str:
+        if isinstance(self.name, str):
+            return self.name
+        return self.name.get_name()
 
 class InputPort(Port):
     def is_input(self) -> bool:

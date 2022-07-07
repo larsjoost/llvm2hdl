@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, Union
+from typing import Dict, List, Tuple, Optional, Union
 from assignment_resolution import AssignmentItem
 
 from messages import Messages
@@ -315,30 +315,43 @@ class LlvmParser:
         self._msg.function_end("get_call_assignment = " + str(result))
         return result
 
+    def _get_type_and_two_arguments_instructions(self) -> Dict[str, InstructionPosition]:
+        # 1) fadd float %0, %1
+        # 2) or i1 %cmp, %cmp2
+        # 3) ashr i32 %a, %b 
+        position = InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]) 
+        commands = ["fadd", "xor", "and", "or", "ashr", "lshr", "shl"]
+        return {i:position for i in commands}
+
+    def _get_arithmetic_instructions(self) -> Dict[str, InstructionPosition]:
+        # 1) add nsw i32 %0, %1
+        # 2) sub nsw i32 %0, %1
+        position = InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)])
+        commands = ["add", "sub", "mul"]
+        return {i:position for i in commands}
+
+    def _get_special_instructions(self) -> Dict[str, InstructionPosition]:
+        # 1) icmp eq i32 %call, 5
+        # 2) zext i1 %cmp to i32
+        # 3) select i1 %cmp, i32 1, i32 2
+        # 4) trunc i64 %x.coerce to i32
+        position: dict = {
+            "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
+            "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
+            "trunc": InstructionPosition(opcode=0, data_type=4, operands=[(1, 2)]),
+            "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)])}
+        return position
+
+    def _get_instruction_positions(self) -> Dict[str, InstructionPosition]:
+        dict_1 = self._get_type_and_two_arguments_instructions()
+        dict_2 = self._get_arithmetic_instructions()
+        dict_3 = self._get_special_instructions()
+        return dict_1 | dict_2 | dict_3 
+
     def get_instruction(self, instruction: str) -> Instruction:
         self._msg.function_start("get_instruction(instruction=" + instruction + ")")
-        # 1) add nsw i32 %0, %1
-        # 2) fadd float %0, %1
-        # 3) icmp eq i32 %call, 5
-        # 4) zext i1 %cmp to i32
-        # 5) select i1 %cmp, i32 1, i32 2
-        # 6) or i1 %cmp, %cmp2
-        # 7) ashr i32 %a, %b 
         a = self._split_space(instruction)
-        type_and_two_arguments = InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]) 
-        position: dict = {
-            "add": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
-            "sub": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
-            "mul": InstructionPosition(opcode=0, data_type=2, operands=[(2, 3), (2, 4)]),
-            "fadd": type_and_two_arguments,
-            "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
-            "xor": type_and_two_arguments,
-            "and": type_and_two_arguments,
-            "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
-            "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
-            "or": type_and_two_arguments,
-            "ashr": type_and_two_arguments,
-            "shl": type_and_two_arguments}
+        position: Dict[str, InstructionPosition] = self._get_instruction_positions()
         opcode = self._get_list_element(a, 0)
         instruction = InstructionParser(instruction=a, position=position[opcode])
         result = Instruction(source=instruction.source, library="llvm", opcode="llvm_" + instruction.opcode, 

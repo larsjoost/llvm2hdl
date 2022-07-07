@@ -4,7 +4,7 @@ from llvmlite.binding import ValueRef, TypeRef
 from file_writer import FileWriter
 from global_variables import GlobalVariables
 from instance_container import InstanceContainer
-from llvm_declarations import LlvmDeclaration, VectorDeclaration, BooleanDeclaration
+from llvm_declarations import LlvmDeclaration, LlvmName, VectorDeclaration, BooleanDeclaration
 from llvm_parser import LlvmParser
 from messages import Messages
 from ports import OutputPort, InputPort, Port
@@ -28,7 +28,7 @@ class FunctionParser:
             return
         return_data_type = self._get_data_type(str(function.type))
         output_port = [OutputPort(name="return_value", data_type=return_data_type)]
-        ports: List[Port] = [InputPort(name=i.name, data_type=LlvmDeclaration(str(i.type))) for i in function.arguments]
+        ports: List[Port] = [InputPort(name=LlvmName(i.name), data_type=LlvmDeclaration(str(i.type))) for i in function.arguments]
         instance_container = InstanceContainer()
         for block in function.blocks:
             for i in block.instructions:

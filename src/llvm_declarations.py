@@ -119,11 +119,11 @@ class LlvmType:
 @dataclass(frozen=True)
 class LlvmName(LlvmType):
     """
-    Example %0, %a
+    Example %0, %a, %x.coerce
     """
     name: str
     def _to_string(self) -> str:
-        return self.name.replace("%", "")
+        return self.name.replace("%", "").replace(".", "_")
     def get_name(self) -> str:
         return self._to_string()
     def get_value(self) -> str:
