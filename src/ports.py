@@ -19,6 +19,8 @@ class Port(ABC):
         if isinstance(self.name, str):
             return self.name
         return self.name.get_name()
+    def is_pointer(self) -> bool:
+        return self.data_type.is_pointer()
 
 class InputPort(Port):
     def is_input(self) -> bool:

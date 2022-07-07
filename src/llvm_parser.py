@@ -17,7 +17,7 @@ class ConstantDeclaration:
     type: LlvmDeclaration
     values: List[Constant]
     def get_name(self) -> str:
-        return self.name.split(".")[-1]
+        return self.name.rsplit(".", maxsplit=1)[-1]
     def get_dimensions(self) -> Tuple[int, int]:
         return self.type.get_dimensions()
     def get_values(self) -> List[str]:
@@ -113,7 +113,7 @@ class EqualAssignment:
     
 @dataclass
 class ReturnInstruction:
-    value : LlvmName
+    value : Optional[LlvmName]
     data_type : LlvmDeclaration
     
 @dataclass
@@ -165,24 +165,6 @@ class LlvmParser:
             source = self._get_list_element(a, 2)
         return EqualAssignment(destination=destination, source=source)
  
-    def get_store_assignment(self, instruction : str) -> Tuple[LlvmName, AssignmentItem]:
-        # 1) store i32 %a, i32* %a.addr, align 4
-        # 2) store i64 8589934593, i64* %a, align 8
-        a = self._split_comma(instruction)
-        # 1) a = ["store i32 %a", "i32* %a.addr", "align 4"]
-        # 2) a = ["store i64 8589934593", "i64* %a", "align 8"]
-        b = self._split_space(a[0])
-        # 1) b = ["store", "i32", "%a"]
-        # 2) a = ["store", "i64" "8589934593"]
-        source = LlvmTypeFactory(self._get_list_element(b, 2)).resolve()
-        # source = "%a"
-        b = self._split_space(a[1])
-        # b = ["i32*", "%a.addr"]
-        data_type = LlvmDeclaration(b[0])
-        destination = LlvmName(b[1])
-        # destination = "%a.addr"
-        return (destination, AssignmentItem(source=source, data_type=data_type))
-
     def get_load_assignment(self, instruction : str) -> AssignmentItem:
         # load i32, i32* %a.addr, align 4
         c = self._split_comma(instruction)
@@ -235,8 +217,12 @@ class LlvmParser:
 
     def get_return_instruction(self, instruction : str) -> ReturnInstruction:
         # ret i32 %add
+        # ret void
         a = self._remove_empty_elements(instruction.split(' '))
-        value = LlvmName(a[2].strip())
+        try:
+            value = LlvmName(a[2].strip())
+        except IndexError:
+            value = None
         data_type = LlvmDeclaration(a[1].strip())
         return ReturnInstruction(value=value, data_type=data_type)
     
@@ -335,18 +321,20 @@ class LlvmParser:
         # 2) zext i1 %cmp to i32
         # 3) select i1 %cmp, i32 1, i32 2
         # 4) trunc i64 %x.coerce to i32
+        # 5) store i32 %a, i32* %a.addr, align 4
         position: dict = {
             "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
             "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
             "trunc": InstructionPosition(opcode=0, data_type=4, operands=[(1, 2)]),
-            "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)])}
+            "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
+            "store": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (3, 4)])}
         return position
 
     def _get_instruction_positions(self) -> Dict[str, InstructionPosition]:
         dict_1 = self._get_type_and_two_arguments_instructions()
         dict_2 = self._get_arithmetic_instructions()
         dict_3 = self._get_special_instructions()
-        return dict_1 | dict_2 | dict_3 
+        return dict_1 | dict_2 | dict_3
 
     def get_instruction(self, instruction: str) -> Instruction:
         self._msg.function_start("get_instruction(instruction=" + instruction + ")")

@@ -56,10 +56,6 @@ class InstanceContainer(InstanceContainerInterface):
         alloca: Alloca = self._llvm_parser.get_alloca_assignment(assignment.source)
         self._alloca_map[assignment.destination] = alloca
 
-    def _add_store_instruction(self, instruction: str):
-        destination, assignment = self._llvm_parser.get_store_assignment(instruction)
-        self._assignment_resolution.add_assignment(destination=destination, assignment=assignment)
-
     def _add_assignment_instruction(self, instruction: str):
         assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(instruction)
         assignment_item: AssignmentItem = self.get_assignment(assignment.source)
@@ -83,8 +79,6 @@ class InstanceContainer(InstanceContainerInterface):
         if instruction.opcode == "call":
             if not self._internal_llvm_call(str(instruction)):
                 self._add_call_instruction(str(instruction))  
-        elif instruction.opcode == "store":
-            self._add_store_instruction(str(instruction))
         elif instruction.opcode in ["load", "bitcast", "getelementptr"]:
             self._add_assignment_instruction(str(instruction))
         elif instruction.opcode == "ret":

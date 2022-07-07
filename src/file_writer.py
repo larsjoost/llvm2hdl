@@ -2,10 +2,11 @@ from dataclasses import dataclass
 import inspect
 import io
 import os
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from llvm_parser import ConstantDeclaration, InstructionArgument
+from vhdl_port import VhdlPort
 from vhdl_declarations import VhdlDeclarations
 from ports import Port
 from messages import Messages
@@ -156,8 +157,9 @@ class FileWriter:
         self._trailer.append(self._print_to_string(*args, **kwargs))
 
     def _write_signal(self, declaration: DeclarationData):
-        self._signals.append(Signal(instance=declaration.instance_name, name=declaration.entity_name, type=declaration.type))
-    
+        self._signals.append(Signal(instance=declaration.instance_name, 
+        name=declaration.entity_name, type=declaration.type))
+
     def _is_tag_element(self, input_port: InstructionArgument) -> bool:
         self._msg.function_start("_is_tag_element(input_port=" + str(input_port) + ")")
         name = str(input_port.signal_name)
@@ -214,12 +216,14 @@ class FileWriter:
         self._msg.function_end("_get_port_signal = " + result)
         return result
 
-    def _get_port_signal_assignment(self, input_port: InstructionArgument) -> str:
+    def _get_port_signal_assignment(self, input_port: InstructionArgument) -> Optional[str]:
         self._msg.function_start("_get_port_signal_assignment(input_port=" + str(input_port) + ")")
-        signal_name = self._get_input_port_signal_name(input_port)
-        arguments = self._get_port_map_arguments(input_port)
-        result = signal_name + " <= get(" + ", ".join(arguments) + ");"
-        self._msg.function_end("_get_port_signal_assignment = " + result)
+        result = None
+        if not input_port.is_pointer():
+            signal_name = self._get_input_port_signal_name(input_port)
+            arguments = self._get_port_map_arguments(input_port)
+            result = signal_name + " <= get(" + ", ".join(arguments) + ");"
+        self._msg.function_end("_get_port_signal_assignment = " + str(result))
         return result
 
     def _write_instance(self, instance: InstanceData):
@@ -241,7 +245,8 @@ class FileWriter:
         self.write_body("tag_i <= " + instance.previous_tag_name + ";")
         self.write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
         for i in _input_ports_signal_assignment:
-            self.write_body(i)
+            if i is not None:
+                self.write_body(i)
         self.write_body(instance.instance_name + " : entity " + instance.library + "." + instance.entity_name)
         self.write_body("port map (", end="")
         self.write_body(", ".join(_input_ports_map), end="")
@@ -258,8 +263,7 @@ class FileWriter:
         self.write_body("end block " + block_name + ";")
 
     def _get_port(self, port: Port) -> str:
-        direction = "in" if port.is_input() else "out"
-        return port.get_name() + " : " + direction + " std_ulogic_vector"
+        return VhdlPort(port).get_port()
 
     def _write_ports(self, ports: List[Port]):
         self.write_header("port (")
