@@ -18,7 +18,7 @@ class ConstantDeclaration:
     values: List[Constant]
     def get_name(self) -> str:
         return self.name.rsplit(".", maxsplit=1)[-1]
-    def get_dimensions(self) -> Tuple[int, int]:
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
         return self.type.get_dimensions()
     def get_values(self) -> List[str]:
         return [i.value for i in self.values]
@@ -31,16 +31,16 @@ class InstructionPosition:
 
 @dataclass
 class InstructionArgument:
-    signal_name: Union[str, LlvmType]
+    signal_name: LlvmType
     data_type : LlvmDeclaration
     port_name: Optional[str] = None
-    def get_dimensions(self) -> Tuple[int, int]:
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
         return self.data_type.get_dimensions()
     def single_dimension(self) -> bool:
         return self.data_type.single_dimension()
     def is_pointer(self) -> bool:
         return self.data_type.is_pointer()
-    def get_array_index(self) -> str:
+    def get_array_index(self) -> Optional[str]:
         return self.data_type.get_array_index()
     def get_name(self) -> str:
         if isinstance(self.signal_name, str):
@@ -56,8 +56,6 @@ class InstructionArgument:
         if isinstance(self.signal_name, LlvmType):
             return self.signal_name.is_integer()
         return False
-    def get_reference_arguments(self) -> Tuple[str, Optional[str]]:
-        return self.data_type.get_reference_arguments()
 
 @dataclass
 class OutputPort:
@@ -66,15 +64,15 @@ class OutputPort:
     def get_type_declarations(self) -> str:
         return VhdlDeclarations(self.data_type).get_type_declarations()
     def get_port_map(self) -> str:
-        port_map = "q_i"
+        port_map = "m_tdata_i"
         if self.port_name is not None:
             port_map = self.port_name + " => " + port_map
         return port_map
 
 class InstructionParser:
-    source : str
+    source : List[str]
     opcode : str
-    operands : List[str]
+    operands : List[InstructionArgument]
     data_type : str
     def __init__(self, instruction: List[str], position: InstructionPosition):
         self.source = instruction
@@ -93,12 +91,11 @@ class InstructionParser:
 
 @dataclass
 class Instruction:
-    source : str
     library: str
     opcode: str
     operands: List[InstructionArgument]
     data_type: LlvmDeclaration
-    output_port_name: str
+    output_port_name: Optional[str]
     def get_output_port(self) -> OutputPort:
         return OutputPort(data_type=self.data_type, port_name=self.output_port_name)
 
@@ -107,7 +104,7 @@ class LlvmParserException(Exception):
 
 @dataclass
 class EqualAssignment:
-    destination : LlvmName
+    destination : Optional[LlvmName]
     source : str
 
     
@@ -118,7 +115,7 @@ class ReturnInstruction:
     
 @dataclass
 class Alloca:
-    data_type : str
+    data_type : LlvmDeclaration
 
 class LlvmParser:
 
@@ -156,7 +153,7 @@ class LlvmParser:
         # 1) instruction = "%0 = load i32, i32* %a.addr, align 4"
         # 2) instruction = "ret i32 %add"
         source: str = instruction
-        destination: Optional[str] = None
+        destination: Optional[LlvmName] = None
         a: Tuple[str, str, str] = source.partition('=')
         # 1) a = ["%0", "=", "load i32, i32* %a.addr, align 4"]
         # 2) a = ["ret i32 %add", "", ""]
@@ -296,8 +293,8 @@ class LlvmParser:
         name = self.get_entity_name(head_split[-1])
         data_type = LlvmDeclaration(head_split[-2])
         arguments = self._get_call_arguments(arguments=tail)
-        result = Instruction(source=instruction, library="work", opcode=name, 
-        operands=arguments, data_type=data_type, output_port_name=None)
+        result = Instruction(library="work", opcode=name, 
+                             operands=arguments, data_type=data_type, output_port_name=None)
         self._msg.function_end("get_call_assignment = " + str(result))
         return result
 
@@ -341,8 +338,8 @@ class LlvmParser:
         a = self._split_space(instruction)
         position: Dict[str, InstructionPosition] = self._get_instruction_positions()
         opcode = self._get_list_element(a, 0)
-        instruction = InstructionParser(instruction=a, position=position[opcode])
-        result = Instruction(source=instruction.source, library="llvm", opcode="llvm_" + instruction.opcode, 
-        operands=instruction.operands, data_type=LlvmDeclaration(instruction.data_type), output_port_name="q")
+        x = InstructionParser(instruction=a, position=position[opcode])
+        result = Instruction(library="llvm", opcode="llvm_" + x.opcode, 
+        operands=x.operands, data_type=LlvmDeclaration(x.data_type), output_port_name="m_tdata")
         self._msg.function_end("get_instruction = " + str(result))
         return result

@@ -8,10 +8,10 @@ from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
 from llvm_parser import EqualAssignment, LlvmParser, Instruction, ReturnInstruction, Alloca
 from messages import Messages
-from llvm_declarations import LlvmName
+from llvm_declarations import LlvmName, LlvmType
 
 class InstanceContainer(InstanceContainerInterface):
-    
+
     _container: List[Instance] = []
     _instance_map: Dict[LlvmName, Instance] = {}
     _alloca_map: Dict[str, Alloca] = {}
@@ -22,7 +22,7 @@ class InstanceContainer(InstanceContainerInterface):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
 
-    def get_source(self, search_source: LlvmName) -> List[AssignmentItem]:
+    def get_source(self, search_source: LlvmType) -> List[AssignmentItem]:
         return self._assignment_resolution.get_source(search_source)
 
     def _add_instruction(self, destination : LlvmName, instruction : Instruction):

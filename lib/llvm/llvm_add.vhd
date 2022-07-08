@@ -6,10 +6,12 @@ entity llvm_add is
   port (
     clk      : in  std_ulogic;
     sreset   : in  std_ulogic;
+    a        : in  std_ulogic_vector;
+    b        : in  std_ulogic_vector;
+    s_taddr  : in  std_ulogic_vector;
     s_tag    : in  std_ulogic_vector;
     s_tvalid : in  std_ulogic;
     s_tready : out std_ulogic;
-    s_tdata  : in  std_ulogic_vector;
     m_tvalid : out std_ulogic;
     m_tready : in  std_ulogic;
     m_tag    : out std_ulogic_vector;
@@ -18,20 +20,22 @@ end entity llvm_add;
 
 architecture rtl of llvm_add is
 
-  constant data_width : positive := s_tdata'length/2;
-
-  signal a_i, b_i, q_i : unsigned(0 to data_width - 1);
+  signal a_i : unsigned(0 to a'length - 1);
+  signal b_i : unsigned(0 to b'length - 1);
+  signal q_i : unsigned(0 to m_tdata'length - 1);
 
   signal s_tdata_i : std_ulogic_vector(0 to m_tdata'length - 1);
-  
+
 begin
 
-  (a_i, b_i) <= unsigned(s_tdata);
+  a_i <= unsigned(a);
+
+  b_i <= unsigned(b);
 
   q_i <= a_i + b_i;
 
   s_tdata_i <= std_ulogic_vector(q_i);
-  
+
   llvm_buffer_1 : entity work.llvm_buffer(rtl)
     port map (
       clk      => clk,

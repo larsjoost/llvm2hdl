@@ -1,4 +1,3 @@
-
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 from dataclasses import dataclass
@@ -10,7 +9,7 @@ class TypeDeclaration(ABC):
     data_type: str
 
     @abstractmethod
-    def get_dimensions(self) -> Tuple[int, str]:
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
         pass
 
     def single_dimension(self) -> bool:
@@ -86,8 +85,8 @@ class LlvmArrayDeclaration(TypeDeclaration):
         self.data_type = data_type
         self.index = index
 
-    def get_dimensions(self) -> Tuple[int, str]:
-        return self.data_type.get_dimensions()
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
+        return LlvmDeclaration(self.data_type).get_dimensions()
 
     def single_dimension(self) -> bool:
         return False
@@ -107,10 +106,11 @@ class LlvmArrayDeclaration(TypeDeclaration):
     def get_data_width(self) -> str:
         return LlvmDeclaration(self.data_type).get_data_width()
 
-@dataclass
-class LlvmType:
+class LlvmType(ABC):
+    @abstractmethod
     def get_name(self) -> str:
         pass
+    @abstractmethod
     def get_value(self) -> str:
         pass
     def is_integer(self) -> bool:
@@ -163,7 +163,7 @@ class VectorDeclaration(TypeDeclaration):
     def __init__(self, data_width: Optional[str] = None) -> None:
         self.data_width = data_width
 
-    def get_dimensions(self) -> Tuple[int, str]:
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
         return (1, self.data_width)
 
 class BooleanDeclaration(TypeDeclaration):

@@ -76,13 +76,13 @@ class Instance:
         entity_name = self.instruction.opcode
         output_port = self.instruction.get_output_port()
         tag_name = self._get_output_tag_name()
-        previous_tag_name = self.get_previous_tag_name()
+        previous_instance_name = None if self._prev is None else self._prev.get_instance_name()
         input_ports = self._get_input_ports(operands=self.instruction.operands, 
         data_type=self.instruction.data_type)
         data = InstanceData(instance_name=instance_name, entity_name=entity_name, 
         library=self.instruction.library,
         output_port=output_port,tag_name=tag_name, input_ports=input_ports, 
-        previous_tag_name=previous_tag_name)
+        previous_instance_name=previous_instance_name)
         return data
 
     def get_declaration_data(self) -> DeclarationData:

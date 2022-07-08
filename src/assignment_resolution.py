@@ -17,7 +17,7 @@ class AssignmentItem:
     data_type: Optional[TypeDeclaration] = None
     driver: Optional[str] = None
     source: Optional[LlvmName] = None
-    def get_driver(self) -> Union[LlvmType, str]:
+    def get_driver(self) -> Optional[Union[LlvmType, str]]:
         if self.driver is None:
             return self.source
         return self.driver
@@ -35,10 +35,11 @@ class AssignmentResolution:
     def get_source(self, search_source: LlvmName) -> List[AssignmentItem]:
         self._msg.function_start("get_source(assignment=" + str(search_source) + ")")
         result = []
-        while search_source in self._assignment_map:
-            found_source = self._assignment_map[search_source]
+        x: Optional[LlvmName] = search_source
+        while x in self._assignment_map:
+            found_source = self._assignment_map[x]
             result.append(found_source)
-            search_source = found_source.source
+            x = found_source.source
         self._msg.function_end("get_source = " + str(result))
         return result
 

@@ -27,7 +27,7 @@ class FunctionParser:
         if function.is_declaration:
             return
         return_data_type = self._get_data_type(str(function.type))
-        output_port = [OutputPort(name="return_value", data_type=return_data_type)]
+        output_port = [OutputPort(name="m_tdata", data_type=return_data_type)]
         ports: List[Port] = [InputPort(name=LlvmName(i.name), data_type=LlvmDeclaration(str(i.type))) for i in function.arguments]
         instance_container = InstanceContainer()
         for block in function.blocks:

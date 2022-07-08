@@ -4,13 +4,13 @@ from llvmlite.binding import ValueRef
 from assignment_resolution import AssignmentItem
 from instance_data import DeclarationData
 from instance_container_data import InstanceContainerData
-
 from instance_statistics import InstanceStatistics
+from llvm_declarations import LlvmName, LlvmType
 
 class InstanceContainerInterface(ABC):
     
     @abstractmethod
-    def get_source(self, assignment: AssignmentItem) -> AssignmentItem:
+    def get_source(self, search_source: LlvmType) -> List[AssignmentItem]:
         pass
 
     @abstractmethod

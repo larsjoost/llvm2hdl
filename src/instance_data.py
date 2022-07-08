@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass
 from llvm_parser import InstructionArgument, OutputPort
@@ -12,7 +12,16 @@ class InstanceData:
     output_port: OutputPort
     tag_name: str
     input_ports: List[InstructionArgument]
-    previous_tag_name: str
+    previous_instance_name: Optional[str]
+    def _get_signal_name(self, instance_name: str, signal_name: str) -> str: 
+        return instance_name + "_" + signal_name + "_i"
+    def get_previous_instance_signal_name(self, signal_name: str) -> str:
+        if self.previous_instance_name is None:
+            return signal_name + "_i"
+        return self._get_signal_name(instance_name=self.previous_instance_name, signal_name=signal_name)
+    def get_own_instance_signal_name(self, signal_name) -> str:
+        return self._get_signal_name(instance_name=self.instance_name, signal_name=signal_name)
+
 
 @dataclass
 class DeclarationData:

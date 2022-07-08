@@ -18,7 +18,8 @@ cd $file_path
 $SCRIPTPATH/../cpp2hdl.sh $file_name
 instances_file_name=${file_name%.cpp}.inc
 instances=$(cat $instances_file_name)
-instances=$(echo "llvm_pkg $instances")
+common_instances="llvm_pkg llvm_buffer"
+instances=$(echo "$common_instances $instances")
 for i in $instances; do
     ghdl -i $ghdl_arguments --work=llvm $llvm_path/$i.vhd
 done
