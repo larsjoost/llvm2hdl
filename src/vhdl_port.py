@@ -108,7 +108,7 @@ class VhdlPortGenerator:
     def get_tag_elements(self, ports: List[Port], signals : List[VhdlSignal]) -> Generator[Tuple[str, str], None, None]:
         yield ("tag", ": std_ulogic_vector(0 to s_tag'length - 1);")
         for port in ports:
-            if port.is_input() and not port.is_pointer():
+            if port.is_input():
                 yield (port.get_name(), ": std_ulogic_vector(0 to " + port.get_name() + "'length - 1);")
         for signal in signals:
             yield signal.get_record_item()
@@ -133,10 +133,11 @@ class VhdlPortGenerator:
 
     def get_ports(self,port: Port) -> List[str]:
         name = port.get_name()
-        if port.is_pointer():
-            return [i.get_port_definition() for i in self._memory_ports]
         direction = "in" if port.is_input() else "out"
-        return [name + " : " + direction + " std_ulogic_vector"]
+        result = [name + " : " + direction + " std_ulogic_vector"]
+        if port.is_pointer():
+            result.extend([name + "_" + i.get_port_definition() for i in self._memory_ports])
+        return result
 
     def get_port_map(self, input_port: InstructionArgument) -> str:
         self._msg.function_start("get_port_map(input_port=" + str(input_port) + ")")
@@ -189,13 +190,11 @@ class VhdlPortGenerator:
         self._msg.function_end("_get_port_map_arguments = " + str(arguments))
         return arguments
 
-    def get_port_signal_assignment(self, input_port: InstructionArgument, ports: List[Port], signals : List[VhdlSignal]) -> Optional[str]:
+    def get_port_signal_assignment(self, input_port: InstructionArgument, ports: List[Port], signals : List[VhdlSignal]) -> str:
         self._msg.function_start("_get_port_signal_assignment(input_port=" + str(input_port) + ")")
-        result = None
-        if not input_port.is_pointer():
-            signal_name = self._get_input_port_signal_name(input_port)
-            arguments = self._get_port_map_arguments(input_port=input_port, ports=ports, signals=signals)
-            result = signal_name + " <= get(" + ", ".join(arguments) + ");"
+        signal_name = self._get_input_port_signal_name(input_port)
+        arguments = self._get_port_map_arguments(input_port=input_port, ports=ports, signals=signals)
+        result = signal_name + " <= get(" + ", ".join(arguments) + ");"
         self._msg.function_end("_get_port_signal_assignment = " + str(result))
         return result
 

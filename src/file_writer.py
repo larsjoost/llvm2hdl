@@ -155,8 +155,7 @@ class FileWriter:
         self._write_body("tag_i <= " + ("tag_in_i" if tag_name is None else tag_name) + ";")
         self._write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
         for i in _input_ports_signal_assignment:
-            if i is not None:
-                self._write_body(i)
+            self._write_body(i)
         self._write_body(instance.instance_name + " : entity " + instance.library + "." + instance.entity_name)
         self._write_body("port map (", end="")
         self._write_body(", ".join(_input_ports_map), end="")

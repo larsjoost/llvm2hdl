@@ -73,7 +73,7 @@ class Messages:
             text=text, current_frame=current_frame)
             self.indent += 2
 
-    def function_end(self, return_value, verbose=False):
+    def function_end(self, return_value=None, verbose=False):
         if self._verbose or verbose:
             current_frame = inspect.currentframe()
             _, function_name, _ = self._get_previous_frame_info(current_frame)
