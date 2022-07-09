@@ -21,7 +21,6 @@ architecture behavior of test_main is
   signal m_tdata  : std_ulogic_vector(0 to 0);
   signal s_tvalid : std_ulogic;
   signal s_tready : std_ulogic;
-  signal s_taddr  : std_ulogic_vector(0 to 31);
   signal m_tvalid : std_ulogic;
   signal m_tready : std_ulogic;
   signal s_tag    : std_ulogic_vector(0 to tag_width - 1);
@@ -38,7 +37,6 @@ begin
       sreset   => sreset,
       s_tvalid => s_tvalid,
       s_tready => s_tready,
-      s_taddr  => s_taddr,
       m_tdata  => m_tdata,
       m_tvalid => m_tvalid,
       m_tready => m_tready,

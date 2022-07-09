@@ -4,26 +4,22 @@ use ieee.numeric_std.all;
 
 entity llvm_fadd is
   port (
-    clk     : in  std_ulogic;
-    sreset  : in  std_ulogic;
-    tag_in  : in  std_ulogic_vector;
-    tag_out : out std_ulogic_vector;
-    q       : out std_ulogic_vector(0 to 32 - 1);
-    a       : in  std_ulogic_vector(0 to 32 - 1);
-    b       : in  std_ulogic_vector(0 to 32 - 1)
-    );
+    clk      : in  std_ulogic;
+    sreset   : in  std_ulogic;
+    a        : in  std_ulogic_vector;
+    b        : in  std_ulogic_vector;
+    s_tag    : in  std_ulogic_vector;
+    s_tvalid : in  std_ulogic;
+    s_tready : out std_ulogic;
+    m_tvalid : out std_ulogic;
+    m_tready : in  std_ulogic;
+    m_tag    : out std_ulogic_vector;
+    m_tdata  : out std_ulogic_vector);
 end entity llvm_fadd;
 
 architecture rtl of llvm_fadd is
 
 begin
 
-  process (clk)
-  begin
-    if rising_edge(clk) then
-      q       <= (others => 'U');
-      tag_out <= tag_in;
-    end if;
-  end process;
 
 end architecture rtl;

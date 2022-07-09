@@ -30,7 +30,7 @@ class Instance:
         return self._prev.get_instance_index() + 1
 
     def get_instance_name(self) -> str:
-        return "inst_" + self.instruction.opcode + "_" + str(self.get_instance_index())
+        return self.instruction.opcode + "_" + str(self.get_instance_index())
 
     def get_tag_name(self) -> str:
         return self.get_instance_name() + "_tag_out_i"

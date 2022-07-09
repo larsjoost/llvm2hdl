@@ -6,10 +6,10 @@ entity llvm_store is
   port (
     clk                       : in  std_ulogic;
     sreset                    : in  std_ulogic;
+    a : IN std_ulogic_vector;
+    b : IN std_ulogic_vector;
     s_tvalid                  : in  std_ulogic;
     s_tready                  : out std_ulogic;
-    s_taddr                   : in  std_ulogic_vector;
-    s_tdata                   : in  std_ulogic_vector;
     s_tag                     : in  std_ulogic_vector;
     m_tag                     : out std_ulogic_vector;
     m_tvalid                  : out std_ulogic;
@@ -78,11 +78,11 @@ begin
       if (data_transfer_i = '1') then
         m_mem_addr_valid    <= '1';
         m_mem_data_valid    <= '1';
-        m_mem_addr          <= memory_addr_t(resize(unsigned(address), m_mem_addr'length));
+        m_mem_addr          <= memory_addr_t(resize(unsigned(b), m_mem_addr'length));
         id_v                := std_ulogic_vector(to_unsigned(id_i, c_id_width));
         m_mem_addr_id       <= id_v;
         m_mem_data_id       <= id_v;
-        m_mem_data          <= memory_data_t(resize(unsigned(data), m_mem_data'length));
+        m_mem_data          <= memory_data_t(resize(unsigned(a), m_mem_data'length));
         tag_storage_i(id_i) <= tag_in;
         id_i                <= (id_i + 1) mod c_id_size;
       end if;

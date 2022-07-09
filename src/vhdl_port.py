@@ -9,7 +9,9 @@ from llvm_parser import InstructionArgument
 from messages import Messages
 
 
+@dataclass
 class VhdlPortRole(ABC):
+    connection: Optional[str] = None 
     def is_master(self) -> bool:
         return False
     def is_slave(self) -> bool:
@@ -17,17 +19,24 @@ class VhdlPortRole(ABC):
     def get_signal_name(self, instance: InstanceData, name: str) -> str:
         return name
 
+@dataclass
 class VhdlMasterPort(VhdlPortRole):
     def is_master(self) -> bool:
         return True
     def get_signal_name(self, instance: InstanceData, name: str) -> str:
         return instance.get_own_instance_signal_name(name)
 
+@dataclass
 class VhdlSlavePort(VhdlPortRole):
     def is_slave(self) -> bool:
         return True
     def get_signal_name(self, instance: InstanceData, name: str) -> str:
-        return instance.get_previous_instance_signal_name(name)
+        signal_name = instance.get_previous_instance_signal_name(name)
+        if signal_name is None:
+            return name
+        if self.connection is not None:
+            return signal_name.replace(name, self.connection)
+        return signal_name
 
 class VhdlGlobalPort(VhdlPortRole):
     pass
@@ -52,6 +61,9 @@ class VhdlPort(ABC):
         return self.role.is_slave()
     def get_signal_name(self, instance: InstanceData) -> str:
         return self.role.get_signal_name(instance=instance, name=self.name)
+    def get_port_map(self, instance: InstanceData) -> str:
+        signal_name = self.get_signal_name(instance=instance)
+        return f"{self.name} => {signal_name}"
         
 class VhdlInputPort(VhdlPort):
     def get_port_definition(self) -> str:
@@ -83,9 +95,8 @@ class VhdlPortGenerator:
     _standard_ports = [
     VhdlInputPort(name="clk", data_type="std_ulogic"),
     VhdlInputPort(name="sreset", data_type="std_ulogic"),
-    VhdlInputPort(name="s_tvalid", data_type="std_ulogic", role=VhdlSlavePort()),
-    VhdlOutputPort(name="s_tready", data_type="std_ulogic", role=VhdlSlavePort()),
-    VhdlInputPort(name="s_taddr", data_type="std_ulogic_vector", role=VhdlSlavePort()),
+    VhdlInputPort(name="s_tvalid", data_type="std_ulogic", role=VhdlSlavePort(connection="m_tvalid")),
+    VhdlOutputPort(name="s_tready", data_type="std_ulogic", role=VhdlSlavePort(connection="m_tready")),
     VhdlOutputPort(name="m_tvalid", data_type="std_ulogic", role=VhdlMasterPort()),
     VhdlInputPort(name="m_tready", data_type="std_ulogic", role=VhdlMasterPort())
     ]
@@ -188,12 +199,8 @@ class VhdlPortGenerator:
         self._msg.function_end("_get_port_signal_assignment = " + str(result))
         return result
 
-    def _get_standard_port_map(self, instance: InstanceData, port: VhdlPort) -> str:
-        signal_name = port.get_signal_name(instance=instance)
-        return f"{port.name} => {signal_name}"
-
     def get_standard_ports_map(self, instance: InstanceData) -> List[str]:
-        return [self._get_standard_port_map(instance=instance, port=i) for i in self._standard_ports]
+        return [i.get_port_map(instance=instance) for i in self._standard_ports]
     
     def _get_standard_port_signals(self, instance: InstanceData, port: VhdlPort) -> Optional[str]:
         if not port.is_master():

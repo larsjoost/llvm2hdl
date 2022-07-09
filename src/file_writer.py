@@ -137,9 +137,8 @@ class FileWriter:
         vhdl_port = VhdlPortGenerator()
         self._instance_signals.extend(vhdl_port.get_standard_ports_signals(instance=instance))
         memory_ports = [i for i in instance.input_ports if i.is_pointer()]
-        input_ports = [i for i in instance.input_ports if not i.is_pointer()]
         _memory_port_map = self._flatten([vhdl_port.get_memory_port_map(input_port=i) for i in memory_ports])
-        _input_ports_map = [vhdl_port.get_port_map(input_port=i) for i in input_ports]
+        _input_ports_map = [vhdl_port.get_port_map(input_port=i) for i in instance.input_ports]
         _input_ports_signals = [vhdl_port.get_port_signal(input_port=i) for i in instance.input_ports]
         _input_ports_signal_assignment = [vhdl_port.get_port_signal_assignment(input_port=i, ports=self._ports, signals=self._signals) for i in instance.input_ports]
         block_name = instance.instance_name + "_b"
@@ -152,7 +151,8 @@ class FileWriter:
             self._write_body(i)
         self._write_body("signal m_tdata_i : " + instance.output_port.get_type_declarations() + ";")
         self._write_body("begin")
-        self._write_body("tag_i <= " + instance.get_previous_instance_signal_name("tag_in") + ";")
+        tag_name = instance.get_previous_instance_signal_name("tag_out")
+        self._write_body("tag_i <= " + ("tag_in_i" if tag_name is None else tag_name) + ";")
         self._write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
         for i in _input_ports_signal_assignment:
             if i is not None:
@@ -189,7 +189,7 @@ class FileWriter:
     def _write_instances(self, instances: InstanceContainerData):
         self._write_body("tag_in_i.tag <= s_tag;")
         for i in self._ports:
-            if i.is_input() and not i.is_pointer():
+            if i.is_input():
                 self._write_body("tag_in_i." + i.get_name() + " <= " + i.get_name() + ";")
         for i in instances.instances:
             self._write_instance(instance=i)

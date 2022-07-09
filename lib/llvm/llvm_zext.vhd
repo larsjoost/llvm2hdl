@@ -9,7 +9,6 @@ entity llvm_zext is
     clk      : in  std_ulogic;
     sreset   : in  std_ulogic;
     a        : in  std_ulogic_vector;
-    s_taddr  : in  std_ulogic_vector;
     s_tag    : in  std_ulogic_vector;
     s_tvalid : in  std_ulogic;
     s_tready : out std_ulogic;

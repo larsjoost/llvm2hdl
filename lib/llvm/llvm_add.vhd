@@ -8,7 +8,6 @@ entity llvm_add is
     sreset   : in  std_ulogic;
     a        : in  std_ulogic_vector;
     b        : in  std_ulogic_vector;
-    s_taddr  : in  std_ulogic_vector;
     s_tag    : in  std_ulogic_vector;
     s_tvalid : in  std_ulogic;
     s_tready : out std_ulogic;

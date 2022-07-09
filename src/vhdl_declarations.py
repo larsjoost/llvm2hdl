@@ -24,8 +24,9 @@ class VhdlDeclarations:
         dimensions: Tuple[int, Optional[str]] = self.data_type.get_dimensions()
         x = dimensions[0]
         y = dimensions[1]
-        scale = "" if (x == 1 or y is None) else str(x) + "*" + y
-        return scale
+        if y is None:
+            return str(x)
+        return y if (x == 1) else str(x) + "*" + y
 
     def get_initialization(self, values: List[str]) -> str:
         return "get(integer_array_t'(" + ", ".join(values) + "), " + self.get_data_width() + ")"
