@@ -1,9 +1,9 @@
 import os
 import argparse
-from llvmlite.binding import ModuleRef, parse_assembly
 
 from instance_statistics import InstanceStatistics
 from file_writer import FileWriter
+from llvm_parser import LlvmParser
 from vhdlgen import VhdlGen
 
 def arguments():
@@ -23,12 +23,13 @@ def main():
 
     with open(args.file_name, 'r') as file_handle:
         text = file_handle.read()
-    _llvm: ModuleRef = parse_assembly(text)
 
-    _vhdlgen = VhdlGen()
+    llvm_parser = LlvmParser()
+
+    llvm_module = llvm_parser.parse(text)
 
     if args.llvm_tree:
-        _vhdlgen.print_tree(_llvm)
+        print(llvm_module)
 
     if args.output_file_name is not None:
         output_file_name = args.output_file_name
@@ -39,7 +40,7 @@ def main():
     statistics = InstanceStatistics()
 
     file_writer = FileWriter(file_name=output_file_name)
-    VhdlGen().parse(_llvm, file_writer, statistics)
+    VhdlGen().parse(llvm_module, file_writer, statistics)
     file_writer.close()
 
     if args.verbose:

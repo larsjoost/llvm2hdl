@@ -69,7 +69,7 @@ class Messages:
             current_frame = inspect.currentframe()
             _, function_name, _ = self._get_previous_frame_info(current_frame)
             text = str(function_name) + "(" + text + ")"
-            self._print_formatted(color_text="FUNCTION START",
+            self._print_formatted(color_text=ColorText("FUNCTION START", "magenta"),
             text=text, current_frame=current_frame)
             self.indent += 2
 
@@ -78,6 +78,6 @@ class Messages:
             current_frame = inspect.currentframe()
             _, function_name, _ = self._get_previous_frame_info(current_frame)
             self.indent = self.indent - 2
-            text = function_name + " = " + str(return_value)
-            self._print_formatted(color_text="FUNCTION END", 
+            text = str(function_name) + " = " + str(return_value)
+            self._print_formatted(color_text=ColorText("FUNCTION END", "magenta"), 
             text=text, current_frame=current_frame)

@@ -1,12 +1,11 @@
 from typing import Dict, List
-from llvmlite.binding import ValueRef
 
 from assignment_resolution import AssignmentItem, AssignmentResolution
 from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
-from llvm_parser import EqualAssignment, LlvmParser, Instruction, ReturnInstruction, Alloca
+from llvm_parser import EqualAssignment, LlvmInstruction, LlvmParser, Instruction, ReturnInstruction, Alloca
 from messages import Messages
 from llvm_declarations import LlvmName, LlvmType
 
@@ -74,8 +73,8 @@ class InstanceContainer(InstanceContainerInterface):
     def _internal_llvm_call(self, instruction: str) -> bool:
         return "@llvm" in instruction
 
-    def add_instruction(self, instruction: ValueRef, statistics: InstanceStatistics):
-        self._msg.function_start("add_instruction(instruction=" + str(instruction) + ")")
+    def add_instruction(self, instruction: LlvmInstruction, statistics: InstanceStatistics) -> None:
+        self._msg.function_start("instruction=" + str(instruction))
         if instruction.opcode == "call":
             if not self._internal_llvm_call(str(instruction)):
                 self._add_call_instruction(str(instruction))  
@@ -90,7 +89,7 @@ class InstanceContainer(InstanceContainerInterface):
             assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
             instruction: Instruction = self._llvm_parser.get_instruction(assignment.source)
             self._add_instruction(assignment.destination, instruction)
-        self._msg.function_end("add_instruction")
+        self._msg.function_end()
 
     def get_instances(self) -> InstanceContainerData:
         self._msg.function_start("get_instances()")
