@@ -5,7 +5,7 @@ from instance_data import DeclarationData
 from instance_container_data import InstanceContainerData
 from instance_statistics import InstanceStatistics
 from llvm_declarations import LlvmName, LlvmType
-from src.llvm_parser import LlvmInstruction
+from llvm_parser import LlvmInstruction
 
 class InstanceContainerInterface(ABC):
     

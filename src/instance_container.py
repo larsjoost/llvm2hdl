@@ -1,11 +1,10 @@
 from typing import Dict, List
 
-from assignment_resolution import AssignmentItem, AssignmentResolution
 from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from instance_statistics import InstanceStatistics
-from llvm_parser import EqualAssignment, LlvmInstruction, LlvmParser, Instruction, ReturnInstruction, Alloca
+from llvm_parser import EqualAssignment, LlvmInstruction, LlvmParser, Instruction, ReturnInstruction, AllocaInstruction
 from messages import Messages
 from llvm_declarations import LlvmName, LlvmType
 
@@ -13,9 +12,8 @@ class InstanceContainer(InstanceContainerInterface):
 
     _container: List[Instance] = []
     _instance_map: Dict[LlvmName, Instance] = {}
-    _alloca_map: Dict[str, Alloca] = {}
+    _alloca_map: Dict[str, AllocaInstruction] = {}
     _return_value: ReturnInstruction
-    _assignment_resolution : AssignmentResolution = AssignmentResolution()
     
     def __init__(self):
         self._msg = Messages()
@@ -52,14 +50,8 @@ class InstanceContainer(InstanceContainerInterface):
 
     def _add_alloca(self, instruction: str):
         assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(instruction)
-        alloca: Alloca = self._llvm_parser.get_alloca_assignment(assignment.source)
+        alloca: AllocaInstruction = self._llvm_parser.get_alloca_assignment(assignment.source)
         self._alloca_map[assignment.destination] = alloca
-
-    def _add_assignment_instruction(self, instruction: str):
-        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(instruction)
-        assignment_item: AssignmentItem = self.get_assignment(assignment.source)
-        self._assignment_resolution.add_assignment(destination=assignment.destination, 
-        assignment=assignment_item)
 
     def _get_return_instruction_driver(self, return_instruction: ReturnInstruction) -> str:
         return self._instance_map[return_instruction.value].get_instance_name()
