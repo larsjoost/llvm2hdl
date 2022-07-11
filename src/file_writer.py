@@ -192,9 +192,10 @@ class FileWriter:
                 self._write_body("tag_in_i." + i.get_name() + " <= " + i.get_name() + ";")
         for i in instances.instances:
             self._write_instance(instance=i)
-        self._write_body("m_tvalid <= " + instances.return_instruction_driver + "_m_tvalid_i;")
-        self._write_body(instances.return_instruction_driver + "_m_tready_i <= m_tready;")
-        self._write_body("m_tdata <= conv_std_ulogic_vector(tag_out_i." + instances.return_instruction_driver + ", m_tdata'length);")
+        return_driver = instances.get_return_instruction_driver()
+        self._write_body("m_tvalid <= " + return_driver + "_m_tvalid_i;")
+        self._write_body(return_driver + "_m_tready_i <= m_tready;")
+        self._write_body("m_tdata <= conv_std_ulogic_vector(tag_out_i." + return_driver + ", m_tdata'length);")
         self._write_body("m_tag <= tag_out_i.tag;")
 
     def _write_declarations(self, declarations: List[DeclarationData]):

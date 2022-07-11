@@ -1,24 +1,18 @@
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import List
-from assignment_resolution import AssignmentItem
+from typing import List, Optional
 from instance_data import DeclarationData
 from instance_container_data import InstanceContainerData
 from instance_statistics import InstanceStatistics
-from llvm_declarations import LlvmName, LlvmType
-from llvm_parser import LlvmInstruction
+from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
+from llvm_parser import LlvmInstruction, Instruction
+from instance_interface import InstanceInterface
+from source_info import SourceInfo
 
 class InstanceContainerInterface(ABC):
     
     @abstractmethod
-    def get_source(self, search_source: LlvmType) -> List[AssignmentItem]:
-        pass
-
-    @abstractmethod
-    def get_assignment(self, instruction : str):
-        pass
-
-    @abstractmethod
-    def add_instruction(self, instruction: LlvmInstruction, statistics: InstanceStatistics):
+    def get_source(self, search_source: LlvmType) -> Optional[SourceInfo]:
         pass
 
     @abstractmethod
@@ -27,4 +21,5 @@ class InstanceContainerInterface(ABC):
 
     @abstractmethod
     def get_declarations(self) -> List[DeclarationData]:
-        pass        
+        pass
+

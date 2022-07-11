@@ -6,7 +6,7 @@ class ColorText:
     Adds color codes to text
     """
 
-    def __init__(self, text, color=None):
+    def __init__(self, text, color=None) -> None:
         colors = {
             "magenta": '\033[95m',
             "blue": '\033[94m',

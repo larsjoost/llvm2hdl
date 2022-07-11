@@ -64,7 +64,7 @@ class Messages:
             self._print_formatted(color_text=ColorText("ERROR", "error"), line_number=line_number,
                                 text=text, file_name=file_name)
 
-    def function_start(self, text: str, verbose=False):
+    def function_start(self, text: str = "", verbose=False):
         if self._verbose or verbose:
             current_frame = inspect.currentframe()
             _, function_name, _ = self._get_previous_frame_info(current_frame)

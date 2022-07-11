@@ -13,7 +13,7 @@ class InstanceData:
     tag_name: str
     input_ports: List[InstructionArgument]
     previous_instance_name: Optional[str]
-    def _get_signal_name(self, instance_name: str, signal_name: str) -> str: 
+    def _get_signal_name(self, instance_name: str, signal_name: str) -> str:
         return instance_name + "_" + signal_name + "_i"
     def get_previous_instance_signal_name(self, signal_name: str) -> Optional[str]:
         if self.previous_instance_name is None:

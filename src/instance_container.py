@@ -1,95 +1,55 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
-from instance_container_interface import InstanceContainerInterface
+from instance_container_interface import InstanceContainerInterface, SourceInfo
 from instance_statistics import InstanceStatistics
-from llvm_parser import EqualAssignment, LlvmInstruction, LlvmParser, Instruction, ReturnInstruction, AllocaInstruction
+from llvm_parser import LlvmInstruction, LlvmParser, Instruction, ReturnInstruction, AllocaInstruction
 from messages import Messages
 from llvm_declarations import LlvmName, LlvmType
+from instance_interface import InstanceInterface
+from ports import InputPort
 
 class InstanceContainer(InstanceContainerInterface):
 
     _container: List[Instance] = []
-    _instance_map: Dict[LlvmName, Instance] = {}
-    _alloca_map: Dict[str, AllocaInstruction] = {}
+    _source_info_map: Dict[LlvmName, SourceInfo] = {}
     _return_value: ReturnInstruction
     
-    def __init__(self):
+    def __init__(self, instructions: List[LlvmInstruction], input_ports: List[InputPort]):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
+        for i in instructions:
+            self._add_instruction(instruction=i)
+        for i in input_ports:
+            source_info: SourceInfo = i.get_source_info()
+            self._source_info_map[source_info.destination] = source_info
 
-    def get_source(self, search_source: LlvmType) -> List[AssignmentItem]:
-        return self._assignment_resolution.get_source(search_source)
+    def get_source(self, search_source: LlvmType) -> Optional[SourceInfo]:
+        return self._source_info_map.get(search_source, None)
 
-    def _add_instruction(self, destination : LlvmName, instruction : Instruction):
-        self._msg.function_start("_add_instruction(destination=" + str(destination) + ", instruction=" + str(instruction) + ")")
-        instance = Instance(self)
+    def _add_instruction(self, instruction : LlvmInstruction) -> None:
+        self._msg.function_start("instruction=" + str(instruction))
+        if not instruction.is_command():
+            return
+        instance = Instance(self, instruction)
         try:
             last_instance = self._container[-1]
             last_instance._next = instance
             instance._prev = last_instance
         except IndexError:
             pass
-        instance.set_instruction(instruction)
-        self._instance_map[destination] = instance
-        assignment = instance.get_assignment()
-        self._assignment_resolution.add_assignment(destination=destination, assignment = assignment)
+        destination = instruction.get_destination()
+        if destination is not None:
+            self._source_info_map[destination] = instance.get_source_info()
         self._container.append(instance)
-        self._msg.function_end("_add_instruction")
-
-    def get_assignment(self, instruction : str) -> AssignmentItem:
-        return self._llvm_parser.get_assignment(instruction)
-
-    def _add_call_instruction(self, instruction: str):
-        self._msg.function_start("_add_call_instruction(instruction=" + instruction + ")")
-        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
-        instruction: Instruction = self._llvm_parser.get_call_assignment(assignment.source)
-        self._add_instruction(assignment.destination, instruction)
-        self._msg.function_end("_add_call_instruction")
-
-    def _add_alloca(self, instruction: str):
-        assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(instruction)
-        alloca: AllocaInstruction = self._llvm_parser.get_alloca_assignment(assignment.source)
-        self._alloca_map[assignment.destination] = alloca
-
-    def _get_return_instruction_driver(self, return_instruction: ReturnInstruction) -> str:
-        return self._instance_map[return_instruction.value].get_instance_name()
-        
-    def _add_return_instruction(self, instruction: str) -> ReturnInstruction:
-        self._msg.function_start("add_return_instruction(instruction=" + str(instruction) + ")")
-        result: ReturnInstruction = self._llvm_parser.get_return_instruction(instruction)
-        self._msg.function_end("_add_return_instruction = " + str(result))
-        return result
-
-    def _internal_llvm_call(self, instruction: str) -> bool:
-        return "@llvm" in instruction
-
-    def add_instruction(self, instruction: LlvmInstruction, statistics: InstanceStatistics) -> None:
-        self._msg.function_start("instruction=" + str(instruction))
-        if instruction.opcode == "call":
-            if not self._internal_llvm_call(str(instruction)):
-                self._add_call_instruction(str(instruction))  
-        elif instruction.opcode in ["load", "bitcast", "getelementptr"]:
-            self._add_assignment_instruction(str(instruction))
-        elif instruction.opcode == "ret":
-            self._return_value = self._add_return_instruction(str(instruction))
-        elif instruction.opcode == "alloca":
-            self._add_alloca(str(instruction))
-        else:
-            statistics.increment(instruction.opcode)
-            assignment: EqualAssignment = self._llvm_parser.get_equal_assignment(str(instruction))
-            instruction: Instruction = self._llvm_parser.get_instruction(assignment.source)
-            self._add_instruction(assignment.destination, instruction)
         self._msg.function_end()
 
     def get_instances(self) -> InstanceContainerData:
-        self._msg.function_start("get_instances()")
+        self._msg.function_start()
         instances = [i.get_instance_data() for i in self._container]
-        return_instruction_driver = self._get_return_instruction_driver(return_instruction=self._return_value)
-        result = InstanceContainerData(instances=instances, return_instruction_driver=return_instruction_driver,
-        return_data_type=self._return_value.data_type)
-        self._msg.function_end("get_instances = " + str(result))
+        result = InstanceContainerData(instances=instances)
+        self._msg.function_end(result)
         return result
 
     def get_declarations(self) -> List[DeclarationData]:

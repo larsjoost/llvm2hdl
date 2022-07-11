@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 from llvm_declarations import LlvmName, TypeDeclaration
+from source_info import SourceInfo
 
 class Port(ABC):
     name: Union[LlvmName, str]
@@ -21,6 +22,10 @@ class Port(ABC):
         return self.name.get_name()
     def is_pointer(self) -> bool:
         return self.data_type.is_pointer()
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(destination=self.name,
+        output_signal_name=self.get_name(),
+        data_type=self.data_type)
 
 class InputPort(Port):
     def is_input(self) -> bool:
