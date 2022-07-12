@@ -3,11 +3,9 @@ from typing import Dict, List, Optional
 from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface, SourceInfo
-from instance_statistics import InstanceStatistics
-from llvm_parser import LlvmInstruction, LlvmParser, Instruction, ReturnInstruction, AllocaInstruction
+from llvm_parser import LlvmInstruction, LlvmParser, ReturnInstruction
 from messages import Messages
 from llvm_declarations import LlvmName, LlvmType
-from instance_interface import InstanceInterface
 from ports import InputPort
 
 class InstanceContainer(InstanceContainerInterface):

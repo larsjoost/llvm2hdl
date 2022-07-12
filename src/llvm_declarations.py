@@ -154,7 +154,7 @@ class LlvmTypeFactory:
             return LlvmInteger(value)
         except ValueError:
             pass
-        raise ValueError("Unknown LlvmType")
+        raise ValueError("Unknown LlvmType = " + self.text)
 
 class VectorDeclaration(TypeDeclaration):
     

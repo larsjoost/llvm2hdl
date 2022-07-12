@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from llvm_declarations import TypeDeclaration
-from ports import Port
 
 @dataclass
 class VhdlDeclarations:

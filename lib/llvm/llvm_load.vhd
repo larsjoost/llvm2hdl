@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity llvm_store is
+entity llvm_load is
   port (
     clk                       : in  std_ulogic;
     sreset                    : in  std_ulogic;
@@ -29,9 +29,9 @@ entity llvm_store is
     s_mem_data_response_valid : in  std_ulogic;
     s_mem_data_response_id    : in  std_ulogic_vector
     );
-end entity llvm_store;
+end entity llvm_load;
 
-architecture rtl of llvm_store is
+architecture rtl of llvm_load is
 
   constant c_id_width : positive := m_mem_addr_id'length;
   constant c_id_size  : positive := 2 ** c_id_width;
@@ -109,3 +109,4 @@ begin
   end process;
 
 end architecture rtl;
+

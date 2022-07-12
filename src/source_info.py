@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
+from llvm_declarations import LlvmName, TypeDeclaration
 
 @dataclass 
 class SourceInfo:

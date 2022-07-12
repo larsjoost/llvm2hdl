@@ -4,7 +4,7 @@ from source_info import SourceInfo
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
 from llvm_declarations import LlvmDeclaration, TypeDeclaration
-from llvm_parser import InstructionArgument, LlvmInstruction, LlvmParser, Instruction
+from llvm_parser import InstructionArgument, LlvmInstruction, LlvmParser
 from messages import Messages
 from instance_interface import InstanceInterface
 from vhdl_declarations import VhdlDeclarations
@@ -29,7 +29,7 @@ class Instance(InstanceInterface):
         return self._prev.get_instance_index() + 1
 
     def get_instance_name(self) -> str:
-        return self.instruction.get_opcode() + "_" + str(self.get_instance_index())
+        return self.instruction.get_instance_name() + "_" + str(self.get_instance_index())
 
     def get_tag_name(self) -> str:
         return self.get_instance_name() + "_tag_out_i"
@@ -77,7 +77,7 @@ class Instance(InstanceInterface):
 
     def get_instance_data(self) -> InstanceData:
         instance_name = self.get_instance_name()
-        entity_name = self.instruction.get_opcode()
+        entity_name = self.instruction.get_instance_name()
         output_port = self.instruction.get_output_port()
         tag_name = self._get_output_tag_name()
         previous_instance_name = None if self._prev is None else self._prev.get_instance_name()

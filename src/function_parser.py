@@ -1,12 +1,11 @@
 from typing import List, Optional, Union
 
 from file_writer import FileWriter
-from global_variables import GlobalVariables
 from instance_container import InstanceContainer
-from llvm_declarations import LlvmDeclaration, LlvmName, VectorDeclaration, BooleanDeclaration
-from llvm_parser import LlvmFunction, LlvmParser, CallInstructionParser
+from llvm_declarations import LlvmDeclaration
+from llvm_parser import LlvmFunction, CallInstructionParser
 from messages import Messages
-from ports import OutputPort, InputPort, Port
+from ports import OutputPort, InputPort
 
 class FunctionParser:
 
