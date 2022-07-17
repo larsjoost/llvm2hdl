@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from llvm_declarations import LlvmName, TypeDeclaration
+from typing import Optional
+from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
 
 @dataclass 
 class SourceInfo:
-    destination: LlvmName
-    output_signal_name: LlvmName
+    destination: Optional[LlvmType]
+    output_signal_name: LlvmType
     data_type: TypeDeclaration
 

@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from dataclasses import dataclass
-from llvm_parser import InstructionArgument, OutputPort
+from llvm_parser import InstructionArgument, MemoryInterface, OutputPort
 from vhdl_declarations import VhdlDeclarations
 
 @dataclass
@@ -11,8 +11,10 @@ class InstanceData:
     library: str
     output_port: OutputPort
     tag_name: str
+    generic_map: Optional[List[str]]
     input_ports: List[InstructionArgument]
     previous_instance_name: Optional[str]
+    memory_interface: Optional[MemoryInterface]
     def _get_signal_name(self, instance_name: str, signal_name: str) -> str:
         return instance_name + "_" + signal_name + "_i"
     def get_previous_instance_signal_name(self, signal_name: str) -> Optional[str]:

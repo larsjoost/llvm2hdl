@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from llvm_parser import ConstantDeclaration
-from vhdl_port import VhdlPortGenerator
+from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import Port
 from messages import Messages
@@ -32,6 +32,9 @@ class FileWriter:
     _instances : List[str] = []
     _ports: List[Port]
 
+    _local_tag_in = "local_tag_in_i"
+    _local_tag_out = "local_tag_out_i"
+        
     def __init__(self, file_name: str):
         self._msg = Messages()
         self._file_name = file_name
@@ -69,8 +72,14 @@ class FileWriter:
         print("return " + " & ". join(assign_arg) + ";", file=file_handle)
         print("end function tag_to_std_ulogic_vector;", file=file_handle)
         
+    def _print_constants(self, file_handle):
+        print("constant c_mem_addr_width : positive := 32;", file=file_handle)
+        print("constant c_mem_data_width : positive := 32;", file=file_handle)
+        print("constant c_mem_id_width : positive := 8;", file=file_handle)
+
     def _print_declarations(self, file_handle):
         self._print_total_data_width(file_handle=file_handle)
+        self._print_constants(file_handle=file_handle)
         self._print_tag_record(file_handle=file_handle)
         record_items = VhdlPortGenerator().get_tag_item_names(ports=self._ports, signals=self._signals)
         self._print_function_conv_tag(file_handle=file_handle, record_items=record_items)
@@ -131,47 +140,62 @@ class FileWriter:
     def _flatten(self, xss: List[List[str]]) -> List[str]:
         return [x for xs in xss for x in xs]
 
-    def _write_instance(self, instance: InstanceData):
+    def _write_component_generic_map(self, instance: InstanceData) -> None:
+        if instance.generic_map is not None:
+            self._write_body("generic map (")
+            self._write_body("; ".join(instance.generic_map))
+            self._write_body(")")
+    
+    def _write_component_instantiation(self, instance: InstanceData) -> None:
+        vhdl_port = VhdlPortGenerator()
+        vhdl_memory_port = VhdlMemoryPort()
+        self._write_body(instance.instance_name + " : entity " + instance.library + "." + instance.entity_name)
+        self._write_component_generic_map(instance=instance)
+        self._write_body("port map (", end="")
+        _memory_port_map = []
+        if instance.memory_interface is not None:
+            _memory_port_map = vhdl_memory_port.get_port_map(name=instance.instance_name, master=True)
+            self._instance_signals.extend(vhdl_memory_port.get_port_signals(name=instance.instance_name, master=True))
+        _input_ports_map = [vhdl_port.get_port_map(input_port=i) for i in instance.input_ports]
+        _tag_port_map = [f"s_tag => {self._local_tag_in}", f"m_tag => {self._local_tag_out}"]
+        _standard_port_map =  vhdl_port.get_standard_ports_map(instance=instance)
+        _output_port_map = [instance.output_port.get_port_map()]
+        _ports = _input_ports_map + _output_port_map + _memory_port_map + _standard_port_map + _tag_port_map
+        self._write_body(", ".join(_ports), end="")
+        self._write_body(");")
+
+    def _write_component_output_signal_assignment(self, instance: InstanceData) -> None:
+        self._write_body("process (all)")
+        self._write_body("begin")
+        self._write_body(instance.tag_name + f" <= conv_tag({self._local_tag_out});")
+        self._write_body(instance.tag_name + "." + instance.instance_name + " <= m_tdata_i;")
+        self._write_body("end process;")
+        
+    def _write_instance(self, instance: InstanceData) -> None:
+        self._msg.function_start("instance=" + str(instance))
         if instance.library != "work":
             self._instances.append(instance.entity_name)
         vhdl_port = VhdlPortGenerator()
         self._instance_signals.extend(vhdl_port.get_standard_ports_signals(instance=instance))
-        memory_ports = [i for i in instance.input_ports if i.is_pointer()]
-        _memory_port_map = self._flatten([vhdl_port.get_memory_port_map(input_port=i) for i in memory_ports])
-        _input_ports_map = [vhdl_port.get_port_map(input_port=i) for i in instance.input_ports]
         _input_ports_signals = [vhdl_port.get_port_signal(input_port=i) for i in instance.input_ports]
         _input_ports_signal_assignment = [vhdl_port.get_port_signal_assignment(input_port=i, ports=self._ports, signals=self._signals) for i in instance.input_ports]
         block_name = instance.instance_name + "_b"
-        local_tag_in = "local_tag_in_i"
-        local_tag_out = "local_tag_out_i"
         self._write_body(f"{block_name} : block")
         self._write_body("signal tag_i : tag_t;")
-        self._write_body(f"signal {local_tag_in}, {local_tag_out} : std_ulogic_vector(0 to c_tag_width - 1);")
+        self._write_body(f"signal {self._local_tag_in}, {self._local_tag_out} : std_ulogic_vector(0 to c_tag_width - 1);")
         for i in _input_ports_signals:
             self._write_body(i)
         self._write_body("signal m_tdata_i : " + instance.output_port.get_type_declarations() + ";")
         self._write_body("begin")
         tag_name = instance.get_previous_instance_signal_name("tag_out")
         self._write_body("tag_i <= " + ("tag_in_i" if tag_name is None else tag_name) + ";")
-        self._write_body(f"{local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
+        self._write_body(f"{self._local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
         for i in _input_ports_signal_assignment:
             self._write_body(i)
-        self._write_body(instance.instance_name + " : entity " + instance.library + "." + instance.entity_name)
-        self._write_body("port map (", end="")
-        self._write_body(", ".join(_input_ports_map), end="")
-        if len(_memory_port_map) > 0:
-            self._write_body(", " + ", ".join(_memory_port_map), end="")
-        self._write_body(", "+ instance.output_port.get_port_map(), end="")
-        self._write_body(", " + ", ".join(vhdl_port.get_standard_ports_map(instance=instance)), end="")
-        self._write_body(f", s_tag => {local_tag_in}", end="")
-        self._write_body(f", m_tag => {local_tag_out}", end="")
-        self._write_body(");")
-        self._write_body("process (all)")
-        self._write_body("begin")
-        self._write_body(instance.tag_name + f" <= conv_tag({local_tag_out});")
-        self._write_body(instance.tag_name + "." + instance.instance_name + " <= m_tdata_i;")
-        self._write_body("end process;")
+        self._write_component_instantiation(instance=instance)
+        self._write_component_output_signal_assignment(instance=instance)
         self._write_body("end block " + block_name + ";")
+        self._msg.function_end(None)
 
     def _get_ports(self, port: Port) -> List[str]:
         return VhdlPortGenerator().get_ports(port)
@@ -190,8 +214,8 @@ class FileWriter:
         for i in self._ports:
             if i.is_input():
                 self._write_body("tag_in_i." + i.get_name() + " <= " + i.get_name() + ";")
-        for i in instances.instances:
-            self._write_instance(instance=i)
+        for j in instances.instances:
+            self._write_instance(instance=j)
         return_driver = instances.get_return_instruction_driver()
         self._write_body("m_tvalid <= " + return_driver + "_m_tvalid_i;")
         self._write_body(return_driver + "_m_tready_i <= m_tready;")

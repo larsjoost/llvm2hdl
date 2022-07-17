@@ -6,22 +6,23 @@ from instance_container_interface import InstanceContainerInterface, SourceInfo
 from llvm_parser import LlvmInstruction, LlvmParser, ReturnInstruction
 from messages import Messages
 from llvm_declarations import LlvmName, LlvmType
-from ports import InputPort
+from ports import InputPort, Port
 
 class InstanceContainer(InstanceContainerInterface):
 
     _container: List[Instance] = []
-    _source_info_map: Dict[LlvmName, SourceInfo] = {}
+    _source_info_map: Dict[LlvmType, SourceInfo] = {}
     _return_value: ReturnInstruction
     
-    def __init__(self, instructions: List[LlvmInstruction], input_ports: List[InputPort]):
+    def __init__(self, instructions: List[LlvmInstruction], input_ports: List[Port]):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
         for i in instructions:
             self._add_instruction(instruction=i)
-        for i in input_ports:
-            source_info: SourceInfo = i.get_source_info()
-            self._source_info_map[source_info.destination] = source_info
+        for j in input_ports:
+            source_info: SourceInfo = j.get_source_info()
+            if source_info.destination is not None:
+                self._source_info_map[source_info.destination] = source_info
 
     def get_source(self, search_source: LlvmType) -> Optional[SourceInfo]:
         return self._source_info_map.get(search_source, None)
@@ -32,7 +33,7 @@ class InstanceContainer(InstanceContainerInterface):
             return
         instance = Instance(self, instruction)
         try:
-            last_instance = self._container[-1]
+            last_instance: Instance = self._container[-1]
             last_instance._next = instance
             instance._prev = last_instance
         except IndexError:

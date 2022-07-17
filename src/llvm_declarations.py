@@ -34,11 +34,18 @@ class LlvmDeclaration(TypeDeclaration):
     """
     data_type is one of i1, i32, i64, i32*, float, 3 x i32 
     """
-    
     def __init__(self, data_type: str) -> None:
         self.data_type = data_type
-        
+    
+    def _get_pointer_data_width(self) -> str:
+        return "32"
+
     def _get_data_width(self, data_type: str) -> str:
+        Messages().function_start("data_type=" + data_type)
+        if data_type == "void":
+            return "0"
+        if "*" in data_type:
+            return self._get_pointer_data_width()
         x = data_type.strip()
         x = x.replace("*", "")
         if x[0] == "i":
@@ -46,6 +53,7 @@ class LlvmDeclaration(TypeDeclaration):
         data_types = {'float': "32"}
         if x in data_types:
             return data_types[x]
+        Messages().function_end(x)
         return x
 
     def is_pointer(self) -> bool:
@@ -113,6 +121,8 @@ class LlvmType(ABC):
     @abstractmethod
     def get_value(self) -> str:
         pass
+    def is_name(self) -> bool:
+        return False
     def is_integer(self) -> bool:
         return False
 
@@ -128,6 +138,8 @@ class LlvmName(LlvmType):
         return self._to_string()
     def get_value(self) -> str:
         return self._to_string()
+    def is_name(self) -> bool:
+        return True
 
 @dataclass(frozen=True)
 class LlvmInteger(LlvmType):
