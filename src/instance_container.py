@@ -1,3 +1,4 @@
+import contextlib
 from typing import Dict, List, Optional
 
 from instance import DeclarationData, Instance
@@ -28,16 +29,14 @@ class InstanceContainer(InstanceContainerInterface):
         return self._source_info_map.get(search_source, None)
 
     def _add_instruction(self, instruction : LlvmInstruction) -> None:
-        self._msg.function_start("instruction=" + str(instruction))
-        if not instruction.is_command():
+        self._msg.function_start(f"instruction={instruction}")
+        if not instruction.is_valid():
             return
         instance = Instance(self, instruction)
-        try:
+        with contextlib.suppress(IndexError):
             last_instance: Instance = self._container[-1]
             last_instance._next = instance
             instance._prev = last_instance
-        except IndexError:
-            pass
         destination = instruction.get_destination()
         if destination is not None:
             self._source_info_map[destination] = instance.get_source_info()

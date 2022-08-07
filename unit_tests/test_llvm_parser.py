@@ -1,11 +1,11 @@
 import unittest
-from llvm_declarations import LlvmDeclaration
+from llvm_declarations import LlvmDeclaration, LlvmName
 
 from llvm_parser import InstructionArgument, LlvmParser
 
 class TestSourceParser(unittest.TestCase):
 
-    def test_getReturnInstruction(self):
+    def test_get_return_instruction(self):
         x = LlvmParser()
         a = "ret i32 %add"
         b = x.get_return_instruction(a)
@@ -13,21 +13,21 @@ class TestSourceParser(unittest.TestCase):
         self.assertEqual(b.data_type, "i32")
         self.assertEqual(b.value, "%add")
         
-    def test_getStoreAssignment(self):
+    def test_get_store_assignment(self):
         x = LlvmParser()
         a = "store i32 %a, i32* %a.addr, align 4"
         b = x.get_store_assignment(a)
         self.assertEqual(b.destination, "%a.addr")
         self.assertEqual(b.source, "%a")
     
-    def test_getLoadAssignment(self):
+    def test_get_load_assignment(self):
         x = LlvmParser()
         a = "%0 = load i32, i32* %a.addr, align 4"
         b = x.get_load_assignment(a)
         self.assertEqual(b.destination, "%0")
         self.assertEqual(b.source, "%a.addr")
     
-    def test_getCallAssignment(self):
+    def test_get_call_assignment(self):
         x = LlvmParser()
         a = "call i32 @_Z3addii(i32 2, i32 3)"
         b = x.get_call_assignment(a)
@@ -37,15 +37,7 @@ class TestSourceParser(unittest.TestCase):
         second_argument = InstructionArgument(signal_name=LlvmName("3"), data_type=data_type)
         self.assertEqual(b.operands, [first_argument, second_argument])
 
-    def test_getReturnInstruction(self):
-        x = LlvmParser()
-        a = "ret i32 %add"
-        b = x.get_return_instruction(a)
-        self.assertEqual(b.value, "%add")
-        self.assertEqual(b.data_type, "i32")
-        self.assertEqual(b.data_width, 32)
-
-    def test_getEqualAssignment(self):
+    def test_get_equal_assignment(self):
         x = LlvmParser()
         a = "%0 = load i32, i32* %a.addr, align 4"
         b = x.get_equal_assignment(a)
@@ -56,7 +48,7 @@ class TestSourceParser(unittest.TestCase):
         self.assertEqual(b.destination, None)
         self.assertEqual(b.source, "ret i32 %add")
         
-    def test_getInstruction(self):
+    def test_get_instruction(self):
         x = LlvmParser()
         a = "add nsw i32 %0, %1"
         b = x.get_instruction(a)

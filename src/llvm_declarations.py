@@ -1,3 +1,4 @@
+import contextlib
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 from dataclasses import dataclass
@@ -32,7 +33,7 @@ class TypeDeclaration(ABC):
 
 class LlvmDeclaration(TypeDeclaration):
     """
-    data_type is one of i1, i32, i64, i32*, float, 3 x i32 
+    data_type is one of void, i1, i32, i64, i32*, float, 3 x i32 
     """
     def __init__(self, data_type: str) -> None:
         self.data_type = data_type
@@ -41,7 +42,7 @@ class LlvmDeclaration(TypeDeclaration):
         return "32"
 
     def _get_data_width(self, data_type: str) -> str:
-        Messages().function_start("data_type=" + data_type)
+        Messages().function_start(f"data_type={data_type}")
         if data_type == "void":
             return "0"
         if "*" in data_type:
@@ -75,7 +76,48 @@ class LlvmDeclaration(TypeDeclaration):
     def get_data_width(self) -> str:
         x, data_width = self.get_dimensions()
         if x > 1:
-            data_width = str(x) + "*" + data_width
+            data_width = f"{str(x)}*{data_width}"
+        return data_width
+
+    def __str__(self) -> str:
+        return str(vars(self))
+
+    def __repr__(self) -> str:
+        return str(vars(self))
+
+class LlvmPointerDeclaration(TypeDeclaration):
+    """
+    data_type is one of void, i1, i32, i64, i32*, float, 3 x i32 
+    """
+    def __init__(self, data_type: str) -> None:
+        self.data_type = data_type
+    
+    def _get_pointer_data_width(self) -> str:
+        return "32"
+
+    def _get_data_width(self, data_type: str) -> str:
+        return self._get_pointer_data_width()
+
+    def is_pointer(self) -> bool:
+        return True
+    
+    def is_array(self) -> bool:
+        return " x " in self.data_type
+
+    def single_dimension(self) -> bool:
+        return not (self.is_pointer() or self.is_array())
+
+    def get_dimensions(self) -> Tuple[int, str]:
+        if not self.is_array():
+            return (1, self._get_data_width(data_type=self.data_type))
+        # self.data_type = "[3 x i32]*"
+        x = self.data_type.replace("[", "").replace("]", "").replace("*", "").split("x")
+        return (int(x[0]), self._get_data_width(data_type=x[1]))
+
+    def get_data_width(self) -> str:
+        x, data_width = self.get_dimensions()
+        if x > 1:
+            data_width = f"{str(x)}*{data_width}"
         return data_width
 
     def __str__(self) -> str:
@@ -158,15 +200,12 @@ class LlvmTypeFactory:
         self._msg = Messages()
     def resolve(self) -> LlvmType:
         self._msg.function_start("resolve", False)
-        self._msg.debug("self.text = " + self.text, False)
         if "%" in self.text:
             return LlvmName(self.text)
-        try:
+        with contextlib.suppress(ValueError):
             value = int(self.text)
             return LlvmInteger(value)
-        except ValueError:
-            pass
-        raise ValueError("Unknown LlvmType = " + self.text)
+        raise ValueError(f"Unknown LlvmType = {self.text}")
 
 class VectorDeclaration(TypeDeclaration):
     

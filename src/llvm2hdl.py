@@ -35,7 +35,7 @@ def main():
         output_file_name = args.output_file_name
     else:
         pre, _ = os.path.splitext(args.file_name)
-        output_file_name = pre + ".vhd"
+        output_file_name = f"{pre}.vhd"
 
     statistics = InstanceStatistics()
 

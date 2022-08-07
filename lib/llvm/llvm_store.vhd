@@ -4,36 +4,42 @@ use ieee.numeric_std.all;
 
 entity llvm_store is
   port (
-    clk                       : in  std_ulogic;
-    sreset                    : in  std_ulogic;
-    a : IN std_ulogic_vector;
-    b : IN std_ulogic_vector;
-    s_tvalid                  : in  std_ulogic;
-    s_tready                  : out std_ulogic;
-    s_tag                     : in  std_ulogic_vector;
-    m_tag                     : out std_ulogic_vector;
-    m_tvalid                  : out std_ulogic;
-    m_tready                  : in  std_ulogic;
-    m_mem_addr                : out std_ulogic_vector;
-    m_mem_addr_id             : out std_ulogic_vector;
-    m_mem_addr_valid          : out std_ulogic;
-    m_mem_data                : out std_ulogic_vector;
-    m_mem_data_valid          : out std_ulogic;
-    m_mem_data_ready          : out std_ulogic;
-    m_mem_data_response_ready : out std_ulogic;
-    s_mem_addr_ready          : in  std_ulogic;
-    s_mem_data_ready          : in  std_ulogic;
-    s_mem_data_valid          : in  std_ulogic;
-    s_mem_data                : in  std_ulogic_vector;
-    s_mem_data_id             : in  std_ulogic_vector;
-    s_mem_data_response_valid : in  std_ulogic;
-    s_mem_data_response_id    : in  std_ulogic_vector
+    clk       : in  std_ulogic;
+    sreset    : in  std_ulogic;
+    a         : in  std_ulogic_vector;
+    b         : in  std_ulogic_vector;
+    m_tdata   : out std_ulogic_vector;
+    s_tvalid  : in  std_ulogic;
+    s_tready  : out std_ulogic;
+    s_tag     : in  std_ulogic_vector;
+    m_tag     : out std_ulogic_vector;
+    m_tvalid  : out std_ulogic;
+    m_tready  : in  std_ulogic;
+    m_araddr  : out std_ulogic_vector;
+    m_arid    : out std_ulogic_vector;
+    m_arvalid : out std_ulogic;
+    m_arready : in  std_ulogic;
+    m_rdata   : in  std_ulogic_vector;
+    m_rvalid  : in  std_ulogic;
+    m_rready  : out std_ulogic;
+    m_rid     : in  std_ulogic_vector;
+    m_awaddr  : out std_ulogic_vector;
+    m_awid    : out std_ulogic_vector;
+    m_awvalid : out std_ulogic;
+    m_awready : in  std_ulogic;
+    m_wready  : in  std_ulogic;
+    m_wvalid  : out std_ulogic;
+    m_wdata   : out std_ulogic_vector;
+    m_wid     : out std_ulogic_vector;
+    m_bready  : out std_ulogic;
+    m_bvalid  : in  std_ulogic;
+    m_bid     : in  std_ulogic_vector
     );
 end entity llvm_store;
 
 architecture rtl of llvm_store is
 
-  constant c_id_width : positive := m_mem_addr_id'length;
+  constant c_id_width : positive := m_awid'length;
   constant c_id_size  : positive := 2 ** c_id_width;
 
   type tag_storage_t is array (0 to c_id_size - 1) of
@@ -45,51 +51,32 @@ architecture rtl of llvm_store is
 
 begin
 
-  s_tready <= (not m_mem_addr_valid or s_mem_addr_ready) and
-              (not m_mem_data_valid or s_mem_data_ready);
+  s_tready <= (not m_awvalid or m_awready) and
+              (not m_wvalid or m_wready);
 
   data_transfer_i <= s_tvalid and s_tready;
 
   process (clk)
+    variable id_v : std_ulogic_vector(0 to c_id_width - 1);
   begin
     if rising_edge(clk) then
-      if sreset = '1' then
-        m_mem_addr_valid <= '0';
-        m_mem_data_valid <= '0';
-      else
-        if s_mem_addr_ready = '1' then
-          m_mem_addr_valid <= '0';
-        end if;
-        if s_mem_data_ready = '1' then
-          m_mem_data_valid <= '0';
-        end if;
-        if (data_transfer_i = '1') then
-          m_mem_addr_valid <= '1';
-          m_mem_data_valid <= '1';
-        end if;
-      end if;
-    end if;
-  end process;
-
-  process (clk)
-    variable id_v : memory_id_t;
-  begin
-    if rising_edge(clk) then
+      m_awvalid <= '0';
+      m_wvalid  <= '0';
       if (data_transfer_i = '1') then
-        m_mem_addr_valid    <= '1';
-        m_mem_data_valid    <= '1';
-        m_mem_addr          <= memory_addr_t(resize(unsigned(b), m_mem_addr'length));
+        m_awvalid           <= '1';
+        m_wvalid            <= '1';
+        m_awaddr            <= std_ulogic_vector(resize(unsigned(b), m_awaddr'length));
         id_v                := std_ulogic_vector(to_unsigned(id_i, c_id_width));
-        m_mem_addr_id       <= id_v;
-        m_mem_data_id       <= id_v;
-        m_mem_data          <= memory_data_t(resize(unsigned(a), m_mem_data'length));
-        tag_storage_i(id_i) <= tag_in;
+        m_awid              <= id_v;
+        m_wid               <= id_v;
+        m_wdata             <= std_ulogic_vector(resize(unsigned(a), m_wdata'length));
+        tag_storage_i(id_i) <= s_tag;
         id_i                <= (id_i + 1) mod c_id_size;
       end if;
     end if;
   end process;
 
-  m_mem_data_response_ready <= m_tready or (not m_tvalid);
+  m_bready <= m_tready or (not m_tvalid);
 
   process (clk)
   begin
@@ -97,11 +84,11 @@ begin
       if sreset = '1' then
         m_tvalid <= '0';
       else
-        if m_ready = '1' then
+        if m_tready = '1' then
           m_tvalid <= '0';
         end if;
-        if s_mem_data_response_valid = '1' and m_mem_data_response_ready = '1' then
-          m_tag    <= tag_storage_i(to_integer(unsigned(s_mem_data_response_id)));
+        if m_bvalid = '1' and m_bready = '1' then
+          m_tag    <= tag_storage_i(to_integer(unsigned(m_bid)));
           m_tvalid <= '1';
         end if;
       end if;

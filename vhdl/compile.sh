@@ -7,7 +7,10 @@ set -e
 SCRIPT=$(realpath $0)
 SCRIPTPATH=$(dirname $SCRIPT)
 
-llvm_path=$SCRIPTPATH/../lib/llvm
+lib_path=$SCRIPTPATH/../lib
+
+llvm_path=$lib_path/llvm
+memory_path=$lib_path/memory
 
 file_path=$(dirname $file_name)
 
@@ -18,10 +21,14 @@ cd $file_path
 $SCRIPTPATH/../cpp2hdl.sh $file_name
 instances_file_name=${file_name%.cpp}.inc
 instances=$(cat $instances_file_name)
-common_instances="llvm_pkg llvm_buffer"
-instances=$(echo "$common_instances $instances")
-for i in $instances; do
+common_llvm_instances="llvm_pkg llvm_buffer"
+llvm_instances=$(echo "$common_llvm_instances $instances")
+for i in $llvm_instances; do
     ghdl -i $ghdl_arguments --work=llvm $llvm_path/$i.vhd
+done
+memory_instances="arbiter"
+for i in $memory_instances; do
+    ghdl -i $ghdl_arguments --work=memory $memory_path/$i.vhd
 done
 vhdl_file_name=${file_name%.cpp}.vhd
 ghdl -i $ghdl_arguments --work=work $vhdl_file_name

@@ -27,43 +27,37 @@ class Instance(InstanceInterface):
         self._llvm_parser = LlvmParser()
 
     def get_instance_index(self) -> int:
-        if self._prev is None:
-            return 1
-        return self._prev.get_instance_index() + 1
+        return 1 if self._prev is None else self._prev.get_instance_index() + 1
 
     def get_instance_name(self) -> str:
         instance_name = self.instruction.get_instance_name()
         assert instance_name is not None
-        return instance_name + "_" + str(self.get_instance_index())
+        return f"{instance_name}_{str(self.get_instance_index())}"
 
     def get_tag_name(self) -> str:
-        return self.get_instance_name() + "_tag_out_i"
+        return f"{self.get_instance_name()}_tag_out_i"
 
     def get_output_signal_name(self) -> LlvmName:
         return LlvmName(self.get_instance_name())	
 
     def get_instance_tag_name(self, instance: Optional[InstanceInterface], default: str) -> str:
-        if instance is None:
-            return default
-        return instance.get_tag_name()	
+        return default if instance is None else instance.get_tag_name()	
 
     def get_previous_tag_name(self) -> str:
         return self.get_instance_tag_name(self._prev, "tag_in_i")	
 
     def _get_output_tag_name(self) -> str:
-        if self._next is None:
-            return "tag_out_i"
-        return self.get_tag_name()	
+        return "tag_out_i" if self._next is None else self.get_tag_name()	
 
     def get_data_type(self) -> Optional[TypeDeclaration]:
         return self.instruction.get_data_type()
 
     def _resolve_operand(self, operand: InstructionArgument) -> InstructionArgument:
-        self._msg.function_start("operand=" + str(operand))
+        self._msg.function_start(f"operand={str(operand)}")
         source: Optional[SourceInfo] = self._parent.get_source(search_source=operand.signal_name)
+
         if source is not None:
             operand.signal_name = source.output_signal_name
-            operand.data_type = source.data_type
         self._msg.function_end(operand)
         return operand
 
@@ -75,11 +69,10 @@ class Instance(InstanceInterface):
         data_type=data_type)
 
     def _get_input_ports(self, operands: Optional[List[InstructionArgument]]) -> List[InstructionArgument]:
-        self._msg.function_start("operands=" + str(operands))
+        self._msg.function_start(f"operands={str(operands)}")
         input_ports: List[InstructionArgument] = []
         if operands is not None:
-            for operand in operands:
-                input_ports.append(self._resolve_operand(operand))
+            input_ports.extend(self._resolve_operand(operand) for operand in operands)
         self._msg.function_end(input_ports)
         return input_ports
 
@@ -98,17 +91,11 @@ class Instance(InstanceInterface):
         assert entity_name is not None
         assert library is not None
         assert output_port is not None
-        data = InstanceData(instance_name=instance_name, entity_name=entity_name,
-        library=library,
-        output_port=output_port,tag_name=tag_name, generic_map=generic_map, input_ports=input_ports,
-        previous_instance_name=previous_instance_name, memory_interface=memory_interface)
-        return data
+        return InstanceData(instance_name=instance_name, entity_name=entity_name, library=library, output_port=output_port, tag_name=tag_name, generic_map=generic_map, input_ports=input_ports, previous_instance_name=previous_instance_name, memory_interface=memory_interface, instruction=self.instruction)
 
     def get_declaration_data(self) -> DeclarationData:
         data_type = self.instruction.get_data_type()
         assert data_type is not None
         vhdl_decl = VhdlDeclarations(data_type=data_type)
-        data = DeclarationData(instance_name=self.get_instance_name(), entity_name=self.get_tag_name(), 
-        type=vhdl_decl)
-        return data
+        return DeclarationData(instance_name=self.get_instance_name(), entity_name=self.get_tag_name(), type=vhdl_decl)
 

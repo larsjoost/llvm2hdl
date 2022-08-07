@@ -16,7 +16,7 @@ class VhdlDeclarations:
             y = dimensions[1]
             type_declaration = "std_ulogic_vector"
             if y is not None:
-                type_declaration += "(0 to " + y + " - 1)"
+                type_declaration += f"(0 to {y} - 1)"
         return type_declaration
 
     def get_data_width(self) -> str:
@@ -25,7 +25,7 @@ class VhdlDeclarations:
         y = dimensions[1]
         if y is None:
             return str(x)
-        return y if (x == 1) else str(x) + "*" + y
+        return y if x == 1 else f"{str(x)}*{y}"
 
     def get_initialization(self, values: List[str]) -> str:
         return "get(integer_array_t'(" + ", ".join(values) + "), " + self.get_data_width() + ")"
@@ -36,8 +36,8 @@ class VhdlSignal:
     name : str
     type : VhdlDeclarations
     def write_signal(self, file_handle):
-        print("signal " + self.name + " : tag_t;", file=file_handle)
+        print(f"signal {self.name} : tag_t;", file=file_handle)
     def get_record_item(self) -> Tuple[str, str]:
-        return (self.instance, ": " + self.type.get_type_declarations() + ";")
+        return self.instance, f": {self.type.get_type_declarations()};"
     def get_data_width(self) -> str:
         return self.type.get_data_width()

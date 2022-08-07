@@ -30,7 +30,12 @@ class InputPort(Port):
     def is_input(self) -> bool:
         return True
 
+@dataclass
 class OutputPort(Port):
     def is_input(self) -> bool:
         return False
-    
+
+@dataclass
+class MemoryOutputPort(OutputPort):
+    def is_pointer(self) -> bool:
+        return True
