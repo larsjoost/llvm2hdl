@@ -21,7 +21,7 @@ class FunctionParser:
         return CallInstructionParser().get_entity_name(name)
 
     def parse(self, function: LlvmFunction, file_handle: FileWriter, statistics):								
-        self._msg.function_start(f"function={function}")
+        self._msg.function_start(f"function={function}", True)
         output_port: List[Port] = [OutputPort(name=LlvmName("m_tdata"), data_type=function.return_type)]
         input_ports: List[Port] = [InputPort(name=i.signal_name, data_type=i.data_type) for i in function.arguments]
         instance_container = InstanceContainer(instructions=function.instructions, input_ports=input_ports)
@@ -30,4 +30,4 @@ class FunctionParser:
         declarations = instance_container.get_declarations()
         ports: List[Port] = input_ports + output_port
         file_handle.write_function(function=FunctionDefinition(entity_name=entity_name, instances=instances, declarations=declarations,ports=ports))
-        self._msg.function_end(None)
+        self._msg.function_end(None, True)

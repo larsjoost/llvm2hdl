@@ -25,6 +25,8 @@ class Port(ABC, PortBase):
         data_type=self.data_type)
     def get_name(self) -> str:
         return self.name.get_name()
+    def is_void(self) -> bool:
+        return self.data_type.is_void()
 
 class InputPort(Port):
     def is_input(self) -> bool:

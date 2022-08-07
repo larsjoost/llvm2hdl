@@ -62,7 +62,6 @@ begin
       m_arvalid <= '0';
       if (data_transfer_i = '1') then
         m_arvalid           <= '1';
-        m_rready            <= '1';
         m_araddr            <= std_ulogic_vector(resize(unsigned(a), m_araddr'length));
         id_v                := std_ulogic_vector(to_unsigned(id_i, c_id_width));
         m_arid              <= id_v;

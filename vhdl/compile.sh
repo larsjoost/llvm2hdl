@@ -14,7 +14,7 @@ memory_path=$lib_path/memory
 
 file_path=$(dirname $file_name)
 
-ghdl_arguments="--std=08"
+ghdl_arguments="--std=08 -Wno-hide"
 
 cd $file_path
 

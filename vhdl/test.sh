@@ -18,7 +18,7 @@ file_path=$(dirname $file_name)
 
 vcd_file_name=${file_path}/output.vcd
 
-ghdl_arguments="--std=08"
+ghdl_arguments="--std=08 -Wno-hide"
 
 cd $file_path
 
