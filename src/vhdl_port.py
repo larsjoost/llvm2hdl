@@ -164,10 +164,10 @@ class VhdlMemoryPort:
 
     def _get_signal_assignment(self, port: VhdlPort, signal_name: str, assignment_names: List[str]) -> str:
         self._msg.function_start(f"port={port}, signal_name={signal_name}, assignment_names={assignment_names}")
-        assignment_separator = ", " if port.is_master() else " & "
+        assignment_separator = " & " if port.is_master() else ", "
         assignment = assignment_separator.join([f"{i}_{port.name}" for i in assignment_names])
         port_name = f"{signal_name}_{port.name}"
-        result = f"({assignment}) <= {port_name}" if port.is_master() else f"{port_name} <= {assignment}"
+        result = f"{port_name} <= {assignment}" if port.is_master() else f"({assignment}) <= {port_name}"
         self._msg.function_end(result)
         return result
 
@@ -202,7 +202,8 @@ class VhdlPortGenerator:
             if port.is_input():
                 yield (port.get_name(), f": std_ulogic_vector(0 to {port.get_name()}" + "'length - 1);")
         for signal in signals:
-            yield signal.get_record_item()
+            if not signal.is_void():
+                yield signal.get_record_item()
 
     def get_tag_item_names(self, ports: List[Port], signals : List[VhdlSignal]) -> List[str]:
         self._msg.function_start(f"ports={ports}, signals={signals}")
@@ -230,7 +231,7 @@ class VhdlPortGenerator:
         return result
 
     def get_port_map(self, input_port: InstructionArgument, memory_interface_name: Optional[str] = None) -> List[str]:
-        self._msg.function_start(f"input_port={input_port}", True)
+        self._msg.function_start(f"input_port={input_port}")
         input_port_signal_name = self._get_input_port_signal_name(input_port)
         input_port_map = input_port_signal_name
         if input_port.port_name is not None:
@@ -238,16 +239,16 @@ class VhdlPortGenerator:
         result = [input_port_map]
         if input_port.is_pointer() and memory_interface_name is not None:
             result.extend(VhdlMemoryPort().get_port_map(name=memory_interface_name, master=True, unknown_port_name=True))
-        self._msg.function_end(result, True)
+        self._msg.function_end(result)
         return result
  
     def get_output_port_map(self, output_port: LlvmOutputPort) -> List[str]:
-        self._msg.function_start(f"output_port={output_port}", True)
+        self._msg.function_start(f"output_port={output_port}")
         port_map = "m_tdata_i"
         if output_port.port_name is not None:
             port_map = f"{output_port.get_name()} => {port_map}"
         result = [port_map]
-        self._msg.function_end(result, True)
+        self._msg.function_end(result)
         return result
 
     def get_port_signal(self, input_port: InstructionArgument) -> str:

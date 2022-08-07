@@ -31,6 +31,9 @@ class TypeDeclaration(ABC):
     def get_data_width(self) -> str:
         pass
 
+    def is_void(self) -> bool:
+        return self.data_type == "void"
+
 class LlvmDeclaration(TypeDeclaration):
     """
     data_type is one of void, i1, i32, i64, i32*, float, 3 x i32 
@@ -43,7 +46,7 @@ class LlvmDeclaration(TypeDeclaration):
 
     def _get_data_width(self, data_type: str) -> str:
         Messages().function_start(f"data_type={data_type}")
-        if data_type == "void":
+        if self.is_void():
             return "0"
         if "*" in data_type:
             return self._get_pointer_data_width()

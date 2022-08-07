@@ -30,6 +30,9 @@ class VhdlDeclarations:
     def get_initialization(self, values: List[str]) -> str:
         return "get(integer_array_t'(" + ", ".join(values) + "), " + self.get_data_width() + ")"
 
+    def is_void(self) -> bool:
+        return self.data_type.is_void()
+
 @dataclass
 class VhdlSignal:
     instance : str
@@ -41,3 +44,5 @@ class VhdlSignal:
         return self.instance, f": {self.type.get_type_declarations()};"
     def get_data_width(self) -> str:
         return self.type.get_data_width()
+    def is_void(self) -> bool:
+        return self.type.is_void()

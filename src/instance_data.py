@@ -31,7 +31,11 @@ class InstanceData:
     def get_memory_port_name(self, port: InstructionArgument) -> Optional[str]:
         memory_interface_name = self.instance_name if self.map_memory_interface() else None
         return f"{memory_interface_name}_{port.get_name()}" if memory_interface_name is not None else None
-        
+    def get_memory_instance_names(self) -> List[str]:
+        if self.memory_interface is not None and self.memory_interface.is_master():
+            return [self.instance_name]
+        result = [self.get_memory_port_name(port=i) for i in self.input_ports]
+        return [i for i in result if i is not None]
 
 
 @dataclass
@@ -39,4 +43,7 @@ class DeclarationData:
     instance_name: str
     entity_name: str
     type: VhdlDeclarations
+
+    def is_void(self) -> bool:
+        return self.type.is_void()
 

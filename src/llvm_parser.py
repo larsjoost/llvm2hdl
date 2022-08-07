@@ -61,6 +61,8 @@ class LlvmOutputPort:
         if isinstance(self.port_name, LlvmName):
             return self.port_name.get_name()
         return self.port_name
+    def is_void(self) -> bool:
+        return self.data_type.is_void()
 
 @dataclass
 class LlvmMemoryOutputPort(LlvmOutputPort):
@@ -340,14 +342,14 @@ class ReturnInstructionParser(InstructionParser):
 class AllocaInstructionParser(InstructionParser):
 
     def parse(self, instruction: str, destination: Optional[LlvmName]) -> Instruction:
-        self._msg.function_start(f"instruction={instruction}", True)
+        self._msg.function_start(f"instruction={instruction}")
         x = instruction.split(",")
         y = x[0].split(maxsplit=1)
         opcode = y[0]
         data_type_position = y[1].replace("[", "").replace("]", "")
         data_type = LlvmPointerDeclaration(data_type=data_type_position)
         result = AllocaInstruction(opcode=opcode, data_type=data_type, output_port_name=destination)
-        self._msg.function_end(result, True)
+        self._msg.function_end(result)
         return result
 
 class CallInstructionParser(InstructionParser):

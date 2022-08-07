@@ -50,7 +50,6 @@ class FileWriter:
     def _print_tag_record(self, file_handle):
         print("type tag_t is record", file=file_handle)
         tag_elements = VhdlPortGenerator().get_tag_elements(ports=self._ports, signals=self._signals)
-
         for name, declaration in tag_elements:
             print(f"{name} {declaration}", file=file_handle)
         print("end record;", file=file_handle)
@@ -153,20 +152,23 @@ class FileWriter:
             self._write_body(")")
 
     def _get_component_instantiation_memory_port_map(self, instance: InstanceData) -> List[str]:
-        self._msg.function_start(f"instance={str(instance)}", True)
+        self._msg.function_start(f"instance={instance}")
         vhdl_memory_port = VhdlMemoryPort()
         memory_port_map = []
         if instance.memory_interface is not None:
             master = instance.memory_interface.is_master()
             memory_port_map = vhdl_memory_port.get_port_map(name=instance.instance_name, master=master)
             self._instance_signals.extend(vhdl_memory_port.get_port_signals(name=instance.instance_name))
-        self._msg.function_end(memory_port_map, True)
+        self._msg.function_end(memory_port_map)
         return memory_port_map
  
     def _get_input_port_map(self, input_port: InstructionArgument, instance: InstanceData) -> List[str]:
         vhdl_port = VhdlPortGenerator()
-        name = instance.get_memory_port_name(port=input_port)
-        return vhdl_port.get_port_map(input_port=input_port, memory_interface_name=name)
+        memory_interface_name = instance.get_memory_port_name(port=input_port)
+        if memory_interface_name is not None:
+            vhdl_memory_port = VhdlMemoryPort()
+            self._instance_signals.extend(vhdl_memory_port.get_port_signals(name=memory_interface_name))
+        return vhdl_port.get_port_map(input_port=input_port, memory_interface_name=memory_interface_name)
 
     def _get_input_port_maps(self, instance: InstanceData) -> List[str]:
         self._msg.function_start(f"instance={instance}")
@@ -197,11 +199,14 @@ class FileWriter:
         self._msg.function_end(None)
 
     def _write_component_output_signal_assignment(self, instance: InstanceData) -> None:
+        self._msg.function_start(f"instance={instance}", True)
         self._write_body("process (all)")
         self._write_body("begin")
         self._write_body(f"{instance.tag_name} <= conv_tag({self._local_tag_out});")
-        self._write_body(f"{instance.tag_name}.{instance.instance_name} <= m_tdata_i;")
+        if not instance.output_port.is_void():
+            self._write_body(f"{instance.tag_name}.{instance.instance_name} <= m_tdata_i;")
         self._write_body("end process;")
+        self._msg.function_end(None, True)
         
     def _write_instance_signals(self, instance: InstanceData) -> None:
         vhdl_port = VhdlPortGenerator()
@@ -222,7 +227,7 @@ class FileWriter:
             self._write_body(i)
     
     def _write_instance(self, instance: InstanceData) -> None:
-        self._msg.function_start(f"instance={str(instance)}", True)
+        self._msg.function_start(f"instance={instance}")
         if instance.library != "work":
             self._instances.append(instance.entity_name)
         vhdl_port = VhdlPortGenerator()
@@ -262,14 +267,14 @@ class FileWriter:
         self._write_body(f"m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);")
         self._write_body("m_tag <= tag_out_i.tag;")
 
-    def _write_memory_interface_port_map(self, instances: InstanceContainerData, memory_master_name: str, memory_slave_name: str) -> None:
+    def _write_memory_arbiter_port_map(self, instances: InstanceContainerData, memory_master_name: str, memory_slave_name: str) -> None:
         vhdl_memory_port = VhdlMemoryPort()
         slave_memory_port_map = vhdl_memory_port.get_port_map(name=memory_slave_name, master=False)
         master_memory_port_map = vhdl_memory_port.get_port_map(name=memory_master_name, master=True)
         memory_port_map = slave_memory_port_map + master_memory_port_map
         self._write_body(", ".join(memory_port_map))
 
-    def _write_memory_interface(self, instances: InstanceContainerData) -> None:
+    def _write_memory_arbiter(self, instances: InstanceContainerData) -> None:
         for memory_name in instances.get_memory_names():
             vhdl_memory_port = VhdlMemoryPort()
             block_name = f"arbiter_{memory_name}_b"
@@ -283,10 +288,10 @@ class FileWriter:
             self._write_body("begin")
             signal_assigments = "\n".join([f"{i};" for i in vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)])
             self._write_body(signal_assigments)
-            memory_interface_name = f"memory_interface_{memory_name}"
+            memory_interface_name = f"memory_arbiter_{memory_name}"
             self._write_body(f"{memory_interface_name}: entity memory.arbiter(rtl)")
             self._write_body("port map(clk => clk, sreset => sreset,")
-            self._write_memory_interface_port_map(instances=instances, memory_master_name=memory_name, memory_slave_name=memory_signal_name)
+            self._write_memory_arbiter_port_map(instances=instances, memory_master_name=memory_name, memory_slave_name=memory_signal_name)
             self._write_body(");")
             self._write_body(f"end block {block_name};")
 
@@ -316,7 +321,7 @@ class FileWriter:
         self._write_header(f"architecture rtl of {function.entity_name} is")
         self._write_declarations(declarations=function.declarations)
         self._write_instances(instances=function.instances, ports=function.ports)
-        self._write_memory_interface(instances=function.instances)
+        self._write_memory_arbiter(instances=function.instances)
         self._write_trailer("end architecture rtl;")
 
     def write_function(self, function: FunctionDefinition) -> None:
