@@ -13,3 +13,5 @@ class FunctionDefinition:
     instances: InstanceContainerData
     declarations: List[DeclarationData]
     ports: List[Port]
+    def get_memory_port_names(self) -> List[str]:
+        return [i.get_name() for i in self.ports if i.is_pointer()]

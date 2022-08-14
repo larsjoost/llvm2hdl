@@ -18,3 +18,4 @@ class InstanceContainerData:
 
     def get_memory_names(self) -> List[str]:
         return [instance.instance_name for instance in self.instances if instance.is_memory()]
+        

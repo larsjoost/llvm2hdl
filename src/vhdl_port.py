@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from signal import signal
 from typing import Generator, List, Optional, Tuple, Union
-from unittest import result
 
-from ports import OutputPort, Port
+from ports import Port
 from instance_data import InstanceData
 from vhdl_declarations import VhdlSignal
 from llvm_parser import InstructionArgument, LlvmOutputPort

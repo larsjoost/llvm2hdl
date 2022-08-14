@@ -278,26 +278,33 @@ class FileWriter:
         memory_port_map = slave_memory_port_map + master_memory_port_map
         self._write_body(", ".join(memory_port_map))
 
-    def _write_memory_arbiter(self, instances: InstanceContainerData) -> None:
-        for memory_name in instances.get_memory_names():
-            vhdl_memory_port = VhdlMemoryPort()
-            block_name = f"arbiter_{memory_name}_b"
-            self._write_body(f"{block_name}: block")
-            memory_instance_names = instances.get_memory_instance_names()
-            number_of_memory_instances = len(memory_instance_names)
-            self._write_body(f"constant c_size : positive := {number_of_memory_instances};")
-            memory_signal_name = "s"
-            signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
-            self._write_body(signals)
-            self._write_body("begin")
-            signal_assigments = "\n".join([f"{i};" for i in vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)])
-            self._write_body(signal_assigments)
-            memory_interface_name = f"memory_arbiter_{memory_name}"
-            self._write_body(f"{memory_interface_name}: entity memory.arbiter(rtl)")
-            self._write_body("port map(clk => clk, sreset => sreset,")
-            self._write_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
-            self._write_body(");")
-            self._write_body(f"end block {block_name};")
+    def _write_memory_arbiter(self, instances: InstanceContainerData, memory_name: str) -> None:
+        self._msg.function_start(f"instances={instances}, memory_name={memory_name}")
+        vhdl_memory_port = VhdlMemoryPort()
+        block_name = f"arbiter_{memory_name}_b"
+        self._write_body(f"{block_name}: block")
+        memory_instance_names = instances.get_memory_instance_names()
+        number_of_memory_instances = len(memory_instance_names)
+        self._write_body(f"constant c_size : positive := {number_of_memory_instances};")
+        memory_signal_name = "s"
+        signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
+        self._write_body(signals)
+        self._write_body("begin")
+        signal_assigments = "\n".join([f"{i};" for i in vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)])
+        self._write_body(signal_assigments)
+        memory_interface_name = f"memory_arbiter_{memory_name}"
+        self._write_body(f"{memory_interface_name}: entity memory.arbiter(rtl)")
+        self._write_body("port map(clk => clk, sreset => sreset,")
+        self._write_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
+        self._write_body(");")
+        self._write_body(f"end block {block_name};")
+        self._msg.function_end(None)
+
+    def _write_all_memory_arbiters(self, instances: InstanceContainerData, memory_port_names: List[str]) -> None:
+        self._msg.function_start(f"instances={instances}, memory_port_names={memory_port_names}")
+        for memory_name in instances.get_memory_names() + memory_port_names:
+            self._write_memory_arbiter(instances=instances, memory_name=memory_name)
+        self._msg.function_end(None)
 
     def _write_declarations(self, declarations: List[DeclarationData]):
         for i in declarations:
@@ -325,7 +332,7 @@ class FileWriter:
         self._write_header(f"architecture rtl of {function.entity_name} is")
         self._write_declarations(declarations=function.declarations)
         self._write_instances(instances=function.instances, ports=function.ports)
-        self._write_memory_arbiter(instances=function.instances)
+        self._write_all_memory_arbiters(instances=function.instances, memory_port_names=function.get_memory_port_names())
         self._write_trailer("end architecture rtl;")
 
     def write_function(self, function: FunctionDefinition) -> None:

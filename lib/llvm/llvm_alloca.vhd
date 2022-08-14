@@ -85,5 +85,11 @@ begin
     end if;
   end process;
 
+  s_tready <= m_tready;
+
+  m_tvalid <= s_tvalid;
+
+  m_tag <= s_tag;
+
 end architecture rtl;
 
