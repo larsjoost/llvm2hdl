@@ -33,7 +33,13 @@ package llvm_pkg is
     constant data_width : positive)
     return std_ulogic_vector;
 
-end package llvm_pkg;
+  function to_std_ulogic_vector(arg : std_ulogic)
+    return std_ulogic_vector;
+
+  function to_std_ulogic_vector(arg : std_ulogic_vector)
+    return std_ulogic_vector;
+
+  end package llvm_pkg;
 
 package body llvm_pkg is
   
@@ -93,4 +99,18 @@ package body llvm_pkg is
     return result_v;
   end function conv_std_ulogic_vector;
 
+  function to_std_ulogic_vector(arg : std_ulogic)
+    return std_ulogic_vector is
+  variable x : std_ulogic_vector(0 to 0);
+    begin
+      x(0) := arg;
+      return x;
+    end function to_std_ulogic_vector;
+
+  function to_std_ulogic_vector(arg : std_ulogic_vector)
+    return std_ulogic_vector is
+    begin
+      return arg;
+    end function to_std_ulogic_vector;
+    
 end package body llvm_pkg;

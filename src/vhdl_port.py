@@ -126,7 +126,7 @@ class VhdlMemoryPort:
     VhdlOutputPort(name="awvalid", role=VhdlMasterPort()),
     VhdlInputPort(name="awready", role=VhdlSlavePort()),
     VhdlOutputPort(name="wdata", role=VhdlMasterPort(), data_width=VhdlMemoryDataWidth()),
-    VhdlInputPort(name="wid", role=VhdlMasterPort(), data_width=VhdlMemoryIdWidth()),
+    VhdlOutputPort(name="wid", role=VhdlMasterPort(), data_width=VhdlMemoryIdWidth()),
     VhdlOutputPort(name="wvalid", role=VhdlMasterPort()),
     VhdlInputPort(name="wready", role=VhdlSlavePort()),
     VhdlOutputPort(name="bready", role=VhdlMasterPort()),
@@ -164,8 +164,9 @@ class VhdlMemoryPort:
         self._msg.function_start(f"port={port}, signal_name={signal_name}, assignment_names={assignment_names}")
         assignment_separator = " & " if port.is_master() else ", "
         assignment = assignment_separator.join([f"{i}_{port.name}" for i in assignment_names])
+        destination_assignment = f"({assignment})" if len(assignment_names) > 1 else assignment
         port_name = f"{signal_name}_{port.name}"
-        result = f"{port_name} <= {assignment}" if port.is_master() else f"({assignment}) <= {port_name}"
+        result = f"{port_name} <= {assignment}" if port.is_master() else f"{destination_assignment} <= {port_name}"
         self._msg.function_end(result)
         return result
 

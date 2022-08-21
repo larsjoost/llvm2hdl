@@ -278,26 +278,39 @@ class FileWriter:
         memory_port_map = slave_memory_port_map + master_memory_port_map
         self._write_body(", ".join(memory_port_map))
 
+    def _write_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str) -> None:
+        self._msg.function_start(f"memory_master_name={memory_master_name}, memory_slave_name={memory_slave_name}")
+        vhdl_memory_port = VhdlMemoryPort()
+        assignment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_master_name, assignment_names=[memory_slave_name])
+        assignments = "\n".join([f"{i};" for i in assignment_list])
+        self._write_body(assignments)
+        self._msg.function_end(None)
+
     def _write_memory_arbiter(self, instances: InstanceContainerData, memory_name: str) -> None:
         self._msg.function_start(f"instances={instances}, memory_name={memory_name}")
-        vhdl_memory_port = VhdlMemoryPort()
-        block_name = f"arbiter_{memory_name}_b"
-        self._write_body(f"{block_name}: block")
         memory_instance_names = instances.get_memory_instance_names()
         number_of_memory_instances = len(memory_instance_names)
-        self._write_body(f"constant c_size : positive := {number_of_memory_instances};")
-        memory_signal_name = "s"
-        signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
-        self._write_body(signals)
-        self._write_body("begin")
-        signal_assigments = "\n".join([f"{i};" for i in vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)])
-        self._write_body(signal_assigments)
-        memory_interface_name = f"memory_arbiter_{memory_name}"
-        self._write_body(f"{memory_interface_name}: entity memory.arbiter(rtl)")
-        self._write_body("port map(clk => clk, sreset => sreset,")
-        self._write_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
-        self._write_body(");")
-        self._write_body(f"end block {block_name};")
+        if number_of_memory_instances > 1:
+            memory_signal_name = "s"
+            vhdl_memory_port = VhdlMemoryPort()
+            block_name = f"arbiter_{memory_name}_b"
+            self._write_body(f"{block_name}: block")
+            self._write_body(f"constant c_size : positive := {number_of_memory_instances};")
+            signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
+            self._write_body(signals)
+            self._write_body("begin")
+            signal_assigment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)
+            signal_assigments = "\n".join([f"{i};" for i in signal_assigment_list])
+            self._write_body(signal_assigments)
+            memory_interface_name = f"memory_arbiter_{memory_name}"
+            self._write_body(f"{memory_interface_name}: entity memory.arbiter(rtl)")
+            self._write_body("port map(clk => clk, sreset => sreset,")
+            self._write_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
+            self._write_body(");")
+            self._write_body(f"end block {block_name};")
+        else:
+            memory_signal_name = memory_instance_names[0]
+            self._write_memory_interface_signal_assignment(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
         self._msg.function_end(None)
 
     def _write_all_memory_arbiters(self, instances: InstanceContainerData, memory_port_names: List[str]) -> None:
@@ -320,6 +333,7 @@ class FileWriter:
         self._write_header("use llvm.llvm_pkg.conv_std_ulogic_vector;")
         self._write_header("use llvm.llvm_pkg.get;")
         self._write_header("use llvm.llvm_pkg.integer_array_t;")
+        self._write_header("use llvm.llvm_pkg.to_std_ulogic_vector;")
         self._write_header("library memory;")
         self._write_header("library work;")
         

@@ -81,10 +81,11 @@ begin
       else
         if m_tready = '1' then
           m_tvalid <= '0';
-        end if;
-        if m_tready = '1' or m_tvalid = '0' then
-          m_tag    <= tag_storage_i(to_integer(unsigned(m_rid)));
-          m_tvalid <= '1';
+          if m_rvalid = '1' then
+            m_tag    <= tag_storage_i(to_integer(unsigned(m_rid)));
+            m_tvalid <= '1';
+            m_tdata  <= m_rdata;
+          end if;
         end if;
       end if;
     end if;

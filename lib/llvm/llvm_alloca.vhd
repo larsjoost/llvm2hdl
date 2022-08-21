@@ -91,5 +91,7 @@ begin
 
   m_tag <= s_tag;
 
+  a <= std_ulogic_vector(to_unsigned(0, a'length));
+
 end architecture rtl;
 
