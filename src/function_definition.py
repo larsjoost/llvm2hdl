@@ -4,7 +4,7 @@ from typing import List
 
 from instance_container_data import InstanceContainerData
 from instance_data import DeclarationData
-from ports import Port
+from ports import Port, PortContainer
 
 
 @dataclass
@@ -12,6 +12,6 @@ class FunctionDefinition:
     entity_name: str
     instances: InstanceContainerData
     declarations: List[DeclarationData]
-    ports: List[Port]
+    ports: PortContainer
     def get_memory_port_names(self) -> List[str]:
-        return [i.get_name() for i in self.ports if i.is_pointer()]
+        return self.ports.get_memory_port_names()

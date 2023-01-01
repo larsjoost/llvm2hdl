@@ -1,14 +1,17 @@
 from dataclasses import dataclass
+import inspect
 import io
 import os
-from typing import List, Optional, Tuple
+from types import FrameType
+from typing import IO, List, Optional, Tuple
+from frame_info import FrameInfoFactory
 from function_definition import FunctionDefinition
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from llvm_parser import ConstantDeclaration, InstructionArgument
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
-from ports import Port
+from ports import Port, PortContainer
 from messages import Messages
 
 @dataclass
@@ -31,7 +34,7 @@ class FileWriter:
     _body : List[str] = []
     _trailer : List[str] = []
     _instances : List[str] = []
-    _ports: List[Port]
+    _ports: PortContainer
 
     _local_tag_in = "local_tag_in_i"
     _local_tag_out = "local_tag_out_i"
@@ -40,25 +43,33 @@ class FileWriter:
         self._msg = Messages()
         self._file_name = file_name
 
-    def _print_total_data_width(self, file_handle) -> None:
-        total_data_width = [i.get_data_width() for i in self._signals]
-        total_data_width.append("s_tag'length")
-        total_data_width.extend([f"{i.get_name()}'length" for i in self._ports if i.is_input()])
-        tag_width = " + ".join(total_data_width)
-        print(f"constant c_tag_width : positive := {tag_width};", file=file_handle)
+    def _print_location(self, file: IO, current_frame: Optional[FrameType]) -> None:
+        frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
+        print(f"-- {frame_info.file_name}: {frame_info.function_name}({frame_info.line_number})", file=file)
 
-    def _print_tag_record(self, file_handle):
+    def _print_total_data_width(self, signals: List[VhdlSignal], ports: PortContainer, file_handle: IO) -> None:
+        self._msg.function_start(f"signals={signals}, ports={ports}", True)
+        total_data_width = [i.get_data_width() for i in signals]
+        total_data_width.append("s_tag'length")
+        total_data_width.extend(ports.get_total_input_data_width(generator=VhdlPortGenerator()))
+        tag_width = " + ".join(total_data_width)
+        self._print_location(file=file_handle, current_frame=inspect.currentframe())
+        print(f"constant c_tag_width : positive := {tag_width};", file=file_handle)
+        self._msg.function_end(None)
+
+    def _print_tag_record(self, file_handle: IO) -> None:
+        self._print_location(file=file_handle, current_frame=inspect.currentframe())
         print("type tag_t is record", file=file_handle)
         tag_elements = VhdlPortGenerator().get_tag_elements(ports=self._ports, signals=self._signals)
         for name, declaration in tag_elements:
             print(f"{name} {declaration}", file=file_handle)
         print("end record;", file=file_handle)
         
-    def _print_function_conv_tag(self, file_handle, record_items: List[str]) -> None:
+    def _print_function_conv_tag(self, file_handle: IO, record_items: List[str]) -> None:
         assign_items = [f"result_v.{i}" for i in record_items]
+        self._print_location(file=file_handle, current_frame=inspect.currentframe())
         print("function conv_tag (", file=file_handle)
         print("arg : std_ulogic_vector(0 to c_tag_width - 1)) return tag_t is", file=file_handle)
-
         print("variable result_v : tag_t;", file=file_handle)
         print("begin", file=file_handle)
         print("(" + ", ".join(assign_items) + ") := arg;", file=file_handle)
@@ -66,6 +77,7 @@ class FileWriter:
         print("end function conv_tag;", file=file_handle)
         
     def _print_function_tag_to_std_ulogic_vector(self, record_items: List[str], file_handle) -> None:
+        self._print_location(file=file_handle, current_frame=inspect.currentframe())
         print("function tag_to_std_ulogic_vector (", file=file_handle)
         print("arg : tag_t) return std_ulogic_vector is", file=file_handle)
         print("begin", file=file_handle)
@@ -73,22 +85,24 @@ class FileWriter:
         print("return " + " & ".join(assign_arg) + ";", file=file_handle)
         print("end function tag_to_std_ulogic_vector;", file=file_handle)
         
-    def _print_constants(self, file_handle):
+    def _print_constants(self, file_handle: IO) -> None:
+        self._print_location(file=file_handle, current_frame=inspect.currentframe())
         print("constant c_mem_addr_width : positive := 32;", file=file_handle)
         print("constant c_mem_data_width : positive := 32;", file=file_handle)
         print("constant c_mem_id_width : positive := 8;", file=file_handle)
         for i in self._constants:
             i.write_constant(file_handle=file_handle)
         
-    def _print_signals(self, file_handle) -> None:
+    def _print_signals(self, file_handle: IO) -> None:
+        self._print_location(file=file_handle, current_frame=inspect.currentframe())
         print("signal tag_in_i, tag_out_i : tag_t;", file=file_handle)
         for signal in self._signals:
             signal.write_signal(file_handle=file_handle)
         for instance_signal in self._instance_signals:
             print(f"signal {instance_signal};", file=file_handle)
 
-    def _print_declarations(self, file_handle):
-        self._print_total_data_width(file_handle=file_handle)
+    def _print_declarations(self, file_handle: IO) -> None:
+        self._print_total_data_width(signals=self._signals, ports=self._ports, file_handle=file_handle)
         self._print_constants(file_handle=file_handle)
         self._print_tag_record(file_handle=file_handle)
         record_items = VhdlPortGenerator().get_tag_item_names(ports=self._ports, signals=self._signals)
@@ -96,20 +110,20 @@ class FileWriter:
         self._print_function_tag_to_std_ulogic_vector(record_items=record_items, file_handle=file_handle)
         self._print_signals(file_handle=file_handle)
 
-    def _print_list(self, file_handle, data: List[str]):
+    def _print_list(self, file_handle: IO, data: List[str]) -> None:
         for i in data:
             print(i, file=file_handle, end="")
 
-    def _print_header(self, file_handle):
+    def _print_header(self, file_handle: IO) -> None:
         self._print_list(file_handle, self._header)
 
-    def _print_body(self, file_handle):
+    def _print_body(self, file_handle: IO) -> None:
         self._print_list(file_handle, self._body)
 
-    def _print_trailer(self, file_handle):
+    def _print_trailer(self, file_handle: IO) -> None:
         self._print_list(file_handle, self._trailer)
 
-    def close(self):
+    def close(self) -> None:
         with open(self._file_name, 'w', encoding="utf-8") as file_handle:
             self._print_header(file_handle=file_handle)
             self._print_declarations(file_handle=file_handle)
@@ -138,7 +152,7 @@ class FileWriter:
     def _write_trailer(self, *args, **kwargs):
         self._trailer.append(self._print_to_string(*args, **kwargs))
 
-    def _write_signal(self, declaration: DeclarationData):
+    def _write_signal(self, declaration: DeclarationData) -> None:
         self._signals.append(VhdlSignal(instance=declaration.instance_name, 
         name=declaration.entity_name, type=declaration.type))
 
@@ -163,12 +177,15 @@ class FileWriter:
         return memory_port_map
  
     def _get_input_port_map(self, input_port: InstructionArgument, instance: InstanceData) -> List[str]:
+        self._msg.function_start(f"input_port={input_port}, instance={instance}")
         vhdl_port = VhdlPortGenerator()
         memory_interface_name = instance.get_memory_port_name(port=input_port)
         if memory_interface_name is not None:
             vhdl_memory_port = VhdlMemoryPort()
             self._instance_signals.extend(vhdl_memory_port.get_port_signals(name=memory_interface_name))
-        return vhdl_port.get_port_map(input_port=input_port, memory_interface_name=memory_interface_name)
+        result = vhdl_port.get_port_map(input_port=input_port, memory_interface_name=memory_interface_name)
+        self._msg.function_end(result)
+        return result
 
     def _get_input_port_maps(self, instance: InstanceData) -> List[str]:
         self._msg.function_start(f"instance={instance}")
@@ -242,22 +259,18 @@ class FileWriter:
         self._write_body(f"end block {block_name};")
         self._msg.function_end(None)
 
-    def _get_ports(self, port: Port) -> List[str]:
-        return VhdlPortGenerator().get_ports(port)
-
-    def _write_ports(self, ports: List[Port]) -> None:
+    def _write_ports(self, ports: PortContainer) -> None:
         self._write_header("port (")
-        xss = [self._get_ports(i) for i in ports if not i.is_void()]
-        x = self._flatten(xss) 
+        x = ports.get_ports(generator=VhdlPortGenerator())
         standard_ports = VhdlPortGenerator().get_standard_ports_definition()
         tag_ports = ["s_tag : IN std_ulogic_vector", "m_tag : out std_ulogic_vector"] 
         self._write_header(";\n".join(x + standard_ports + tag_ports))
         self._write_header(");")
 
-    def _write_instances(self, instances: InstanceContainerData, ports: List[Port]) -> None:
+    def _write_instances(self, instances: InstanceContainerData, ports: PortContainer) -> None:
         self._msg.function_start(f"instances={instances}, ports={ports}")
         self._write_body("tag_in_i.tag <= s_tag;")
-        for i in ports:
+        for i in ports.ports:
             if i.is_input():
                 self._write_body(f"tag_in_i.{i.get_name()} <= {i.get_name()};")
         for j in instances.instances:
@@ -265,7 +278,7 @@ class FileWriter:
         return_driver = instances.get_return_instruction_driver()
         self._write_body(f"m_tvalid <= {return_driver}_m_tvalid_i;")
         self._write_body(f"{return_driver}_m_tready_i <= m_tready;")
-        output_port_is_void = any((not i.is_input()) and i.is_void() for i in ports)
+        output_port_is_void = any((not i.is_input()) and i.is_void() for i in ports.ports)
         if not output_port_is_void:
             self._write_body(f"m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);")
         self._write_body("m_tag <= tag_out_i.tag;")
@@ -337,7 +350,7 @@ class FileWriter:
         self._write_header("library memory;")
         self._write_header("library work;")
         
-    def _write_entity(self, entity_name: str, ports: List[Port]) -> None:
+    def _write_entity(self, entity_name: str, ports: PortContainer) -> None:
         self._write_header(f"entity {entity_name} is")
         self._write_ports(ports=ports)
         self._write_header(f"end entity {entity_name};")

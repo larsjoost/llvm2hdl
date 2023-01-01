@@ -1,5 +1,6 @@
 import contextlib
 from abc import ABC, abstractmethod
+import re
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
@@ -7,10 +8,12 @@ from messages import Messages
 
 class TypeDeclaration(ABC):
     
-    data_type: str
-
     @abstractmethod
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
+        pass
+
+    @abstractmethod
+    def get_data_width(self) -> str:
         pass
 
     def single_dimension(self) -> bool:
@@ -25,121 +28,131 @@ class TypeDeclaration(ABC):
     def is_boolean(self) -> bool:
         return False
 
+    def is_void(self) -> bool:
+        return False
+
     def get_array_index(self) -> Optional[str]:
         return None
 
-    def get_data_width(self) -> str:
+class TypeDeclarationFactory(ABC):
+
+    @abstractmethod
+    def match(self) -> bool:
         pass
 
-    def is_void(self) -> bool:
-        return self.data_type == "void"
+    @abstractmethod
+    def get(self) -> TypeDeclaration:
+        pass
 
-class LlvmDeclaration(TypeDeclaration):
-    """
-    data_type is one of void, i1, i32, i64, i32*, float, 3 x i32 
-    """
-    def __init__(self, data_type: str) -> None:
-        self.data_type = data_type
     
-    def _get_pointer_data_width(self) -> str:
-        return "32"
-
-    def _get_data_width(self, data_type: str) -> str:
-        Messages().function_start(f"data_type={data_type}")
-        if self.is_void():
-            return "0"
-        if "*" in data_type:
-            return self._get_pointer_data_width()
-        x = data_type.strip()
-        x = x.replace("*", "")
-        if x[0] == "i":
-            return x[1:]
-        data_types = {'float': "32"}
-        if x in data_types:
-            return data_types[x]
-        Messages().function_end(x)
-        return x
-
-    def is_pointer(self) -> bool:
-        return "*" in self.data_type
-    
-    def is_array(self) -> bool:
-        return " x " in self.data_type
-
-    def single_dimension(self) -> bool:
-        return not (self.is_pointer() or self.is_array())
+class LlvmVoidDeclaration(TypeDeclaration):
 
     def get_dimensions(self) -> Tuple[int, str]:
-        if not self.is_array():
-            return (1, self._get_data_width(data_type=self.data_type))
-        # self.data_type = "[3 x i32]*"
-        x = self.data_type.replace("[", "").replace("]", "").replace("*", "").split("x")
-        return (int(x[0]), self._get_data_width(data_type=x[1]))
+        return 1, self.get_data_width()
+
+    def is_void(self) -> bool:
+        return True
 
     def get_data_width(self) -> str:
-        x, data_width = self.get_dimensions()
-        if x > 1:
-            data_width = f"{str(x)}*{data_width}"
-        return data_width
+        return "0"
 
-    def __str__(self) -> str:
-        return str(vars(self))
-
-    def __repr__(self) -> str:
-        return str(vars(self))
-
-class LlvmPointerDeclaration(TypeDeclaration):
-    """
-    data_type is one of void, i1, i32, i64, i32*, float, 3 x i32 
-    """
-    def __init__(self, data_type: str) -> None:
-        self.data_type = data_type
+@dataclass
+class LlvmVoidDeclarationFactory(TypeDeclarationFactory):
     
-    def _get_pointer_data_width(self) -> str:
+    data_type: str
+
+    def match(self):
+        return self.data_type == "void"
+
+    def get(self) -> TypeDeclaration:
+        return LlvmVoidDeclaration()
+
+class LlvmFloatDeclaration(TypeDeclaration):
+    """
+    data_type is one of float 
+    """
+
+    def get_dimensions(self) -> Tuple[int, str]:
+        return 1, self.get_data_width()
+
+    def get_data_width(self) -> str:
         return "32"
 
-    def _get_data_width(self, data_type: str) -> str:
-        return self._get_pointer_data_width()
+@dataclass
+class LlvmFloatDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
 
+    def match(self):
+        return self.data_type == "float"
+
+    def get(self) -> TypeDeclaration:
+        return LlvmFloatDeclaration()
+
+@dataclass
+class LlvmIntegerDeclaration(TypeDeclaration):
+
+    data_width: str
+    
+    def get_data_width(self) -> str:
+        return self.data_width
+
+    def get_dimensions(self) -> Tuple[int, str]:
+        return 1, self.get_data_width()        
+
+@dataclass
+class LlvmIntegerDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
+
+    def match(self) -> bool:
+        return bool(re.match("^i\d+", self.data_type))
+
+    def get(self) -> TypeDeclaration:
+        return LlvmIntegerDeclaration(data_width=self.data_type[1:])
+
+@dataclass
+class LlvmPointerDeclaration(TypeDeclaration):
+    
     def is_pointer(self) -> bool:
         return True
     
-    def is_array(self) -> bool:
-        return " x " in self.data_type
-
     def single_dimension(self) -> bool:
-        return not (self.is_pointer() or self.is_array())
+        return False
 
     def get_dimensions(self) -> Tuple[int, str]:
-        if not self.is_array():
-            return (1, self._get_data_width(data_type=self.data_type))
-        # self.data_type = "[3 x i32]*"
-        x = self.data_type.replace("[", "").replace("]", "").replace("*", "").split("x")
-        return (int(x[0]), self._get_data_width(data_type=x[1]))
-
+        return 1, self.get_data_width()
+        
     def get_data_width(self) -> str:
-        x, data_width = self.get_dimensions()
-        if x > 1:
-            data_width = f"{str(x)}*{data_width}"
-        return data_width
+        return "32"
 
-    def __str__(self) -> str:
-        return str(vars(self))
-
-    def __repr__(self) -> str:
-        return str(vars(self))
-
-
-class LlvmArrayDeclaration(TypeDeclaration):
+@dataclass
+class LlvmPointerDeclarationFactory(TypeDeclarationFactory):
     
-    index : str
+    data_type: str
+    
+    def match(self) -> bool:
+        return self.data_type == "ptr" or self.data_type.endswith("*")
 
-    def __init__(self, data_type: str, index: str):
-        self.data_type = data_type
-        self.index = index
+    def get(self) -> TypeDeclaration:
+        return LlvmPointerDeclaration()
+
+@dataclass
+class LlvmArrayDeclaration(TypeDeclaration):
+    """
+    Declaration: <index> x <data_type>
+    Example:
+    3 x i32 
+    """
+    x: str
+    y: str
+
+    def _get_dimensions(self) -> Tuple[str, str]:
+        return self.x, self.y
 
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
-        return LlvmDeclaration(self.data_type).get_dimensions()
+        index, data_type = self._get_dimensions()
+        return int(index), LlvmIntegerDeclaration(data_type).get_data_width()
 
     def single_dimension(self) -> bool:
         return False
@@ -147,17 +160,40 @@ class LlvmArrayDeclaration(TypeDeclaration):
     def is_array(self) -> bool:
         return True
 
-    def __str__(self) -> str:
-        return str(vars(self))
-
-    def __repr__(self) -> str:
-        return str(vars(self))
-
     def get_array_index(self) -> str:
-        return self.index
+        index, data_type = self._get_dimensions()
+        return index
 
     def get_data_width(self) -> str:
-        return LlvmDeclaration(self.data_type).get_data_width()
+        index, data_type = self._get_dimensions()
+        return f"{index}*{LlvmIntegerDeclaration(data_type).get_data_width()}"
+
+@dataclass
+class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
+    
+    def match(self) -> bool:
+        return " x " in self.data_type
+
+    def get(self) -> TypeDeclaration:
+        x = self.data_type.split(" x ")
+        return LlvmArrayDeclaration(x=x[0], y=x[1])
+
+class LlvmDeclarationFactory:
+
+    def get(self, data_type: str) -> TypeDeclaration:
+        declaration_types = [
+            LlvmVoidDeclarationFactory(data_type=data_type),
+            LlvmFloatDeclarationFactory(data_type=data_type),
+            LlvmPointerDeclarationFactory(data_type=data_type),
+            LlvmIntegerDeclarationFactory(data_type=data_type),
+            LlvmArrayDeclarationFactory(data_type=data_type)
+        ]    
+        for i in declaration_types:
+            if i.match():
+                return i.get()
+        assert False, f"Could not resolve data type: {data_type}"
 
 class LlvmType(ABC):
     @abstractmethod

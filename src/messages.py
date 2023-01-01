@@ -6,12 +6,8 @@ from types import FrameType
 from typing import Optional, Union
 
 from color_text import ColorText
+from frame_info import FrameInfoFactory
 
-@dataclass
-class FrameInfo:
-    file_name: Optional[str] = None
-    function_name: Optional[str] = None
-    line_number: Optional[int] = None
 
 class Messages:
 
@@ -27,19 +23,8 @@ class Messages:
     def set_verbose(self, verbose):
         self._verbose = verbose
 
-    def get_frame_info(self, current_frame: Optional[FrameType]) -> FrameInfo:
-        result = FrameInfo()
-        if current_frame is not None:
-            previous_frame = current_frame.f_back
-            if previous_frame is not None:
-                line_number = previous_frame.f_lineno
-                file_name = previous_frame.f_code.co_filename
-                function_name = os.path.basename(previous_frame.f_code.co_name)
-                result = FrameInfo(file_name=file_name, function_name=function_name, line_number=line_number)
-        return result
-
     def _print_formatted(self, color_text: Union[ColorText, str], text: str, current_frame: Optional[FrameType]):
-        frame_info = self.get_frame_info(current_frame)
+        frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
         base_name = None if frame_info.file_name is None else os.path.basename(frame_info.file_name)
         indent = " " * self._indent
         print(f"{indent}[{str(color_text)}, {str(base_name)}({str(frame_info.line_number)})] {text}")
@@ -72,7 +57,7 @@ class Messages:
     def function_start(self, text: str = "", verbose=False):
         if self._verbose or verbose:
             current_frame = inspect.currentframe()
-            frame_info = self.get_frame_info(current_frame)
+            frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
             function_name = str(frame_info.function_name)
             text = f"{function_name}({text})"
             self._print_formatted(color_text=ColorText("FUNCTION START", "magenta"),
