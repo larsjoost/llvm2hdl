@@ -38,7 +38,11 @@ class InstanceData:
         return [i for i in result if i is not None]
     def has_output_port(self) -> bool:
         return False if self.output_port is None else not self.output_port.is_void()
-
+    def is_work_library(self) -> bool:
+        return self.library == "work"
+    def get_output_port_type(self) -> str:
+        assert self.output_port is not None
+        return self.output_port.get_type_declarations()
 
 @dataclass
 class DeclarationData:

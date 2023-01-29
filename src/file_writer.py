@@ -28,28 +28,26 @@ class Constant:
 
 
 @dataclass
-class FileContents:
-    file_name : str
+class FunctionContents:
     header : List[str] =  field(default_factory=list) 
     body : List[str]  =  field(default_factory=list)
     trailer : List[str]  =  field(default_factory=list)
     instances : List[str]  =  field(default_factory=list)
     
-class FileGenerator:
+class FunctionGenerator:
 
     _debug : bool = False
     _signals : List[VhdlSignal] = []
     _instance_signals: List[str] = []
     _constants : List[Constant] = []
     _ports: PortContainer
-    _file_contents: FileContents
+    _function_contents: FunctionContents
 
     _local_tag_in = "local_tag_in_i"
     _local_tag_out = "local_tag_out_i"
         
-    def __init__(self, file_name: str):
+    def __init__(self):
         self._msg = Messages()
-        self._file_contents = FileContents(file_name=file_name)
 
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         if current_frame is None:
@@ -123,15 +121,15 @@ class FileGenerator:
         return contents
     
     def _write_body(self, *args, **kwargs):
-        self._file_contents.body.append(self._print_to_string(*args, **kwargs))
+        self._function_contents.body.append(self._print_to_string(*args, **kwargs))
 
     def _write_header(self, *args, **kwargs):
         content = self._print_to_string(*args, **kwargs)
         comment = self._get_comment(current_frame=inspect.currentframe())
-        self._file_contents.header.append(f"{content.strip()} {comment}\n")
+        self._function_contents.header.append(f"{content.strip()} {comment}\n")
 
     def _write_trailer(self, *args, **kwargs):
-        self._file_contents.trailer.append(self._print_to_string(*args, **kwargs))
+        self._function_contents.trailer.append(self._print_to_string(*args, **kwargs))
 
     def _write_signal(self, declaration: DeclarationData) -> None:
         self._signals.append(VhdlSignal(instance=declaration.instance_name, 
@@ -176,7 +174,6 @@ class FileGenerator:
         return result
 
     def _write_component_instantiation_port_map(self, instance: InstanceData) -> None:
-        self._msg.function_start(f"instance={instance}")
         vhdl_port = VhdlPortGenerator()
         memory_port_map = self._get_component_instantiation_memory_port_map(instance=instance)
         input_ports_map = self._get_input_port_maps(instance=instance)
@@ -185,27 +182,22 @@ class FileGenerator:
         output_port_map = [] if instance.output_port is None else vhdl_port.get_output_port_map(output_port=instance.output_port)
         ports = input_ports_map + output_port_map + memory_port_map + standard_port_map + tag_port_map
         self._write_body(", ".join(ports), end="")
-        self._msg.function_end(None)
-
+        
     def _write_component_instantiation(self, instance: InstanceData) -> None:
-        self._msg.function_start(f"instance={instance}")
         self._write_body(f"{instance.instance_name} : entity {instance.library}.{instance.entity_name}")
         self._write_component_instantiation_generic_map(instance=instance)
         self._write_body("port map (", end="")
         self._write_component_instantiation_port_map(instance=instance)
         self._write_body(");")
-        self._msg.function_end(None)
-
+        
     def _write_component_output_signal_assignment(self, instance: InstanceData) -> None:
-        self._msg.function_start(f"instance={instance}")
         self._write_body("process (all)")
         self._write_body("begin")
         self._write_body(f"{instance.tag_name} <= conv_tag({self._local_tag_out});")
         if instance.has_output_port():
             self._write_body(f"{instance.tag_name}.{instance.instance_name} <= m_tdata_i;")
         self._write_body("end process;")
-        self._msg.function_end(None)
-
+        
     def _write_instance_signals(self, instance: InstanceData) -> None:
         vhdl_port = VhdlPortGenerator()
         input_ports_signals = [vhdl_port.get_port_signal(input_port=i) for i in instance.input_ports]
@@ -215,7 +207,7 @@ class FileGenerator:
         for i in input_ports_signals:
             self._write_body(i)
         if instance.has_output_port():
-            self._write_body(f"signal m_tdata_i : {instance.output_port.get_type_declarations()};")
+            self._write_body(f"signal m_tdata_i : {instance.get_output_port_type()};")
 
     def _write_instance_signal_assignments(self, instance: InstanceData) -> None:
         vhdl_port = VhdlPortGenerator()
@@ -227,9 +219,8 @@ class FileGenerator:
             self._write_body(i)
     
     def _write_instance(self, instance: InstanceData) -> None:
-        self._msg.function_start(f"instance={instance}")
-        if instance.library != "work":
-            self._file_contents.instances.append(instance.entity_name)
+        if not instance.is_work_library():
+            self._function_contents.instances.append(instance.entity_name)
         vhdl_port = VhdlPortGenerator()
         self._instance_signals.extend(vhdl_port.get_standard_ports_signals(instance=instance))
         block_name = f"{instance.instance_name}_b"
@@ -240,8 +231,7 @@ class FileGenerator:
         self._write_component_instantiation(instance=instance)
         self._write_component_output_signal_assignment(instance=instance)
         self._write_body(f"end block {block_name};")
-        self._msg.function_end(None)
-
+        
     def _write_ports(self, ports: PortContainer) -> None:
         self._write_header("port (")
         x = ports.get_ports(generator=VhdlPortGenerator())
@@ -350,8 +340,9 @@ class FileGenerator:
         self._write_all_memory_arbiters(instances=function.instances, memory_port_names=function.get_memory_port_names())
         self._write_trailer("end architecture rtl;")
 
-    def write_function(self, function: FunctionDefinition) -> FileContents:
+    def write_function(self, function: FunctionDefinition) -> FunctionContents:
         self._msg.function_start(f"function={function}")
+        self._function_contents = FunctionContents()
         self._write_header(f"-- Autogenerated by {self._get_comment()}")
         self._ports = function.ports
         self._write_include_libraries()
@@ -359,7 +350,7 @@ class FileGenerator:
         self._write_architecture(function=function)
         self._write_declarations_to_header()
         self._msg.function_end(None)
-        return self._file_contents
+        return self._function_contents
 
 class FilePrinter:
 
@@ -367,14 +358,15 @@ class FilePrinter:
         for i in data:
             print(i, file=file_handle, end="")
 
-    def generate(self, contents: FileContents) -> None:
-        with open(contents.file_name, 'w', encoding="utf-8") as file_handle:
-            self._print_list(file_handle=file_handle, data=contents.header)
-            self._print_list(file_handle=file_handle, data=contents.body)
-            self._print_list(file_handle=file_handle, data=contents.trailer)
-        base_name = os.path.splitext(contents.file_name)[0]
+    def generate(self, file_name: str, contents: List[FunctionContents]) -> None:
+        with open(file_name, 'w', encoding="utf-8") as file_handle:
+            for i in contents:
+                self._print_list(file_handle=file_handle, data=i.header)
+                self._print_list(file_handle=file_handle, data=i.body)
+                self._print_list(file_handle=file_handle, data=i.trailer)
+        base_name = os.path.splitext(file_name)[0]
         instance_file_name = f'{base_name}.inc'
         with open(instance_file_name, 'w', encoding="utf-8") as file_handle:
-            for i in contents.instances:
-                print(i, file=file_handle)
+            for i in contents:
+                print("\n".join(i.instances), file=file_handle)
 

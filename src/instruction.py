@@ -116,7 +116,7 @@ class CallInstruction(InstructionInterface):
     data_type: TypeDeclaration
     operands: List[InstructionArgument]
     def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
+        return self.opcode
     def get_library(self) -> str:
         return "work"
     def get_data_type(self) -> TypeDeclaration:
@@ -132,7 +132,7 @@ class CallInstruction(InstructionInterface):
     def map_function_arguments(self) -> bool:
         return True
     def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return None
+        return LlvmOutputPort(data_type=self.data_type, port_name="m_tdata")
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
     

@@ -173,8 +173,8 @@ class LlvmArrayDeclaration(TypeDeclaration):
     Example:
     3 x i32 
     """
-    x: LlvmConstantDeclaration
-    y: LlvmIntegerDeclaration
+    x: TypeDeclaration
+    y: TypeDeclaration
 
     def _get_dimensions(self) -> Tuple[str, str]:
         return self.x.get_data_width(), self.y.get_data_width()
