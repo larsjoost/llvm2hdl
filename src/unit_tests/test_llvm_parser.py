@@ -1,7 +1,7 @@
 import unittest
 
-from llvm_declarations import LlvmIntegerDeclaration, LlvmName
-from llvm_parser import GetelementptrInstructionParser, InstructionArgument, LlvmArgumentParser, LlvmParser
+from llvm_declarations import LlvmName
+from llvm_parser import GetelementptrInstructionParser, LlvmArgumentParser
 
 class TestGetelementptrInstructionParser(unittest.TestCase):        
 

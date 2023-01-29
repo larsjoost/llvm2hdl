@@ -90,7 +90,6 @@ class Instance(InstanceInterface):
         library = self.instruction.get_library()
         assert entity_name is not None
         assert library is not None
-        assert output_port is not None
         return InstanceData(instance_name=instance_name, entity_name=entity_name, library=library, output_port=output_port, tag_name=tag_name, generic_map=generic_map, input_ports=input_ports, previous_instance_name=previous_instance_name, memory_interface=memory_interface, instruction=self.instruction)
 
     def get_declaration_data(self) -> DeclarationData:

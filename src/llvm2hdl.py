@@ -1,8 +1,9 @@
 import os
 import argparse
+from typing import List
 
 from instance_statistics import InstanceStatistics
-from file_writer import FileWriter
+from file_writer import FileContents, FileGenerator
 from llvm_parser import LlvmParser
 from vhdlgen import VhdlGen
 
@@ -39,10 +40,9 @@ def main():
 
     statistics = InstanceStatistics()
 
-    file_writer = FileWriter(file_name=output_file_name)
-    VhdlGen().parse(llvm_module, file_writer, statistics)
-    file_writer.close()
-
+    file_generator = FileGenerator(file_name=output_file_name)
+    VhdlGen().parse(llvm_module, file_generator, statistics)
+    
     if args.verbose:
         statistics.print()
 

@@ -67,7 +67,7 @@ class Messages:
     def function_end(self, return_value=None, verbose=False):
         if self._verbose or verbose:
             current_frame = inspect.currentframe()
-            frame_info = self.get_frame_info(current_frame)
+            frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
             self._indent = self._indent - 2
             function_name = str(frame_info.function_name)
             text = f"{function_name} = {str(return_value)}"

@@ -9,7 +9,7 @@ class InstanceData:
     instance_name: str
     entity_name: str
     library: str
-    output_port: LlvmOutputPort
+    output_port: Optional[LlvmOutputPort]
     tag_name: str
     generic_map: Optional[List[str]]
     input_ports: List[InstructionArgument]
@@ -36,6 +36,8 @@ class InstanceData:
             return [self.instance_name]
         result = [self.get_memory_port_name(port=i) for i in self.input_ports]
         return [i for i in result if i is not None]
+    def has_output_port(self) -> bool:
+        return False if self.output_port is None else not self.output_port.is_void()
 
 
 @dataclass

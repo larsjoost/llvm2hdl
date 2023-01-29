@@ -1,8 +1,11 @@
+
 import contextlib
 from abc import ABC, abstractmethod
 import re
 from typing import Optional, Tuple
 from dataclasses import dataclass
+
+from pydantic import BaseModel, validator
 
 from messages import Messages
 
@@ -92,13 +95,16 @@ class LlvmFloatDeclarationFactory(TypeDeclarationFactory):
 @dataclass
 class LlvmIntegerDeclaration(TypeDeclaration):
 
-    data_width: str
+    data_width: int
+    
+    def __post_init__(self) -> None:
+        assert isinstance(self.data_width, int), f"data_width = {self.data_width} is not an integer"
     
     def get_data_width(self) -> str:
-        return self.data_width
+        return str(self.data_width)
 
     def get_dimensions(self) -> Tuple[int, str]:
-        return 1, self.get_data_width()        
+        return 1, str(self.get_data_width())        
 
 @dataclass
 class LlvmIntegerDeclarationFactory(TypeDeclarationFactory):
@@ -109,7 +115,30 @@ class LlvmIntegerDeclarationFactory(TypeDeclarationFactory):
         return bool(re.match("^i\d+", self.data_type))
 
     def get(self) -> TypeDeclaration:
-        return LlvmIntegerDeclaration(data_width=self.data_type[1:])
+        data_width = int(self.data_type[1:])
+        return LlvmIntegerDeclaration(data_width=data_width)
+
+@dataclass
+class LlvmConstantDeclaration(TypeDeclaration):
+
+    number: str
+    
+    def get_data_width(self) -> str:
+        return self.number
+
+    def get_dimensions(self) -> Tuple[int, str]:
+        return 1, self.get_data_width()        
+
+@dataclass
+class LlvmConstantDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
+
+    def match(self) -> bool:
+        return self.data_type.isnumeric()
+
+    def get(self) -> TypeDeclaration:
+        return LlvmConstantDeclaration(number=self.data_type)
 
 @dataclass
 class LlvmPointerDeclaration(TypeDeclaration):
@@ -144,15 +173,15 @@ class LlvmArrayDeclaration(TypeDeclaration):
     Example:
     3 x i32 
     """
-    x: str
-    y: str
+    x: LlvmConstantDeclaration
+    y: LlvmIntegerDeclaration
 
     def _get_dimensions(self) -> Tuple[str, str]:
-        return self.x, self.y
+        return self.x.get_data_width(), self.y.get_data_width()
 
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
         index, data_type = self._get_dimensions()
-        return int(index), LlvmIntegerDeclaration(data_type).get_data_width()
+        return int(index), data_type
 
     def single_dimension(self) -> bool:
         return False
@@ -166,7 +195,7 @@ class LlvmArrayDeclaration(TypeDeclaration):
 
     def get_data_width(self) -> str:
         index, data_type = self._get_dimensions()
-        return f"{index}*{LlvmIntegerDeclaration(data_type).get_data_width()}"
+        return f"{index}*{data_type}"
 
 @dataclass
 class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
@@ -178,7 +207,8 @@ class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
 
     def get(self) -> TypeDeclaration:
         x = self.data_type.split(" x ")
-        return LlvmArrayDeclaration(x=x[0], y=x[1])
+        y = LlvmIntegerDeclarationFactory(data_type=x[1]).get()
+        return LlvmArrayDeclaration(x=LlvmConstantDeclaration(x[0]), y=y)
 
 class LlvmDeclarationFactory:
 

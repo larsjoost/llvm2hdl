@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict
-from file_writer import FileWriter
+from file_writer import FileGenerator
 from llvm_parser import LlvmParser
 
 @dataclass
@@ -16,7 +16,7 @@ class GlobalVariables:
     def add(self, name: str, data_type: str, definition: str):
         self._global_variables[name] = GlobalVariable(name=name, data_type=data_type, definition=definition)
 
-    def write(self, file_writer: FileWriter):
+    def write(self, file_writer: FileGenerator):
         _llvm_parser = LlvmParser()
         for i in self._global_variables.values():
             _constant = _llvm_parser.get_constant_declaration(i.definition)

@@ -1,12 +1,12 @@
-from typing import List, Optional, Sequence, Union
+from typing import List
 
-from file_writer import FileWriter
+from file_writer import FileContents, FileGenerator
 from function_definition import FunctionDefinition
 from instance_container import InstanceContainer
 from llvm_declarations import LlvmIntegerDeclaration, LlvmName
 from llvm_parser import LlvmFunction, CallInstructionParser
 from messages import Messages
-from ports import OutputPort, InputPort, Port, PortContainer
+from ports import OutputPort, Port, PortContainer
 
 class FunctionParser:
 
@@ -20,8 +20,7 @@ class FunctionParser:
     def _get_entity_name(self, name: str) -> str:
         return CallInstructionParser().get_entity_name(name)
 
-    def parse(self, function: LlvmFunction, file_handle: FileWriter, statistics):								
-        self._msg.function_start(f"function={function}")
+    def parse(self, function: LlvmFunction, file_handle: FileGenerator, statistics) -> FileContents:								
         output_port: List[Port] = [OutputPort(name=LlvmName("m_tdata"), data_type=function.return_type)]
         input_ports: List[Port] = function.get_input_ports()
         instance_container = InstanceContainer(instructions=function.instructions, input_ports=input_ports)
@@ -29,5 +28,5 @@ class FunctionParser:
         instances = instance_container.get_instances()
         declarations = instance_container.get_declarations()
         ports = PortContainer(input_ports + output_port)
-        file_handle.write_function(function=FunctionDefinition(entity_name=entity_name, instances=instances, declarations=declarations,ports=ports))
-        self._msg.function_end(None)
+        return file_handle.write_function(function=FunctionDefinition(entity_name=entity_name, instances=instances, declarations=declarations,ports=ports))
+        
