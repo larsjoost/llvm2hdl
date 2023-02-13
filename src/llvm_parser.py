@@ -257,21 +257,28 @@ class CallInstructionParser(InstructionParser):
     def get_entity_name(self, name: str) -> str:
         return "entity" + name.replace("@", "")
 
-    def _split_parenthesis(self, text: str) -> Tuple[str, str]:
-        self._msg.function_start(f"text={text}")
-        split_text = text.partition('(')
-        head = split_text[0]
-        tail = split_text[2].partition(')')[0]
-        result = head, tail
-        self._msg.function_end(result)
-        return result
+    @log_entry_and_exit
+    def _split_function_call_from_arguments(self, text: str) -> Tuple[str, str]:
+        split_text = text.split('(', maxsplit=1)
+        function_call = split_text[0]
+        arguments = split_text[1].rsplit(')', maxsplit=1)[0]
+        return function_call, arguments
 
     def _is_ignored_function_call(self, name: str) -> bool:
-        self._msg.function_start(f"name={name}")
         ignored_functions = ["@llvm.lifetime", "@llvm.memcpy"]
-        result = any(name.startswith(i) for i in ignored_functions)
-        self._msg.function_end(result)
-        return result
+        return any(name.startswith(i) for i in ignored_functions)
+
+    def _get_call_instruction(self, function_name: str, return_type: str, arguments: str) -> CallInstruction:
+        name = self.get_entity_name(function_name)
+        data_type = LlvmDeclarationFactory().get(return_type)
+        operands = LlvmArgumentParser().parse(arguments=arguments)
+        return CallInstruction(opcode=name, data_type=data_type, operands=operands)
+
+    def _split_function_call(self, function_call: str) -> Tuple[str, str]:
+        head_split = function_call.split()
+        function_name = head_split[-1]
+        return_type = head_split[-2]
+        return function_name, return_type
 
     def parse(self, instruction: str, destination: Optional[LlvmName]) -> Optional[InstructionInterface]:
         """
@@ -279,21 +286,14 @@ class CallInstructionParser(InstructionParser):
             "call i32 @_Z3addii(i32 2, i32 3)"
             "tail call i32 @_Z3addii(i32 2, i32 3)"
         """
-        self._msg.function_start(f"instruction={instruction}")
-        head, tail = self._split_parenthesis(instruction)
+        function_call, arguments = self._split_function_call_from_arguments(instruction)
         # 1) head = "call i32 @_Z3addii"
         # 2) head = "tail call i32 @_Z3addii"
         # tail = "i32 2, i32 3"
-        head_split = head.split()
-        function_name = head_split[-1]
+        function_name, return_type = self._split_function_call(function_call=function_call)
         if self._is_ignored_function_call(name=function_name):
             return None
-        name = self.get_entity_name(function_name)
-        data_type = LlvmDeclarationFactory().get(head_split[-2])
-        arguments = LlvmArgumentParser().parse(arguments=tail)
-        result = CallInstruction(opcode=name, data_type=data_type, operands=arguments)
-        self._msg.function_end(result)
-        return result
+        return self._get_call_instruction(function_name=function_name, return_type=return_type, arguments=arguments)
 
 class DefaultInstructionParser(InstructionParser):
 
@@ -393,10 +393,11 @@ class LlvmArgumentParser:
     def __init__(self) -> None:
         self._msg = Messages()
 
+    @log_entry_and_exit
     def parse(self, arguments: str) -> List[InstructionArgument]:
-        self._msg.function_start(f"arguments={arguments}")
         # arguments = "i32 2, i32* nonnull %n"
         # arguments = ptr nocapture noundef readonly %a
+        # arguments = ptr noundef nonnull align 4 dereferenceable(8 %a, i32 noundef 1, i32 noundef 2
         result = []
         utils = LlvmParserUtilities()
         for i in utils.split_comma(arguments):
@@ -410,7 +411,6 @@ class LlvmArgumentParser:
             # 1) signal_name = "2"
             # 2) signal_name = "%n"
             result.append(InstructionArgument(signal_name=argument, data_type=data_type))
-        self._msg.function_end(result)
         return result
 
 class LlvmInstructionParser:

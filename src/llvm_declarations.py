@@ -5,8 +5,6 @@ import re
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
-from pydantic import BaseModel, validator
-
 from messages import Messages
 
 class TypeDeclaration(ABC):
