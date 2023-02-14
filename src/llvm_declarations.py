@@ -55,7 +55,7 @@ class LlvmVoidDeclaration(TypeDeclaration):
         return True
 
     def get_data_width(self) -> str:
-        return "0"
+        return "1"
 
 @dataclass
 class LlvmVoidDeclarationFactory(TypeDeclarationFactory):

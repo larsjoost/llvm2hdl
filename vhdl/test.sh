@@ -28,12 +28,13 @@ ghdl -m $ghdl_arguments test_main
 
 ghdl -e $ghdl_arguments test_main
 
-ghdl -r $ghdl_arguments test_main  --vcd=${vcd_file_name}
+ghdl -r $ghdl_arguments test_main --vcd=${vcd_file_name}
 
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
     error "Simulation failed"
+    echo "To debug problem use: gtkwave $(dirname $file_name)/output.vcd"
     exit 1
 fi
 

@@ -3,7 +3,7 @@ from typing import List, Optional
 from source_info import SourceInfo
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
-from llvm_declarations import LlvmIntegerDeclaration, LlvmName, TypeDeclaration
+from llvm_declarations import LlvmName, TypeDeclaration
 from llvm_parser import InstructionArgument, LlvmInstruction, LlvmParser
 from messages import Messages
 from instance_interface import InstanceInterface
@@ -16,7 +16,6 @@ class Instance(InstanceInterface):
     _parent: InstanceContainerInterface
     _prev: Optional[InstanceInterface]
     _next: Optional[InstanceInterface]
-
 
     def __init__(self, parent: InstanceContainerInterface, instruction : LlvmInstruction):
         self._msg = Messages()
@@ -53,12 +52,9 @@ class Instance(InstanceInterface):
         return self.instruction.get_data_type()
 
     def _resolve_operand(self, operand: InstructionArgument) -> InstructionArgument:
-        self._msg.function_start(f"operand={str(operand)}")
         source: Optional[SourceInfo] = self._parent.get_source(search_source=operand.signal_name)
-
         if source is not None:
             operand.signal_name = source.output_signal_name
-        self._msg.function_end(operand)
         return operand
 
     def get_source_info(self) -> SourceInfo:
@@ -69,11 +65,9 @@ class Instance(InstanceInterface):
         data_type=data_type)
 
     def _get_input_ports(self, operands: Optional[List[InstructionArgument]]) -> List[InstructionArgument]:
-        self._msg.function_start(f"operands={str(operands)}")
         input_ports: List[InstructionArgument] = []
         if operands is not None:
             input_ports.extend(self._resolve_operand(operand) for operand in operands)
-        self._msg.function_end(input_ports)
         return input_ports
 
     def get_instance_data(self) -> InstanceData:

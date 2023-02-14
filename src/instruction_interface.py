@@ -41,6 +41,7 @@ class MemoryInterfaceSlave(MemoryInterface):
 class InstructionArgument:
     signal_name: LlvmType
     data_type : TypeDeclaration
+    unnamed : bool = False 
     port_name: Optional[str] = None
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
         return self.data_type.get_dimensions()

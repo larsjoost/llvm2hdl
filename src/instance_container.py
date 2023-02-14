@@ -6,8 +6,8 @@ from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface, SourceInfo
 from llvm_parser import LlvmInstruction, LlvmParser, ReturnInstruction
 from messages import Messages
-from llvm_declarations import LlvmName, LlvmType
-from ports import InputPort, Port
+from llvm_declarations import LlvmType
+from ports import Port
 
 class InstanceContainer(InstanceContainerInterface):
 
@@ -29,7 +29,6 @@ class InstanceContainer(InstanceContainerInterface):
         return self._source_info_map.get(search_source, None)
 
     def _add_instruction(self, instruction : LlvmInstruction) -> None:
-        self._msg.function_start(f"instruction={instruction}")
         if not instruction.is_valid():
             return
         instance = Instance(self, instruction)
@@ -41,8 +40,7 @@ class InstanceContainer(InstanceContainerInterface):
         if destination is not None:
             self._source_info_map[destination] = instance.get_source_info()
         self._container.append(instance)
-        self._msg.function_end()
-
+        
     def get_instances(self) -> InstanceContainerData:
         self._msg.function_start()
         instances = [i.get_instance_data() for i in self._container]

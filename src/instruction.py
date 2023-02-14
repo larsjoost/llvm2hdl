@@ -106,7 +106,7 @@ class GetelementptrInstruction(InstructionInterface):
     def map_function_arguments(self) -> bool:
         return False
     def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return None
+        return LlvmMemoryOutputPort(data_type=self.data_type)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
     
@@ -142,7 +142,6 @@ class MemoryInstruction(InstructionInterface):
     data_type: TypeDeclaration
     operands: List[InstructionArgument]
     output_port_name: str
-    memory_interface: Optional[MemoryInterface]
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)
     def get_library(self) -> str:
@@ -160,6 +159,7 @@ class MemoryInstruction(InstructionInterface):
     def map_function_arguments(self) -> bool:
         return True
     def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return LlvmMemoryOutputPort(data_type=self.data_type, port_name=self.output_port_name)
+        return LlvmOutputPort(data_type=self.data_type, port_name=self.output_port_name)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
-        return self.memory_interface
+        return None
+

@@ -3,6 +3,7 @@ from typing import List, Optional
 from dataclasses import dataclass
 from llvm_parser import InstructionArgument, LlvmInstruction, MemoryInterface, LlvmOutputPort
 from vhdl_declarations import VhdlDeclarations
+from function_logger import log_entry_and_exit
 
 @dataclass
 class InstanceData:
@@ -36,12 +37,10 @@ class InstanceData:
             return [self.instance_name]
         result = [self.get_memory_port_name(port=i) for i in self.input_ports]
         return [i for i in result if i is not None]
-    def has_output_port(self) -> bool:
-        return False if self.output_port is None else not self.output_port.is_void()
     def is_work_library(self) -> bool:
         return self.library == "work"
     def get_output_port_type(self) -> str:
-        assert self.output_port is not None
+        assert self.output_port is not None, f"Instance {self.instance_name} output port is not defined"
         return self.output_port.get_type_declarations()
 
 @dataclass

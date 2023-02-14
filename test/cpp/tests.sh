@@ -48,7 +48,6 @@ for i in $test_files; do
 	else
 	    echo "FAILED"
 	    echo $TEST_OUTPUT
-	    echo "To debug problem use: gtkwave $(dirname $file_name)/output.vcd"
 	    RETURN_CODE=1
 	    let NUMBER_OF_FAILED+=1
 	fi

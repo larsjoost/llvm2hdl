@@ -50,7 +50,7 @@ end entity arbiter;
 architecture rtl of arbiter is
 
   constant c_size     : positive := s_arvalid'length;
-  constant c_id_width : positive := s_arid'length / c_size;
+  constant c_id_width : positive := m_rid'length;
   constant c_id_size  : positive := 2 ** c_id_width;
 
   type tag_t is record
@@ -108,19 +108,19 @@ architecture rtl of arbiter is
   end function copy_all;
 
   signal ar_tag_i : tag_array_t;
-  signal ar_id_i  : natural range 0 to c_size - 1;
-  signal r_id_i   : natural range 0 to c_size - 1;
+  signal ar_id_i  : natural range 0 to c_id_size - 1;
+  signal r_id_i   : natural range 0 to c_id_size - 1;
   signal s_arid_i : std_ulogic_vector(0 to c_id_width - 1);
   signal s_rid_i  : std_ulogic_vector(0 to c_id_width - 1);
 
   signal aw_tag_i : tag_array_t;
-  signal aw_id_i  : natural range 0 to c_size - 1;
-  signal w_id_i   : natural range 0 to c_size - 1;
+  signal aw_id_i  : natural range 0 to c_id_size - 1;
+  signal w_id_i   : natural range 0 to c_id_size - 1;
   signal s_awid_i : std_ulogic_vector(0 to c_id_width - 1);
   signal s_wid_i  : natural range 0 to c_id_size - 1;
   signal w_tag_i  : w_tag_t;
 
-  signal b_id_i : natural range 0 to c_size - 1;
+  signal b_id_i : natural range 0 to c_id_size - 1;
 
   signal ar_grant_i : integer range 0 to c_size - 1;
   signal aw_grant_i : integer range 0 to c_size - 1;
@@ -148,16 +148,15 @@ begin
   s_arid_i <= get(s_arid, ar_grant_i);
   s_awid_i <= get(s_awid, aw_grant_i);
 
-
   process (clk) is
   begin
     if rising_edge(clk) then
       if ar_transfer_i then
-        ar_id_i           <= (ar_id_i + 1) mod c_size;
+        ar_id_i           <= (ar_id_i + 1) mod c_id_size;
         ar_tag_i(ar_id_i) <= (id => s_arid_i, grant => ar_grant_i);
       end if;
       if aw_transfer_i then
-        aw_id_i                                             <= (aw_id_i + 1) mod c_size;
+        aw_id_i                                             <= (aw_id_i + 1) mod c_id_size;
         aw_tag_i(aw_id_i)                                   <= (id => s_awid_i, grant => aw_grant_i);
         w_tag_i(aw_grant_i, to_integer(unsigned(s_awid_i))) <= aw_id_i;
       end if;
@@ -176,7 +175,7 @@ begin
 
   m_araddr <= get(s_araddr, ar_grant_i);
   m_arid   <= std_ulogic_vector(to_unsigned(ar_id_i, m_arid'length));
-  m_rready <= s_rready(r_id_i);
+  m_rready <= s_rready(r_grant_i);
 
   m_awaddr <= get(s_awaddr, aw_grant_i);
   m_awid   <= std_ulogic_vector(to_unsigned(aw_id_i, m_awid'length));

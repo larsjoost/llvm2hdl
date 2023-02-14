@@ -60,9 +60,9 @@ begin
 
   s_arready <= '1';
 
-  s_awready <= s_bready;
+  s_awready <= '1';
 
-  s_wready <= s_bready;
+  s_wready <= '1';
 
   wdata_transfer_i <= s_wvalid and s_bready;
 

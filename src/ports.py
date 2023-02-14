@@ -61,8 +61,7 @@ class PortContainer:
     def get_ports(self, generator: PortGenerator) -> List[str]:
         x = []
         for i in self.ports:
-            if not i.is_void():
-                x.extend(generator.get_ports(port=i))
+            x.extend(generator.get_ports(port=i))
         return x
     def get_total_input_data_width(self, generator: PortGenerator) -> List[str]:
         return [generator.get_data_width(port=i) for i in self.ports if i.is_input()]

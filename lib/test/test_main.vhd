@@ -13,7 +13,8 @@ use ieee.numeric_std.to_integer;
 architecture behavior of test_main is
 
   constant c_clock_period : time := 10 ns;
-
+  constant c_timeout : time := c_clock_period * 100;
+  
   constant tag_width : positive := 32;
 
   signal clk          : std_ulogic                            := '0';
@@ -62,6 +63,14 @@ begin
     wait;
   end process;
 
+  process 
+  begin
+    wait for c_timeout;
+    report "Simulation time exceeded " & time'image(c_timeout)
+      severity failure;
+    wait;
+  end process;
+  
   process is
   begin
     sreset <= '1';

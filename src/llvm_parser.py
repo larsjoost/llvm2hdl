@@ -33,17 +33,14 @@ class InstructionPosition:
     opcode: int
     operands: List[Tuple[int, int]]
     data_type: int
-    memory_interface: Optional[MemoryInterface] = None
 
 class InstructionPositionParser:
     source : List[str]
     opcode : str
     operands : List[InstructionArgument]
     data_type : str
-    memory_interface: Optional[MemoryInterface]
     def __init__(self, instruction: List[str], position: InstructionPosition):
         self.source = instruction
-        self.memory_interface = position.memory_interface
         self.opcode = instruction[position.opcode]
         self.data_type = instruction[position.data_type].replace(",", "")
         self.operands = [self._parse_operand(instruction, item, index) for index, item in enumerate(position.operands)]
@@ -257,7 +254,6 @@ class CallInstructionParser(InstructionParser):
     def get_entity_name(self, name: str) -> str:
         return "entity" + name.replace("@", "")
 
-    @log_entry_and_exit
     def _split_function_call_from_arguments(self, text: str) -> Tuple[str, str]:
         split_text = text.split('(', maxsplit=1)
         function_call = split_text[0]
@@ -271,7 +267,7 @@ class CallInstructionParser(InstructionParser):
     def _get_call_instruction(self, function_name: str, return_type: str, arguments: str) -> CallInstruction:
         name = self.get_entity_name(function_name)
         data_type = LlvmDeclarationFactory().get(return_type)
-        operands = LlvmArgumentParser().parse(arguments=arguments)
+        operands = LlvmArgumentParser().parse(arguments=arguments, unnamed=True)
         return CallInstruction(opcode=name, data_type=data_type, operands=operands)
 
     def _split_function_call(self, function_call: str) -> Tuple[str, str]:
@@ -330,8 +326,8 @@ class DefaultInstructionParser(InstructionParser):
             "zext": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2)]),
             "trunc": InstructionPosition(opcode=0, data_type=4, operands=[(1, 2)]),
             "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
-            "store": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (3, 4)], memory_interface=MemoryInterfaceMaster()),
-            "load": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)], memory_interface=MemoryInterfaceMaster())}
+            "store": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (3, 4)]),
+            "load": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)])}
 
     def _get_instruction_positions(self) -> Dict[str, InstructionPosition]:
         dict_1 = self._get_type_and_two_arguments_instructions()
@@ -340,16 +336,18 @@ class DefaultInstructionParser(InstructionParser):
         return dict_1 | dict_2 | dict_3
 
     def parse(self, instruction: str, destination: Optional[LlvmName]) -> InstructionInterface:
-        self._msg.function_start(f"instruction={instruction}")
         utils = LlvmParserUtilities()
         a = utils.split_space(instruction)
         position: Dict[str, InstructionPosition] = self._get_instruction_positions()
         opcode = utils.get_list_element(a, 0)
         x = InstructionPositionParser(instruction=a, position=position[opcode])
         data_type = LlvmDeclarationFactory().get(x.data_type)
-        result = MemoryInstruction(opcode=x.opcode, data_type=data_type, operands=x.operands, output_port_name="m_tdata", memory_interface=x.memory_interface)
-        self._msg.function_end(result)
-        return result
+        return MemoryInstruction(
+            opcode=x.opcode,
+            data_type=data_type,
+            operands=x.operands,
+            output_port_name="m_tdata"
+        )
 
 class LlvmInstructionCommandParser:
 
@@ -357,7 +355,6 @@ class LlvmInstructionCommandParser:
         self._msg = Messages()
 
     def _parse_instruction(self, instruction: str, destination: Optional[LlvmName]) -> Optional[InstructionInterface]:
-        self._msg.function_start(f"instruction={instruction}")
         parsers: Dict[str, InstructionParser] =  {
             "bitcast": BitCastInstructionParser(),
             "getelementptr": GetelementptrInstructionParser(),
@@ -369,9 +366,7 @@ class LlvmInstructionCommandParser:
         for i in parsers:
             if i in instruction_words:
                 parser = parsers[i]
-        result = parser.parse(instruction=instruction, destination=destination)
-        self._msg.function_end(result)
-        return result
+        return parser.parse(instruction=instruction, destination=destination)
 
     def parse(self, text: str) -> Optional[LlvmInstructionCommand]:
         """
@@ -393,8 +388,7 @@ class LlvmArgumentParser:
     def __init__(self) -> None:
         self._msg = Messages()
 
-    @log_entry_and_exit
-    def parse(self, arguments: str) -> List[InstructionArgument]:
+    def parse(self, arguments: str, unnamed: bool = False) -> List[InstructionArgument]:
         # arguments = "i32 2, i32* nonnull %n"
         # arguments = ptr nocapture noundef readonly %a
         # arguments = ptr noundef nonnull align 4 dereferenceable(8 %a, i32 noundef 1, i32 noundef 2
@@ -410,7 +404,7 @@ class LlvmArgumentParser:
             argument = LlvmTypeFactory(utils.get_list_element(g, -1)).resolve()
             # 1) signal_name = "2"
             # 2) signal_name = "%n"
-            result.append(InstructionArgument(signal_name=argument, data_type=data_type))
+            result.append(InstructionArgument(signal_name=argument, data_type=data_type, unnamed=unnamed))
         return result
 
 class LlvmInstructionParser:
@@ -446,14 +440,11 @@ class LlvmFunctionParser:
         2) line = "define dso_local void @_ZN9ClassTestC2Eii(%class.ClassTest* nocapture noundef nonnull writeonly align 4 dereferenceable(8) %this, i32 noundef %a, i32 noundef %b) unnamed_addr #0 align 2 {"
         3) line = "define dso_local noundef i32 @_Z8for_loopPi(ptr nocapture noundef readonly %a) local_unnamed_addr #0 {"
         """
-        self._msg.function_start(f"line={line}")
         left_parenthis_split = line.split("(", maxsplit=1)
         argument_text = left_parenthis_split[1].rsplit(")", maxsplit=1)[0]
         arguments = LlvmArgumentParser().parse(arguments=argument_text)
         function_name, return_type = self._parse_parentesis(left_parenthis_split=left_parenthis_split)
-        result = function_name, arguments, return_type
-        self._msg.function_end(result)
-        return result
+        return function_name, arguments, return_type
 
     def parse(self, text: str) -> LlvmFunction:
         """
@@ -475,18 +466,15 @@ class LlvmConstantParser:
         self._msg = Messages()
     
     def _parse_definition(self, definition: str) -> List[Constant]:
-        self._msg.function_start(f"definition={definition}")
         definitions: List[Constant] = []
         for i in definition.split(","):
             x = i.split()
             data_type = LlvmIntegerDeclarationFactory(data_type=x[0]).get()
             value = x[1]
             definitions.append(Constant(value=value, data_type=data_type))
-        self._msg.function_end(definitions)
         return definitions
 
     def parse(self, instruction: str) -> Optional[ConstantDeclaration]:
-        self._msg.function_start(f"instruction={instruction}")
         """
         @__const.main.n = private unnamed_addr constant [3 x i32] [i32 1, i32 2, i32 3], align 4
         @_ZN9ClassTestC1Eii = dso_local unnamed_addr alias void (%class.ClassTest*, i32, i32), void (%class.ClassTest*, i32, i32)* @_ZN9ClassTestC2Eii
@@ -504,9 +492,7 @@ class LlvmConstantParser:
         # data_type = "3 x i32"
         constant_type = LlvmArrayDeclarationFactory(data_type=data_type).get()
         definitions = self._parse_definition(definition=definition)
-        result = ConstantDeclaration(name=name, type=constant_type, values=definitions)
-        self._msg.function_end(result)
-        return result
+        return ConstantDeclaration(name=name, type=constant_type, values=definitions)
 
 @dataclass
 class LlvmModule:
@@ -531,31 +517,22 @@ class LlvmParser:
         return [match.group() for match in matches]
 
     def _extract_functions(self, text: str) -> List[str]:
-        self._msg.function_start(f"text={text}")
         all_characters_including_newline = r"(.|\n)*"
         until_right_bracket = r"?\}"
         regex = f"define {all_characters_including_newline}{until_right_bracket}"
-        result = self._findall(text=text, regex=regex)
-        self._msg.function_end(result)
-        return result
+        return self._findall(text=text, regex=regex)
 
     def _extract_constants(self, text: str) -> List[str]:
         """
         @__const.main.n = private unnamed_addr constant [3 x i32] [i32 1, i32 2, i32 3], align 4
         """
-        self._msg.function_start(f"text={text}")
         lines = text.split("\n")
-        result = [i for i in lines if i.startswith("@")]
-        self._msg.function_end(result)
-        return result
+        return [i for i in lines if i.startswith("@")]
 
     def parse(self, text: str) -> LlvmModule:
-        self._msg.function_start(f"text={text}")
         without_comments = self._remove_comments(text)
         functions = self._extract_functions(without_comments)
         constants = self._extract_constants(without_comments)
         llvm_functions =[LlvmFunctionParser().parse(i) for i in functions]
         llvm_constants = [i for i in [LlvmConstantParser().parse(i) for i in constants] if i is not None]
-        llvm_module = LlvmModule(functions=llvm_functions, constants=llvm_constants)
-        self._msg.function_end(llvm_module)
-        return llvm_module
+        return LlvmModule(functions=llvm_functions, constants=llvm_constants)
