@@ -8,7 +8,7 @@ use work.llvm_pkg.c_integer_array_default;
 
 entity llvm_alloca is
   generic (
-    size           : positive;
+    size_bytes     : positive;
     initialization : integer_array_t := c_integer_array_default
     );
   port (
@@ -47,7 +47,7 @@ architecture rtl of llvm_alloca is
 
   constant c_data_width : positive := s_wdata'length;
 
-  constant c_size : positive := size * 8 / c_data_width;
+  constant c_size : positive := size_bytes * 8 / c_data_width;
 
   type memory_t is array (0 to c_size - 1) of std_ulogic_vector(0 to c_data_width - 1);
 

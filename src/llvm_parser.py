@@ -255,14 +255,14 @@ class ReturnInstructionParser(InstructionParser):
 
 class AllocaInstructionParser(InstructionParser):
 
-    @log_entry_and_exit
     def parse(self, arguments: InstructionParserArguments) -> InstructionInterface:
         # alloca [3 x i32], align 4
+        # alloca i32, align 4
         x = arguments.instruction.split(",")
         y = x[0].split(maxsplit=1)
         opcode = y[0]
         data_type_position = y[1].replace("[", "").replace("]", "")
-        data_type = LlvmArrayDeclarationFactory(data_type=data_type_position).get()
+        data_type = LlvmDeclarationFactory().get(data_type=data_type_position)
         initialization = arguments.constants.get_initialization(name=arguments.destination)
         return AllocaInstruction(
             opcode=opcode, data_type=data_type, output_port_name=arguments.destination, initialization=initialization
