@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 entity llvm_getelementptr is
   port (
     a        : in  std_ulogic_vector;
+    offset   : in  std_ulogic_vector;
     m_tdata  : out std_ulogic_vector;
     clk      : in  std_ulogic;
     sreset   : in  std_ulogic;
@@ -25,7 +26,7 @@ architecture rtl of llvm_getelementptr is
 
 begin
 
-  a_i <= unsigned(a);
+  a_i <= unsigned(a) + unsigned(offset);
 
   q_i <= a_i;
 

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface, LlvmMemoryOutputPort, LlvmOutputPort, MemoryInterface, MemoryInterfaceSlave
-from llvm_declarations import TypeDeclaration, LlvmName
+from llvm_declarations import LlvmInteger, LlvmIntegerDeclaration, TypeDeclaration, LlvmName
 
 @dataclass
 class ReturnInstruction(InstructionInterface):
@@ -103,7 +103,7 @@ class GetelementptrInstruction(InstructionInterface):
     def get_generic_map(self) -> Optional[List[str]]:
         return None
     def get_operands(self) -> Optional[List[InstructionArgument]]:
-        return self.operands
+        return self.operands + [InstructionArgument(signal_name=LlvmInteger(value=self.offset), data_type=LlvmIntegerDeclaration(data_width=32))]
     def is_valid(self) -> bool:
         return True
     def is_memory(self) -> bool:

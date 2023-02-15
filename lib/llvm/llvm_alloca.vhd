@@ -66,8 +66,6 @@ architecture rtl of llvm_alloca is
     return x;
   end function get_initialization;
 
-  signal memory_i : memory_t := get_initialization;
-
   signal araddr_i, awaddr_i : integer range 0 to c_size - 1;
 
   signal wdata_transfer_i : std_ulogic;
@@ -87,12 +85,13 @@ begin
   wdata_transfer_i <= s_wvalid and s_bready;
 
   process (clk)
+  variable memory_v : memory_t := get_initialization;
   begin
     if rising_edge(clk) then
-      if s_wready = '1' then
-        memory_i(awaddr_i) <= s_wdata;
+      if s_wvalid = '1' then
+        memory_v(awaddr_i) := s_wdata;
       end if;
-      s_rdata  <= memory_i(araddr_i);
+      s_rdata  <= memory_v(araddr_i);
       s_rid    <= s_arid;
       s_rvalid <= s_arvalid;
       if s_bready = '1' then

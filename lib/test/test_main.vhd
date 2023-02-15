@@ -55,6 +55,8 @@ begin
     s_tvalid <= '0';
     wait until rising_edge(clk) and sreset = '0';
     s_tvalid <= '1';
+    wait until rising_edge(clk);
+    s_tvalid <= '0';
     wait until rising_edge(clk) and m_tvalid = '1';
     assert (unsigned(m_tdata) = 0) 
     report "Test failed. m_tdata = " & to_string(m_tdata) & ", but expected 0" 

@@ -92,6 +92,10 @@ begin
   end process;
 
   m_bready <= '1';
+
+  m_wvalid <= '0';
+
+  m_awvalid <= '0';
   
 end architecture rtl;
 
