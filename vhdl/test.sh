@@ -17,6 +17,7 @@ $SCRIPTPATH/compile.sh $file_name
 file_path=$(dirname $file_name)
 
 vcd_file_name=${file_path}/output.vcd
+wave_file_name=${file_path}/output.ghw
 
 ghdl_arguments="--std=08 -Wno-hide"
 
@@ -28,13 +29,13 @@ ghdl -m $ghdl_arguments test_main
 
 ghdl -e $ghdl_arguments test_main
 
-ghdl -r $ghdl_arguments test_main --vcd=${vcd_file_name}
+ghdl -r $ghdl_arguments test_main --vcd=${vcd_file_name} --wave=${wave_file_name}
 
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
     error "Simulation failed"
-    echo "To debug problem use: gtkwave $(dirname $file_name)/output.vcd"
+    echo "To debug problem use: gtkwave $wave_file_name or gtkwave $vcd_file_name"
     exit 1
 fi
 

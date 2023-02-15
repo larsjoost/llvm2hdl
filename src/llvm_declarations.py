@@ -266,7 +266,6 @@ class LlvmTypeFactory:
         self.text = text
         self._msg = Messages()
     def resolve(self) -> LlvmType:
-        self._msg.function_start("resolve", False)
         if "%" in self.text:
             return LlvmName(self.text)
         with contextlib.suppress(ValueError):

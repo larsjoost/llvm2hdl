@@ -15,7 +15,6 @@ class VhdlDeclarations:
             data_width = self.data_type.get_data_width()
             type_declaration = "std_ulogic_vector"
             if data_width is not None:
-                assert data_width.isnumeric(), f"data_width = {data_width} of data type {self.data_type} is not numeric"
                 type_declaration += f"(0 to {data_width} - 1)"
         return type_declaration
 

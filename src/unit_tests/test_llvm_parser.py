@@ -1,7 +1,7 @@
 import unittest
 
 from llvm_declarations import LlvmName
-from llvm_parser import GetelementptrInstructionParser, LlvmArgumentParser
+from llvm_parser import ConstantContainer, GetelementptrInstructionParser, InstructionParserArguments, LlvmArgumentParser
 
 class TestGetelementptrInstructionParser(unittest.TestCase):        
 
@@ -9,7 +9,8 @@ class TestGetelementptrInstructionParser(unittest.TestCase):
         x = GetelementptrInstructionParser()
         instruction = "getelementptr inbounds [4 x i32], ptr %n, i64 0, i64 1"
         destination = LlvmName(name='%arrayidx')
-        print(x.parse(instruction=instruction, destination=destination))
+        constants = ConstantContainer(constants=[])
+        print(x.parse(arguments=InstructionParserArguments(instruction=instruction, destination=destination, constants=constants)))
 
 class TestArgumentParser(unittest.TestCase):        
 

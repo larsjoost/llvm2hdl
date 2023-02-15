@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import inspect
 import sys
 import os
@@ -7,7 +6,6 @@ from typing import Optional, Union
 
 from color_text import ColorText
 from frame_info import FrameInfoFactory
-
 
 class Messages:
 
@@ -53,22 +51,3 @@ class Messages:
             current_frame = inspect.currentframe()
             self._print_formatted(color_text=ColorText("ERROR", "error"),
                                 text=text, current_frame=current_frame)
-
-    def function_start(self, text: str = "", verbose=False):
-        if self._verbose or verbose:
-            current_frame = inspect.currentframe()
-            frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
-            function_name = str(frame_info.function_name)
-            text = f"{function_name}({text})"
-            self._print_formatted(color_text=ColorText("FUNCTION START", "magenta"),
-            text=text, current_frame=current_frame)
-            self._indent += 2
-
-    def function_end(self, return_value=None, verbose=False):
-        if self._verbose or verbose:
-            current_frame = inspect.currentframe()
-            frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
-            self._indent = self._indent - 2
-            function_name = str(frame_info.function_name)
-            text = f"{function_name} = {str(return_value)}"
-            self._print_formatted(color_text=ColorText("FUNCTION END", "magenta"), text=text, current_frame=current_frame)

@@ -9,6 +9,8 @@ package llvm_pkg is
 
   type integer_array_t is array (natural range <>) of integer;
 
+  constant c_integer_array_default : integer_array_t(0 to 0) := (others => 0);
+  
   function get(data : std_ulogic_vector; data_width: positive; index: natural := 0) 
   return std_ulogic_vector;
 

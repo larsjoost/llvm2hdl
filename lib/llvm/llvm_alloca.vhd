@@ -2,9 +2,14 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.llvm_pkg.integer_array_t;
+use work.llvm_pkg.c_integer_array_default;
+
 entity llvm_alloca is
   generic (
-    size : positive
+    size           : positive;
+    initialization : integer_array_t := c_integer_array_default
     );
   port (
     a         : out std_ulogic_vector;
@@ -46,7 +51,22 @@ architecture rtl of llvm_alloca is
 
   type memory_t is array (0 to c_size - 1) of std_ulogic_vector(0 to c_data_width - 1);
 
-  signal memory_i : memory_t;
+  function get_initialization
+    return memory_t is
+    alias init : integer_array_t(0 to initialization'length - 1) is initialization;
+    variable x : memory_t;
+  begin
+    for i in memory_t'range loop
+      if i < initialization'length then
+        x(i) := std_ulogic_vector(to_signed(init(i), c_data_width));
+      else
+        x(i) := (others => '0');
+      end if;
+    end loop;
+    return x;
+  end function get_initialization;
+
+  signal memory_i : memory_t := get_initialization;
 
   signal araddr_i, awaddr_i : integer range 0 to c_size - 1;
 

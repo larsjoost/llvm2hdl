@@ -12,6 +12,6 @@ class VhdlGen:
         file_contents: List[FunctionContents] = []
         for function in module.functions:
             function_parser = FunctionParser()
-            file_contents.append(function_parser.parse(function=function, file_handle=file_handle, statistics=statistics))    
+            file_contents.append(function_parser.parse(function=function, constants=module.constants, file_handle=file_handle, statistics=statistics))    
         file_printer = FilePrinter()
         file_printer.generate(file_name=file_name, contents=file_contents)

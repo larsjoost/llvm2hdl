@@ -4,7 +4,7 @@ from typing import List
 
 from instance_container_data import InstanceContainerData
 from instance_data import DeclarationData
-from ports import Port, PortContainer
+from ports import PortContainer
 
 
 @dataclass

@@ -61,6 +61,7 @@ class AllocaInstruction(InstructionInterface):
     opcode: str
     data_type: TypeDeclaration
     output_port_name: Optional[LlvmName]
+    initialization: Optional[List[str]]
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)
     def get_library(self) -> str:
@@ -69,7 +70,11 @@ class AllocaInstruction(InstructionInterface):
         return self.data_type
     def get_generic_map(self) -> Optional[List[str]]:
         data_width = self.data_type.get_data_width()
-        return [f"size => {data_width}/8"]
+        generic_map = [f"size => {data_width}/8"]
+        if self.initialization is not None:
+            initialization = ", ".join(self.initialization)
+            generic_map.append(f"initialization => ({initialization})")
+        return generic_map
     def get_operands(self) -> Optional[List[InstructionArgument]]:
         return None
     def is_valid(self) -> bool:

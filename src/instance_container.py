@@ -42,11 +42,8 @@ class InstanceContainer(InstanceContainerInterface):
         self._container.append(instance)
         
     def get_instances(self) -> InstanceContainerData:
-        self._msg.function_start()
         instances = [i.get_instance_data() for i in self._container]
-        result = InstanceContainerData(instances=instances)
-        self._msg.function_end(result)
-        return result
+        return InstanceContainerData(instances=instances)
 
     def get_declarations(self) -> List[DeclarationData]:
         return [i.get_declaration_data() for i in self._container]

@@ -138,13 +138,11 @@ class VhdlMemoryPort:
         self._msg = Messages()
 
     def _get_port_map(self, prefix: str, name: Union[str, List[str]], memory_port_name: str, unknown_port_name: bool) -> str:
-        self._msg.function_start(f"prefix={prefix}, name={name}, memory_port_name={memory_port_name}, unknown_port_name={unknown_port_name}")
         if not isinstance(name, list):
             name = [name]
         port_map = " & ".join([f"{i}_{memory_port_name}" for i in name])
         if not unknown_port_name:
             port_map = f"{prefix}_{memory_port_name} => {port_map}"
-        self._msg.function_end(port_map)
         return port_map
 
     def get_port_map(self, name: Union[str, List[str]], master: bool, unknown_port_name: bool = False) -> List[str]:
@@ -161,20 +159,21 @@ class VhdlMemoryPort:
         ]
 
     def _get_signal_assignment(self, port: VhdlPort, signal_name: str, assignment_names: List[str]) -> str:
-        self._msg.function_start(f"port={port}, signal_name={signal_name}, assignment_names={assignment_names}")
         assignment_separator = " & " if port.is_master() else ", "
         assignment = assignment_separator.join([f"{i}_{port.name}" for i in assignment_names])
         destination_assignment = f"({assignment})" if len(assignment_names) > 1 else assignment
         port_name = f"{signal_name}_{port.name}"
-        result = f"{port_name} <= {assignment}" if port.is_master() else f"{destination_assignment} <= {port_name}"
-        self._msg.function_end(result)
-        return result
+        return (
+            f"{port_name} <= {assignment}"
+            if port.is_master()
+            else f"{destination_assignment} <= {port_name}"
+        )
 
     def get_signal_assignments(self, signal_name: str, assignment_names: List[str]) -> List[str]:
-        self._msg.function_start(f"signal_name={signal_name}, assignment_names={assignment_names}")
-        result = [f"{self._get_signal_assignment(port=i, signal_name=signal_name, assignment_names=assignment_names)}" for i in self._memory_ports]
-        self._msg.function_end(result)
-        return result
+        return [
+            f"{self._get_signal_assignment(port=i, signal_name=signal_name, assignment_names=assignment_names)}"
+            for i in self._memory_ports
+        ]
 
     def get_ports(self, port: Port) -> List[str]:
         name = port.get_name()
@@ -207,10 +206,9 @@ class VhdlPortGenerator(PortGenerator):
             yield signal.get_record_item()
 
     def get_tag_item_names(self, ports: PortContainer, signals : List[VhdlSignal]) -> List[str]:
-        self._msg.function_start(f"ports={ports}, signals={signals}")
-        record_items = [name for name, _ in self.get_tag_elements(ports=ports, signals=signals)]
-        self._msg.function_end(record_items)
-        return record_items
+        return [
+            name for name, _ in self.get_tag_elements(ports=ports, signals=signals)
+        ]
 
     def _get_input_port_signal_name(self, input_port: InstructionArgument) -> str:
         signal_name = input_port.get_name()
