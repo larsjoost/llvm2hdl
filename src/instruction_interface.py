@@ -3,7 +3,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union
 
-from llvm_declarations import LlvmName, TypeDeclaration, LlvmType
+from llvm_type_declaration import TypeDeclaration
+from llvm_type import LlvmName, LlvmType
 from vhdl_declarations import VhdlDeclarations
 
 @dataclass

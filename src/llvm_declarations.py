@@ -1,50 +1,10 @@
 
-import contextlib
-from abc import ABC, abstractmethod
 import re
 from typing import Optional, Tuple
 from dataclasses import dataclass
-
-from messages import Messages
-
-class TypeDeclaration(ABC):
-    
-    @abstractmethod
-    def get_dimensions(self) -> Tuple[int, Optional[str]]:
-        pass
-
-    @abstractmethod
-    def get_data_width(self) -> str:
-        pass
-
-    def single_dimension(self) -> bool:
-        return True
-
-    def is_pointer(self) -> bool:
-        return False
-
-    def is_array(self) -> bool:
-        return False
-
-    def is_boolean(self) -> bool:
-        return False
-
-    def is_void(self) -> bool:
-        return False
-
-    def get_array_index(self) -> Optional[str]:
-        return None
-
-class TypeDeclarationFactory(ABC):
-
-    @abstractmethod
-    def match(self) -> bool:
-        pass
-
-    @abstractmethod
-    def get(self) -> TypeDeclaration:
-        pass
-
+from llvm_constant import ConstantContainer
+from llvm_type import LlvmName
+from llvm_type_declaration import TypeDeclaration, TypeDeclarationFactory
     
 class LlvmVoidDeclaration(TypeDeclaration):
 
@@ -208,70 +168,55 @@ class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
         y = LlvmIntegerDeclarationFactory(data_type=x[1]).get()
         return LlvmArrayDeclaration(x=LlvmConstantDeclaration(x[0]), y=y)
 
+@dataclass
+class LlvmClassDeclaration(TypeDeclaration):
+    """
+    Declaration: %class.<name>
+    Example:
+    %class.ClassTest
+    """
+    name: str
+    constants: ConstantContainer
+
+    def get_data_width(self) -> str:
+        data_width = self.constants.get_data_width(name=LlvmName(self.name))        
+        assert data_width is not None
+        return data_width
+
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
+        return 1, self.name
+
+@dataclass
+class LlvmClassDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
+    constants: Optional[ConstantContainer]
+
+    def match(self) -> bool:
+        if self.constants is None:
+            return False
+        return self.data_type.startswith('%class.')
+
+    def get(self) -> TypeDeclaration:
+        assert self.constants is not None
+        name = self.data_type.split(".")
+        return LlvmClassDeclaration(name=name[-1], constants=self.constants)
+
 class LlvmDeclarationFactory:
 
-    def get(self, data_type: str) -> TypeDeclaration:
+    def get(self, data_type: str, constants: Optional[ConstantContainer] = None) -> TypeDeclaration:
         declaration_types = [
             LlvmVoidDeclarationFactory(data_type=data_type),
             LlvmFloatDeclarationFactory(data_type=data_type),
             LlvmPointerDeclarationFactory(data_type=data_type),
             LlvmIntegerDeclarationFactory(data_type=data_type),
-            LlvmArrayDeclarationFactory(data_type=data_type)
+            LlvmArrayDeclarationFactory(data_type=data_type),
+            LlvmClassDeclarationFactory(data_type=data_type, constants=constants)
         ]    
         for i in declaration_types:
             if i.match():
                 return i.get()
         assert False, f"Could not resolve data type: {data_type}"
-
-class LlvmType(ABC):
-    @abstractmethod
-    def get_name(self) -> str:
-        pass
-    @abstractmethod
-    def get_value(self) -> str:
-        pass
-    def is_name(self) -> bool:
-        return False
-    def is_integer(self) -> bool:
-        return False
-
-@dataclass(frozen=True)
-class LlvmName(LlvmType):
-    """
-    Example %0, %a, %x.coerce
-    """
-    name: str
-    def _to_string(self) -> str:
-        return self.name.replace("%", "").replace(".", "_")
-    def get_name(self) -> str:
-        return self._to_string()
-    def get_value(self) -> str:
-        return self._to_string()
-    def is_name(self) -> bool:
-        return True
-
-@dataclass(frozen=True)
-class LlvmInteger(LlvmType):
-    value: int
-    def get_name(self) -> str:
-        return str(self.value)
-    def get_value(self) -> str:
-        return f'x"{self.value:x}"'
-    def is_integer(self) -> bool:
-        return True
-
-class LlvmTypeFactory:
-    text: str
-    def __init__(self, text: str):
-        self.text = text
-        self._msg = Messages()
-    def resolve(self) -> LlvmType:
-        if "%" in self.text:
-            return LlvmName(self.text)
-        with contextlib.suppress(ValueError):
-            value = int(self.text)
-            return LlvmInteger(value)
-        raise ValueError(f"Unknown LlvmType = {self.text}")
 
 class VectorDeclaration(TypeDeclaration):
     

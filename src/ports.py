@@ -1,9 +1,10 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from llvm_declarations import LlvmName, LlvmType, TypeDeclaration
+from llvm_type_declaration import TypeDeclaration
+from llvm_type import LlvmType
 from source_info import SourceInfo
 
 @dataclass

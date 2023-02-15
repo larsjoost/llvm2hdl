@@ -7,11 +7,11 @@ from llvm_parser import LlvmModule
 
 class VhdlGen:
 
-    def parse(self, file_name: str, module: LlvmModule, file_handle: FunctionGenerator, statistics: InstanceStatistics) -> None:
+    def parse(self, file_name: str, module: LlvmModule, file_handle: FunctionGenerator) -> None:
         module.write_constants(file_writer=file_handle)
         file_contents: List[FunctionContents] = []
         for function in module.functions:
             function_parser = FunctionParser()
-            file_contents.append(function_parser.parse(function=function, constants=module.constants, file_handle=file_handle, statistics=statistics))    
+            file_contents.append(function_parser.parse(function=function, file_handle=file_handle))    
         file_printer = FilePrinter()
         file_printer.generate(file_name=file_name, contents=file_contents)

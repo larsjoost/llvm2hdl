@@ -11,7 +11,7 @@ from function_logger import log_entry_and_exit
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from instruction_interface import InstructionArgument
-from llvm_parser import ConstantDeclaration
+from llvm_constant import ConstantDeclaration
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer

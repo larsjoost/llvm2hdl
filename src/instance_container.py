@@ -6,7 +6,7 @@ from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface, SourceInfo
 from llvm_parser import LlvmInstruction, LlvmParser, ReturnInstruction
 from messages import Messages
-from llvm_declarations import LlvmType
+from llvm_type import LlvmType
 from ports import Port
 
 class InstanceContainer(InstanceContainerInterface):

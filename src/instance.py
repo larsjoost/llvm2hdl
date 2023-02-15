@@ -3,7 +3,8 @@ from typing import List, Optional
 from source_info import SourceInfo
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
-from llvm_declarations import LlvmName, TypeDeclaration
+from llvm_type_declaration import TypeDeclaration
+from llvm_type import LlvmName
 from llvm_parser import InstructionArgument, LlvmInstruction, LlvmParser
 from messages import Messages
 from instance_interface import InstanceInterface

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from instance_data import DeclarationData
 from instance_container_data import InstanceContainerData
-from llvm_declarations import LlvmType
+from llvm_type import LlvmType
 from source_info import SourceInfo
 
 class InstanceContainerInterface(ABC):

@@ -1,6 +1,6 @@
 import unittest
 
-from llvm_declarations import LlvmName
+from llvm_type import LlvmName
 from llvm_parser import ConstantContainer, GetelementptrInstructionParser, InstructionParserArguments, LlvmArgumentParser
 
 class TestGetelementptrInstructionParser(unittest.TestCase):        

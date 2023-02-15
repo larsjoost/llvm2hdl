@@ -2,7 +2,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from llvm_declarations import LlvmName, TypeDeclaration
+from llvm_type import LlvmName
+from llvm_type_declaration import TypeDeclaration
 
 class InstanceInterface(ABC):
 

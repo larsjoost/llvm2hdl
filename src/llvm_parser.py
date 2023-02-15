@@ -4,44 +4,15 @@ import re
 from typing import Dict, List, Tuple, Optional, Union
 from function_logger import log_entry_and_exit
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, MemoryInstruction, ReturnInstruction
-from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface, MemoryInterfaceMaster
+from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
+from llvm_constant import Constant, ConstantContainer, ConstantDeclaration
 
 from messages import Messages
-from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmPointerDeclaration, LlvmPointerDeclarationFactory, TypeDeclaration, LlvmIntegerDeclaration, LlvmName, LlvmTypeFactory
+from llvm_type_declaration import TypeDeclaration
+from llvm_type import LlvmName, LlvmTypeFactory
+from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 from ports import InputPort, Port
 
-
-@dataclass
-class Constant:
-    value: str
-    data_type: TypeDeclaration
-
-@dataclass
-class ConstantDeclaration:
-    name: str
-    type: TypeDeclaration
-    values: List[Constant]
-    def get_name(self) -> str:
-        return self.name.rsplit(".", maxsplit=1)[-1].strip()
-    def get_dimensions(self) -> Tuple[int, Optional[str]]:
-        return self.type.get_dimensions()
-    def get_values(self) -> List[str]:
-        return [i.value for i in self.values]
-    def _is_name(self, name: str) -> bool:
-        return self.get_name().strip() == name.strip()
-    def match(self, name: Optional[LlvmName]) -> bool:
-        return False if name is None else self._is_name(name=name.get_name())
-    
-@dataclass
-class ConstantContainer:
-    constants: List[ConstantDeclaration]
-    def write_constants(self, file_writer):
-        for i in self.constants:
-            file_writer.write_constant(constant=i)
-    def get_initialization(self, name: Optional[LlvmName]) -> Optional[List[str]]:
-        return next(
-            (i.get_values() for i in self.constants if i.match(name=name)), None
-        )
 
 @dataclass
 class InstructionPosition:
@@ -255,14 +226,16 @@ class ReturnInstructionParser(InstructionParser):
 
 class AllocaInstructionParser(InstructionParser):
 
+    @log_entry_and_exit
     def parse(self, arguments: InstructionParserArguments) -> InstructionInterface:
         # alloca [3 x i32], align 4
         # alloca i32, align 4
+        # alloca %class.ClassTest, align 4
         x = arguments.instruction.split(",")
         y = x[0].split(maxsplit=1)
         opcode = y[0]
         data_type_position = y[1].replace("[", "").replace("]", "")
-        data_type = LlvmDeclarationFactory().get(data_type=data_type_position)
+        data_type = LlvmDeclarationFactory().get(data_type=data_type_position, constants=arguments.constants)
         initialization = arguments.constants.get_initialization(name=arguments.destination)
         return AllocaInstruction(
             opcode=opcode, data_type=data_type, output_port_name=arguments.destination, initialization=initialization
@@ -543,9 +516,10 @@ class LlvmParser:
     def _extract_constants(self, text: str) -> List[str]:
         """
         @__const.main.n = private unnamed_addr constant [3 x i32] [i32 1, i32 2, i32 3], align 4
+        %class.ClassTest = type { i32, i32 }
         """
         lines = text.split("\n")
-        return [i for i in lines if i.startswith("@")]
+        return [i for i in lines if i.startswith(("@", "%"))]
 
     def _parse_constants(self, constants: List[str]) -> ConstantContainer:
         return ConstantContainer(constants=[i for i in [LlvmConstantParser().parse(i) for i in constants] if i is not None])

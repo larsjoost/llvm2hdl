@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface, LlvmMemoryOutputPort, LlvmOutputPort, MemoryInterface, MemoryInterfaceSlave
-from llvm_declarations import LlvmInteger, LlvmIntegerDeclaration, TypeDeclaration, LlvmName
+from llvm_declarations import LlvmIntegerDeclaration
+from llvm_type_declaration import TypeDeclaration
+from llvm_type import LlvmInteger, LlvmName
 
 @dataclass
 class ReturnInstruction(InstructionInterface):
