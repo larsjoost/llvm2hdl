@@ -68,8 +68,6 @@ architecture rtl of llvm_alloca is
 
   signal araddr_i, awaddr_i : integer range 0 to c_size - 1;
 
-  signal wdata_transfer_i : std_ulogic;
-
 begin
 
   araddr_i <= to_integer(unsigned(s_araddr)) mod c_size;
@@ -82,10 +80,8 @@ begin
 
   s_wready <= '1';
 
-  wdata_transfer_i <= s_wvalid and s_bready;
-
   process (clk)
-  variable memory_v : memory_t := get_initialization;
+    variable memory_v : memory_t := get_initialization;
   begin
     if rising_edge(clk) then
       if s_wvalid = '1' then
@@ -94,12 +90,23 @@ begin
       s_rdata  <= memory_v(araddr_i);
       s_rid    <= s_arid;
       s_rvalid <= s_arvalid;
-      if s_bready = '1' then
+    end if;
+  end process;
+
+  process (clk)
+    variable memory_v : memory_t := get_initialization;
+  begin
+    if rising_edge(clk) then
+      if sreset = '1' then
         s_bvalid <= '0';
-      end if;
-      if wdata_transfer_i = '1' then
-        s_bvalid <= '1';
-        s_bid    <= s_wid;
+      else
+        if s_bready = '1' then
+          s_bvalid <= '0';
+        end if;
+        if s_wvalid = '1' and (s_bvalid = '0' or s_bready = '1') then
+          s_bvalid <= '1';
+          s_bid    <= s_wid;
+        end if;
       end if;
     end if;
   end process;

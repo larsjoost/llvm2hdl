@@ -17,6 +17,15 @@ from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
 from messages import Messages
 
+class CommentGenerator:
+    def get_comment(self, current_frame: Optional[FrameType] = None) -> str:
+        if current_frame is None:
+            current_frame = inspect.currentframe()
+        frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
+        assert frame_info.file_name is not None
+        file_name = os.path.basename(frame_info.file_name)
+        return f"-- {file_name}({frame_info.line_number}): "
+
 @dataclass
 class Constant:
     constant : ConstantDeclaration
@@ -34,11 +43,28 @@ class FunctionContents:
     trailer : List[str]  =  field(default_factory=list)
     instances : List[str]  =  field(default_factory=list)
     
+@dataclass
+class Signals:
+    comment : str
+    signals : List[str]
+    
+class InstanceSignals:
+    signals: List[Signals] = []
+    def get_signals(self) -> str:
+        result = ""
+        for i in self.signals:
+            result += "\n" + i.comment + "\n"
+            result += "\n".join(f"signal {instance_signal};" for instance_signal in i.signals)
+        return result
+    def add(self, signals: List[str]) -> None:
+        comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
+        self.signals.append(Signals(comment=comment, signals=signals))
+
 class FunctionGenerator:
 
     _debug : bool = False
     _signals : List[VhdlSignal] = []
-    _instance_signals: List[str] = []
+    _instance_signals: InstanceSignals = InstanceSignals()
     _constants : List[Constant] = []
     _ports: PortContainer
     _function_contents: FunctionContents
@@ -50,12 +76,7 @@ class FunctionGenerator:
         self._msg = Messages()
 
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
-        if current_frame is None:
-            current_frame = inspect.currentframe()
-        frame_info = FrameInfoFactory().get_frame_info(current_frame=current_frame)
-        assert frame_info.file_name is not None
-        file_name = os.path.basename(frame_info.file_name)
-        return f"-- {file_name}({frame_info.line_number}): "
+        return CommentGenerator().get_comment(current_frame=current_frame)
         
     def _write_total_data_width(self, signals: List[VhdlSignal], ports: PortContainer) -> None:
         total_data_width = [i.get_data_width() for i in signals]
@@ -110,7 +131,7 @@ end function tag_to_std_ulogic_vector;
         self._write_header("signal tag_in_i, tag_out_i : tag_t;")
         signal_declaration = "\n".join(signal.get_signal_declaration() for signal in self._signals)
         self._write_header(signal_declaration)
-        signals = "\n".join(f"signal {instance_signal};" for instance_signal in self._instance_signals)
+        signals = self._instance_signals.get_signals()
         self._write_header(signals)
 
     def _write_declarations_to_header(self) -> None:
@@ -165,7 +186,7 @@ generic map (
         if instance.memory_interface is not None:
             master = instance.memory_interface.is_master()
             memory_port_map = vhdl_memory_port.get_port_map(name=instance.instance_name, master=master)
-            self._instance_signals.extend(vhdl_memory_port.get_port_signals(name=instance.instance_name))
+            self._instance_signals.add(vhdl_memory_port.get_port_signals(name=instance.instance_name))
         return memory_port_map
  
     def _get_input_port_map(self, input_port: InstructionArgument, instance: InstanceData) -> List[str]:
@@ -173,7 +194,7 @@ generic map (
         memory_interface_name = instance.get_memory_port_name(port=input_port)
         if memory_interface_name is not None:
             vhdl_memory_port = VhdlMemoryPort()
-            self._instance_signals.extend(vhdl_memory_port.get_port_signals(name=memory_interface_name))
+            self._instance_signals.add(vhdl_memory_port.get_port_signals(name=memory_interface_name))
         return vhdl_port.get_port_map(
             input_port=input_port, memory_interface_name=memory_interface_name
         )
@@ -232,7 +253,7 @@ end process;
         if not instance.is_work_library():
             self._function_contents.instances.append(instance.entity_name)
         vhdl_port = VhdlPortGenerator()
-        self._instance_signals.extend(vhdl_port.get_standard_ports_signals(instance=instance))
+        self._instance_signals.add(vhdl_port.get_standard_ports_signals(instance=instance))
         block_name = f"{instance.instance_name}_b"
         self._write_body(f"{block_name} : block")
         self._write_instance_signals(instance=instance)

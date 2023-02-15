@@ -87,7 +87,7 @@ begin
         if m_tready = '1' then
           m_tvalid <= '0';
         end if;
-        if m_bvalid = '1' and m_bready = '1' then
+        if m_bvalid = '1' and (m_bready = '1' or m_tvalid = '0') then
           m_tag    <= tag_storage_i(to_integer(unsigned(m_bid)));
           m_tvalid <= '1';
         end if;
@@ -95,4 +95,8 @@ begin
     end if;
   end process;
 
+  m_arvalid <= '0';
+
+  m_rready <= '0';
+  
 end architecture rtl;

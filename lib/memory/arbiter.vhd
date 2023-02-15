@@ -191,8 +191,8 @@ begin
   b_grant_i <= aw_tag_i(b_id_i).grant;
 
   m_bready <= s_bready(b_grant_i);
+  
   s_bvalid <= drive_one(m_bvalid, b_grant_i, s_bvalid'length);
-
   s_bid <= copy_all(aw_tag_i(b_id_i).id, s_bid'length);
 
 end architecture rtl;
