@@ -4,7 +4,7 @@ from typing import List, Optional
 from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface, LlvmMemoryOutputPort, LlvmOutputPort, MemoryInterface, MemoryInterfaceSlave
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmInteger, LlvmName
+from llvm_type import LlvmInteger, LlvmVariableName
 
 @dataclass
 class ReturnInstruction(InstructionInterface):
@@ -62,7 +62,7 @@ class BitcastInstruction(InstructionInterface):
 class AllocaInstruction(InstructionInterface):
     opcode: str
     data_type: TypeDeclaration
-    output_port_name: Optional[LlvmName]
+    output_port_name: Optional[LlvmVariableName]
     initialization: Optional[List[str]]
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)

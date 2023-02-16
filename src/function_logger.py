@@ -17,13 +17,14 @@ def log_entry_and_exit(func):
         func_args_str = ", ".join(map("{0[0]} = {0[1]!r}".format, func_args.items()))
         file_name = os.path.basename(frame_info.file_name)
         line_number = frame_info.line_number
+        function_name = ColorText(func.__name__, "blue")
         try:
             result = func(*args, **kwargs)  
         except Exception as e:
-            print(f"{file_name}({line_number}): {func.__name__}( {func_args_str} )")
+            print(f"{file_name}({line_number}): {function_name}( {func_args_str} )")
             raise e from e
         result_text = ColorText(str(result), "magenta")
-        print(f"{file_name}({line_number}): {func.__name__}( {func_args_str} ) = {result_text}")
+        print(f"{file_name}({line_number}): {function_name}( {func_args_str} ) = {result_text}")
         return result
 
     return wrapper

@@ -2,13 +2,13 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from llvm_type import LlvmName
+from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
 
 class InstanceInterface(ABC):
 
     @abstractmethod
-    def get_output_signal_name(self) -> LlvmName:
+    def get_output_signal_name(self) -> LlvmVariableName:
         pass
 
     @abstractmethod

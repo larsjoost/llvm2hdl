@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass
 import os
+import inspect
 from typing import Optional
 from types import FrameType
 
@@ -13,8 +14,10 @@ class FrameInfo:
 
 class FrameInfoFactory:
     
-    def get_frame_info(self, current_frame: Optional[FrameType]) -> FrameInfo:
+    def get_frame_info(self, current_frame: Optional[FrameType] = None) -> FrameInfo:
         result = FrameInfo()
+        if current_frame is None:
+            current_frame = inspect.currentframe()
         if current_frame is not None:
             previous_frame = current_frame.f_back
             if previous_frame is not None:

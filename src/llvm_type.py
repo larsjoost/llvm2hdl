@@ -1,9 +1,9 @@
 
 
 from abc import ABC, abstractmethod
-import contextlib
 from dataclasses import dataclass
 
+from function_logger import log_entry_and_exit
 from messages import Messages
 
 class LlvmType(ABC):
@@ -18,12 +18,22 @@ class LlvmType(ABC):
     def is_integer(self) -> bool:
         return False
 
+class LlvmTypeMatch(ABC):
+    @abstractmethod
+    def match(self, text: str) -> bool:
+        pass
+    @abstractmethod
+    def get(self, text: str) -> LlvmType:
+        pass
+
 @dataclass(frozen=True)
-class LlvmName(LlvmType):
+class LlvmName:
+    name: str
+
+class LlvmVariableName(LlvmName, LlvmType):
     """
     Example %0, %a, %x.coerce
     """
-    name: str
     def _to_string(self) -> str:
         return self.name.replace("%", "").replace(".", "_")
     def get_name(self) -> str:
@@ -32,6 +42,50 @@ class LlvmName(LlvmType):
         return self._to_string()
     def is_name(self) -> bool:
         return True
+    def equals(self, other: LlvmName) -> bool:
+        return self.name == other.name
+
+class LlvmVariableNameMatch(LlvmTypeMatch):
+    def match(self, text: str) -> bool:
+        return text.startswith("%")
+    def get(self, text: str) -> LlvmType:
+        return LlvmVariableName(name=text)
+
+class LlvmConstantName(LlvmName, LlvmType):
+    """
+    Example @__const_main_n.n
+    """
+    def _to_string(self) -> str:
+        return self.name.split(".")[-1]
+    def get_name(self) -> str:
+        return self._to_string()
+    def get_value(self) -> str:
+        return self._to_string()
+    def is_name(self) -> bool:
+        return True
+    def match(self) -> bool:
+        return self.name.startswith("@")
+
+class LlvmConstantNameMatch(LlvmTypeMatch):
+    def match(self, text: str) -> bool:
+        return text.startswith("@")
+    def get(self, text: str) -> LlvmType:
+        return LlvmConstantName(name=text)
+
+class LlvmReferenceName(LlvmName, LlvmType):
+    """
+    Example @__const_main_n.n
+    """
+    def _to_string(self) -> str:
+        return self.name.split(".")[-1]
+    def get_name(self) -> str:
+        return self._to_string()
+    def get_value(self) -> str:
+        return self._to_string()
+    def is_name(self) -> bool:
+        return True
+    def match(self) -> bool:
+        return self.name.startswith("@")
 
 @dataclass(frozen=True)
 class LlvmInteger(LlvmType):
@@ -42,6 +96,12 @@ class LlvmInteger(LlvmType):
         return f'x"{self.value:x}"'
     def is_integer(self) -> bool:
         return True
+    
+class LlvmIntegerMatch(LlvmTypeMatch):
+    def match(self, text: str) -> bool:
+        return text.isdigit()
+    def get(self, text: str) -> LlvmType:
+        return LlvmInteger(value=int(text))
 
 class LlvmTypeFactory:
     text: str
@@ -49,9 +109,8 @@ class LlvmTypeFactory:
         self.text = text
         self._msg = Messages()
     def resolve(self) -> LlvmType:
-        if "%" in self.text:
-            return LlvmName(self.text)
-        with contextlib.suppress(ValueError):
-            value = int(self.text)
-            return LlvmInteger(value)
+        types = [LlvmVariableNameMatch(), LlvmConstantNameMatch(), LlvmIntegerMatch()]
+        for i in types:
+            if i.match(text=self.text):
+                return i.get(text=self.text)
         raise ValueError(f"Unknown LlvmType = {self.text}")

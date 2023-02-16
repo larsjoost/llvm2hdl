@@ -4,9 +4,8 @@ from file_writer import FunctionContents, FunctionGenerator
 from function_definition import FunctionDefinition
 from instance_container import InstanceContainer
 from llvm_declarations import LlvmIntegerDeclaration
-from llvm_type import LlvmName
+from llvm_type import LlvmVariableName
 from llvm_parser import LlvmFunction, CallInstructionParser
-from llvm_constant import ConstantContainer
 from messages import Messages
 from ports import OutputPort, Port, PortContainer
 from function_logger import log_entry_and_exit
@@ -24,7 +23,7 @@ class FunctionParser:
         return CallInstructionParser().get_entity_name(name)
 
     def parse(self, function: LlvmFunction, file_handle: FunctionGenerator) -> FunctionContents:								
-        output_port: List[Port] = [OutputPort(name=LlvmName("m_tdata"), data_type=function.return_type)]
+        output_port: List[Port] = [OutputPort(name=LlvmVariableName("m_tdata"), data_type=function.return_type)]
         input_ports: List[Port] = function.get_input_ports()
         instance_container = InstanceContainer(instructions=function.instructions, input_ports=input_ports)
         entity_name = self._get_entity_name(function.name)

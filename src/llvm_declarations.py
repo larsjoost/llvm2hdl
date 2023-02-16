@@ -1,11 +1,12 @@
 
 import re
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
-from llvm_constant import ConstantContainer
-from llvm_type import LlvmName
+from llvm_constant_container import ConstantContainer
+from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration, TypeDeclarationFactory
-    
+from function_logger import log_entry_and_exit
+
 class LlvmVoidDeclaration(TypeDeclaration):
 
     def get_dimensions(self) -> Tuple[int, str]:
@@ -73,7 +74,8 @@ class LlvmIntegerDeclarationFactory(TypeDeclarationFactory):
         return bool(re.match("^i\d+", self.data_type))
 
     def get(self) -> TypeDeclaration:
-        data_width = int(self.data_type[1:])
+        data_type = self.data_type.strip()
+        data_width = int(data_type[1:])
         return LlvmIntegerDeclaration(data_width=data_width)
 
 @dataclass
@@ -169,22 +171,50 @@ class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
         return LlvmArrayDeclaration(x=LlvmConstantDeclaration(x[0]), y=y)
 
 @dataclass
+class LlvmListDeclaration(TypeDeclaration):
+    """
+    Declaration: <type>, <type>
+    Example:
+    i32, i32
+    """
+    data_types: List[TypeDeclaration]
+
+    def get_data_width(self) -> str:
+        data_width = [i.get_data_width() for i in self.data_types]        
+        return " + ".join(data_width)
+
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
+        return 1, self.get_data_width()
+
+@dataclass
+class LlvmListDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
+
+    def match(self) -> bool:
+        return "," in self.data_type
+
+    def get(self) -> TypeDeclaration:
+        data_types = [LlvmIntegerDeclarationFactory(data_type=i).get() for i in self.data_type.split(",")]
+        return LlvmListDeclaration(data_types=data_types)
+
+@dataclass
 class LlvmClassDeclaration(TypeDeclaration):
     """
     Declaration: %class.<name>
     Example:
     %class.ClassTest
     """
-    name: str
+    name: LlvmVariableName
     constants: ConstantContainer
 
     def get_data_width(self) -> str:
-        data_width = self.constants.get_data_width(name=LlvmName(self.name))        
+        data_width = self.constants.get_data_width(name=self.name)        
         assert data_width is not None
         return data_width
 
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
-        return 1, self.name
+        return 1, self.get_data_width()
 
 @dataclass
 class LlvmClassDeclarationFactory(TypeDeclarationFactory):
@@ -199,8 +229,7 @@ class LlvmClassDeclarationFactory(TypeDeclarationFactory):
 
     def get(self) -> TypeDeclaration:
         assert self.constants is not None
-        name = self.data_type.split(".")
-        return LlvmClassDeclaration(name=name[-1], constants=self.constants)
+        return LlvmClassDeclaration(name=LlvmVariableName(self.data_type), constants=self.constants)
 
 class LlvmDeclarationFactory:
 

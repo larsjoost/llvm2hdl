@@ -5,13 +5,15 @@ import io
 import os
 from types import FrameType
 from typing import IO, List, Optional
+from file_writer_interface import FileWriterInterface
 from frame_info import FrameInfoFactory
 from function_definition import FunctionDefinition
 from function_logger import log_entry_and_exit
 from instance_data import DeclarationData, InstanceData
 from instance_container_data import InstanceContainerData
 from instruction_interface import InstructionArgument
-from llvm_constant import ConstantDeclaration
+from llvm_constant import ConstantDeclaration, ReferenceDeclaration
+from llvm_parser import CallInstructionParser
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
@@ -27,14 +29,32 @@ class CommentGenerator:
         return f"-- {file_name}({frame_info.line_number}): "
 
 @dataclass
-class Constant:
+class FileWriterConstant:
     constant : ConstantDeclaration
     def write_constant(self) -> str:
         vhdl_declaration = VhdlDeclarations(self.constant.type)
-        initialization = vhdl_declaration.get_initialization(values=self.constant.get_values())
+        values = self.constant.get_values()
+        if values is None:
+            return ""
+        initialization = vhdl_declaration.get_initialization(values=values)
         name = self.constant.get_name()
         return f"constant {name} : std_ulogic_vector := {initialization};"
 
+@dataclass
+class FileWriterReference:
+    reference : ReferenceDeclaration
+    def write_reference(self) -> str:
+        name = CallInstructionParser().get_entity_name(self.reference.get_name())
+        reference = CallInstructionParser().get_entity_name(self.reference.reference.get_name())
+        comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
+        return f"""
+{comment}
+configuration {name}_cfg of {reference} is
+    for all : {reference}
+      use configuration work.{name};
+    end for;
+end configuration {name}_cfg;
+        """
 
 @dataclass
 class FunctionContents:
@@ -60,12 +80,13 @@ class InstanceSignals:
         comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
         self.signals.append(Signals(comment=comment, signals=signals))
 
-class FunctionGenerator:
+class FunctionGenerator(FileWriterInterface):
 
     _debug : bool = False
     _signals : List[VhdlSignal] = []
     _instance_signals: InstanceSignals = InstanceSignals()
-    _constants : List[Constant] = []
+    _constants : List[FileWriterConstant] = []
+    _references: List[FileWriterReference] = []
     _ports: PortContainer
     _function_contents: FunctionContents
 
@@ -120,13 +141,17 @@ end function tag_to_std_ulogic_vector;
 
         """)
         
-    def _write_constants(self, constants: List[Constant]) -> None:
+    def _write_constants(self, constants: List[FileWriterConstant]) -> None:
         default_constants = [("c_mem_addr_width", 32), ("c_mem_data_width", 32), ("c_mem_id_width", 8)]
         for name, width in default_constants:
             self._write_header(f"constant {name} : positive := {width};")
         for i in constants:
             self._write_header(i.write_constant())
         
+    def _write_references(self, references: List[FileWriterReference]) -> None:
+        for i in references:
+            self._write_trailer(i.write_reference())
+
     def _write_signals(self) -> None:
         self._write_header("signal tag_in_i, tag_out_i : tag_t;")
         signal_declaration = "\n".join(signal.get_signal_declaration() for signal in self._signals)
@@ -144,6 +169,9 @@ end function tag_to_std_ulogic_vector;
         self._write_signals()
         self._write_header("begin")
 
+    def _write_references_to_trailer(self) -> None:
+        self._write_references(references=self._references)
+        
     def _print_to_string(self, *args, **kwargs) -> str:
         output = io.StringIO()
         print(*args, file=output, **kwargs)
@@ -351,7 +379,10 @@ end block {block_name};
             self._write_signal(declaration=i)
 
     def write_constant(self, constant: ConstantDeclaration):
-        self._constants.append(Constant(constant))
+        self._constants.append(FileWriterConstant(constant=constant))
+
+    def write_reference(self, reference: ReferenceDeclaration):
+        self._references.append(FileWriterReference(reference=reference))
 
     def _write_include_libraries(self) -> None:
         self._write_header("""
@@ -390,6 +421,7 @@ library work;
         self._write_entity(entity_name=function.entity_name, ports=function.ports)
         self._write_architecture(function=function)
         self._write_declarations_to_header()
+        self._write_references_to_trailer()
         return self._function_contents
 
 class FilePrinter:

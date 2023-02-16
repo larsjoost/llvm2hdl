@@ -4,7 +4,7 @@ from source_info import SourceInfo
 from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmName
+from llvm_type import LlvmVariableName
 from llvm_parser import InstructionArgument, LlvmInstruction, LlvmParser
 from messages import Messages
 from instance_interface import InstanceInterface
@@ -37,8 +37,8 @@ class Instance(InstanceInterface):
     def get_tag_name(self) -> str:
         return f"{self.get_instance_name()}_tag_out_i"
 
-    def get_output_signal_name(self) -> LlvmName:
-        return LlvmName(self.get_instance_name())	
+    def get_output_signal_name(self) -> LlvmVariableName:
+        return LlvmVariableName(self.get_instance_name())	
 
     def get_instance_tag_name(self, instance: Optional[InstanceInterface], default: str) -> str:
         return default if instance is None else instance.get_tag_name()	

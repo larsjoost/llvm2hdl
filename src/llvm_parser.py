@@ -5,12 +5,13 @@ from typing import Dict, List, Tuple, Optional, Union
 from function_logger import log_entry_and_exit
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, MemoryInstruction, ReturnInstruction
 from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
-from llvm_constant import Constant, ConstantContainer, ConstantDeclaration
+from llvm_constant import ClassDeclaration, Constant, ConstantDeclaration, DeclarationContainer, ReferenceDeclaration
+from llvm_constant_container import ConstantContainer
 
 from messages import Messages
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmName, LlvmTypeFactory
-from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
+from llvm_type import LlvmConstantName, LlvmName, LlvmReferenceName, LlvmVariableName, LlvmTypeFactory
+from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmListDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 from ports import InputPort, Port
 
 
@@ -74,7 +75,7 @@ class LlvmParserUtilities:
 
 @dataclass
 class LlvmInstruction(ABC):
-    def get_destination(self) -> Optional[LlvmName]:
+    def get_destination(self) -> Optional[LlvmVariableName]:
         return None
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return None
@@ -105,11 +106,11 @@ class LlvmInstructionLabel(LlvmInstruction):
 
 @dataclass
 class LlvmInstructionCommand(LlvmInstruction):
-    destination: Optional[LlvmName]
+    destination: Optional[LlvmVariableName]
     instruction: InstructionInterface
     def is_valid(self) -> bool:
         return self.instruction.is_valid()
-    def get_destination(self) -> Optional[LlvmName]:
+    def get_destination(self) -> Optional[LlvmVariableName]:
         return self.destination
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return self.instruction.get_output_port()
@@ -151,7 +152,7 @@ class LlvmInstructionLabelParser:
 @dataclass
 class InstructionParserArguments:
     instruction: str
-    destination: Optional[LlvmName]
+    destination: Optional[LlvmVariableName]
     constants: ConstantContainer
 
 class InstructionParser(ABC):
@@ -171,7 +172,7 @@ class BitCastInstructionParser(InstructionParser):
         opcode = c[0]
         data_width = int(" ".join(c[1:-3]))
         data_type = LlvmIntegerDeclaration(data_width=data_width)
-        signal_name = LlvmName(c[-3])
+        signal_name = LlvmVariableName(c[-3])
         argument = InstructionArgument(signal_name=signal_name, data_type=data_type)
         operands = [argument]
         return BitcastInstruction(
@@ -198,7 +199,7 @@ class GetelementptrInstructionParser(InstructionParser):
         # 2) array_index = "i64", "0"
         pointer_offset = int(array_index[-1])
         signal_data_type = LlvmPointerDeclaration()
-        signal_name = LlvmName(data_type[1])
+        signal_name = LlvmVariableName(data_type[1])
         argument = InstructionArgument(signal_name=signal_name, data_type=signal_data_type)
         operands = [argument]
         return GetelementptrInstruction(opcode=opcode, data_type=signal_data_type, operands=operands, offset=pointer_offset)
@@ -217,7 +218,7 @@ class ReturnInstructionParser(InstructionParser):
         data_width = int(a[1].strip())
         data_type = LlvmIntegerDeclaration(data_width=data_width)
         try:
-            signal_name = LlvmName(a[2].strip())
+            signal_name = LlvmVariableName(a[2].strip())
             argument = InstructionArgument(signal_name=signal_name, data_type=data_type)
             operands = [argument]
         except IndexError:
@@ -226,7 +227,6 @@ class ReturnInstructionParser(InstructionParser):
 
 class AllocaInstructionParser(InstructionParser):
 
-    @log_entry_and_exit
     def parse(self, arguments: InstructionParserArguments) -> InstructionInterface:
         # alloca [3 x i32], align 4
         # alloca i32, align 4
@@ -370,7 +370,7 @@ class LlvmInstructionCommandParser:
         utils = LlvmParserUtilities()
         if "=" in text:
             x = text.split("=")
-            destination = LlvmName(utils.get_list_element(x, 0))
+            destination = LlvmVariableName(utils.get_list_element(x, 0))
             source = utils.get_list_element(x, 1)
         arguments = InstructionParserArguments(instruction=source, destination=destination, constants=constants)
         instruction = self._parse_instruction(arguments=arguments)
@@ -467,16 +467,21 @@ class LlvmConstantParser:
             definitions.append(Constant(value=value, data_type=data_type))
         return definitions
 
-    def parse(self, instruction: str) -> Optional[ConstantDeclaration]:
+    def _parse_class(self, name: str, source: str) -> DeclarationContainer:
+        """
+        %class.ClassTest = type { i32, i32 }
+        """
+        source_split = source.split("{")
+        # source_split = ["%class.ClassTest = type ","i32, i32 }"]
+        data_type = source_split[-1].split("}")[0]
+        # data_type = "i32, i32"
+        declaration = LlvmListDeclarationFactory(data_type=data_type).get()
+        return DeclarationContainer(class_declaration=ClassDeclaration(name=LlvmVariableName(name), type=declaration))
+
+    def _parse_const(self, name: str, source: str) -> DeclarationContainer:
         """
         @__const.main.n = private unnamed_addr constant [3 x i32] [i32 1, i32 2, i32 3], align 4
-        @_ZN9ClassTestC1Eii = dso_local unnamed_addr alias void (%class.ClassTest*, i32, i32), void (%class.ClassTest*, i32, i32)* @_ZN9ClassTestC2Eii
         """
-        if " constant " not in instruction:
-            return None
-        assignment = instruction.split("=")
-        name = assignment[0]
-        source = assignment[1]
         source_split = source.split("[")
         # source_split = ["private unnamed_addr constant ","3 x i32]", "i32 1, i32 2, i32 3], align 4"]
         definition = source_split[-1].split("]")[0]
@@ -485,7 +490,31 @@ class LlvmConstantParser:
         # data_type = "3 x i32"
         constant_type = LlvmArrayDeclarationFactory(data_type=data_type).get()
         definitions = self._parse_definition(definition=definition)
-        return ConstantDeclaration(name=name, type=constant_type, values=definitions)
+        return DeclarationContainer(constant_declaration=ConstantDeclaration(name=LlvmConstantName(name), type=constant_type, values=definitions))
+
+    def _parse_reference(self, name: str, source: str) -> DeclarationContainer:
+        """
+        @_ZN9ClassTestC1Eii = dso_local unnamed_addr alias void (%class.ClassTest*, i32, i32), void (%class.ClassTest*, i32, i32)* @_ZN9ClassTestC2Eii
+        """
+        reference = source.split()[-1]
+        return DeclarationContainer(reference_declaration=ReferenceDeclaration(name=LlvmReferenceName(name), reference=LlvmReferenceName(reference)))
+
+    def parse(self, instruction: str) -> Optional[DeclarationContainer]:
+        """
+        @__const.main.n = private unnamed_addr constant [3 x i32] [i32 1, i32 2, i3}2 3], align 4
+        @_ZN9ClassTestC1Eii = dso_local unnamed_addr alias void (%class.ClassTest*, i32, i32), void (%class.ClassTest*, i32, i32)* @_ZN9ClassTestC2Eii
+        %class.ClassTest = type { i32, i32 }
+        """
+        assignment = instruction.split("=")
+        name = assignment[0].strip()    
+        source = assignment[1]
+        if name.startswith("@__const."):
+            return self._parse_const(name=name, source=source)
+        if name.startswith("%class."):
+            return self._parse_class(name=name, source=source)
+        if name.startswith("@"):
+            return self._parse_reference(name=name, source=source)
+        assert False, f"Could not parse instruction {instruction}"
 
 @dataclass
 class LlvmModule:
@@ -493,6 +522,8 @@ class LlvmModule:
     constants: ConstantContainer
     def write_constants(self, file_writer):
         self.constants.write_constants(file_writer=file_writer)
+    def write_references(self, file_writer):
+        self.constants.write_references(file_writer=file_writer)
 
 class LlvmParser:
 
@@ -522,8 +553,9 @@ class LlvmParser:
         return [i for i in lines if i.startswith(("@", "%"))]
 
     def _parse_constants(self, constants: List[str]) -> ConstantContainer:
-        return ConstantContainer(constants=[i for i in [LlvmConstantParser().parse(i) for i in constants] if i is not None])
-        
+        parsed_constants = [i for i in [LlvmConstantParser().parse(i) for i in constants] if i is not None]
+        return ConstantContainer(declarations=parsed_constants)
+
     def parse(self, text: str) -> LlvmModule:
         without_comments = self._remove_comments(text)
         functions = self._extract_functions(without_comments)
