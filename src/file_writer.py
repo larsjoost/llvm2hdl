@@ -87,7 +87,9 @@ class Signals:
     signals : List[str]
     
 class InstanceSignals:
-    signals: List[Signals] = []
+    signals: List[Signals]
+    def __init__(self) -> None:
+        self.signals = []
     def get_signals(self) -> str:
         result = ""
         for i in self.signals:
@@ -100,11 +102,10 @@ class InstanceSignals:
 
 class VhdlFunctionGenerator(FileWriterInterface):
 
-    _debug : bool = False
-    _signals : List[VhdlSignal] = []
-    _instance_signals: InstanceSignals = InstanceSignals()
-    _constants : List[FileWriterConstant] = []
-    _references: List[FileWriterReference] = []
+    _signals : List[VhdlSignal]
+    _instance_signals: InstanceSignals
+    _constants : List[FileWriterConstant]
+    _references: List[FileWriterReference]
     _ports: PortContainer
     _function_contents: FunctionContents
 
@@ -113,7 +114,11 @@ class VhdlFunctionGenerator(FileWriterInterface):
         
     def __init__(self):
         self._msg = Messages()
-
+        self._signals = []
+        self._instance_signals = InstanceSignals()
+        self._constants = []
+        self._references = []
+        
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         return CommentGenerator().get_comment(current_frame=current_frame)
         

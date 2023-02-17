@@ -39,8 +39,7 @@ def main():
 
     statistics = InstanceStatistics()
 
-    file_generator = VhdlFunctionGenerator()
-    VhdlGen().parse(file_name=output_file_name, module=llvm_module, file_handle=file_generator)
+    VhdlGen().parse(file_name=output_file_name, module=llvm_module)
     
     if args.verbose:
         statistics.print()
