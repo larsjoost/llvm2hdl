@@ -32,7 +32,7 @@ architecture behavior of test_main is
 
 begin
 
-  entitymain_1 : entity work.entitymain
+  main_1 : entity work.main
     port map (
       clk      => clk,
       sreset   => sreset,

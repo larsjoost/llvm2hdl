@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface, LlvmMemoryOutputPort, LlvmOutputPort, MemoryInterface, MemoryInterfaceSlave
+from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface, MemoryInterface, MemoryInterfaceSlave
+from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmInteger, LlvmVariableName

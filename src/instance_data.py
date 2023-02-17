@@ -1,8 +1,9 @@
 from typing import List, Optional
 
 from dataclasses import dataclass
-from llvm_parser import InstructionArgument, LlvmInstruction, MemoryInterface, LlvmOutputPort
-from vhdl_declarations import VhdlDeclarations
+from llvm_instruction import LlvmInstruction
+from llvm_parser import InstructionArgument, MemoryInterface, LlvmOutputPort
+from llvm_type_declaration import TypeDeclaration
 from function_logger import log_entry_and_exit
 
 @dataclass
@@ -46,9 +47,9 @@ class InstanceData:
 @dataclass
 class DeclarationData:
     instance_name: str
-    entity_name: str
-    type: VhdlDeclarations
+    declaration_name: str
+    data_type: TypeDeclaration
 
     def is_void(self) -> bool:
-        return self.type.is_void()
+        return self.data_type.is_void()
 

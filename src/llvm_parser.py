@@ -7,13 +7,14 @@ from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, 
 from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
 from llvm_constant import ClassDeclaration, Constant, ConstantDeclaration, DeclarationContainer, ReferenceDeclaration
 from llvm_constant_container import ConstantContainer
+from llvm_function import LlvmFunction, LlvmFunctionContainer
+from llvm_instruction import LlvmInstruction
+from llvm_module import LlvmModule
 
 from messages import Messages
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmConstantName, LlvmName, LlvmReferenceName, LlvmVariableName, LlvmTypeFactory
+from llvm_type import LlvmConstantName, LlvmReferenceName, LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmListDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
-from ports import InputPort, Port
-
 
 @dataclass
 class InstructionPosition:
@@ -74,31 +75,6 @@ class LlvmParserUtilities:
         return text.split()[0]
 
 @dataclass
-class LlvmInstruction(ABC):
-    def get_destination(self) -> Optional[LlvmVariableName]:
-        return None
-    def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return None
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
-        return None
-    def get_data_type(self) -> Optional[TypeDeclaration]:
-        return None
-    def get_library(self) -> Optional[str]:
-        return None
-    def get_instance_name(self) -> Optional[str]:
-        return None
-    def get_generic_map(self) -> Optional[List[str]]:
-        return None
-    def get_memory_interface(self) -> Optional[MemoryInterface]:
-        return None
-    def is_valid(self) -> bool:
-        return True
-    def is_memory(self) -> bool:
-        return False
-    def map_function_arguments(self) -> bool:
-        return False
-
-@dataclass
 class LlvmInstructionLabel(LlvmInstruction):
     name: str
     def is_valid(self) -> bool:
@@ -130,15 +106,6 @@ class LlvmInstructionCommand(LlvmInstruction):
         return self.instruction.is_memory()
     def map_function_arguments(self) -> bool:
         return self.instruction.map_function_arguments()
-
-@dataclass
-class LlvmFunction:
-    name: str
-    arguments: List[InstructionArgument]
-    return_type : TypeDeclaration
-    instructions: List[LlvmInstruction]
-    def get_input_ports(self) -> List[Port]:
-        return [InputPort(name=i.signal_name, data_type=i.data_type) for i in self.arguments]
 
 class LlvmInstructionLabelParser:
 
@@ -243,9 +210,6 @@ class AllocaInstructionParser(InstructionParser):
 
 class CallInstructionParser(InstructionParser):
 
-    def get_entity_name(self, name: str) -> str:
-        return "entity" + name.replace("@", "")
-
     def _split_function_call_from_arguments(self, text: str) -> Tuple[str, str]:
         split_text = text.split('(', maxsplit=1)
         function_call = split_text[0]
@@ -257,10 +221,9 @@ class CallInstructionParser(InstructionParser):
         return any(name.startswith(i) for i in ignored_functions)
 
     def _get_call_instruction(self, function_name: str, return_type: str, arguments: str) -> CallInstruction:
-        name = self.get_entity_name(function_name)
         data_type = LlvmDeclarationFactory().get(return_type)
         operands = LlvmArgumentParser().parse(arguments=arguments, unnamed=True)
-        return CallInstruction(opcode=name, data_type=data_type, operands=operands)
+        return CallInstruction(opcode=function_name, data_type=data_type, operands=operands)
 
     def _split_function_call(self, function_call: str) -> Tuple[str, str]:
         head_split = function_call.split()
@@ -516,15 +479,6 @@ class LlvmConstantParser:
             return self._parse_reference(name=name, source=source)
         assert False, f"Could not parse instruction {instruction}"
 
-@dataclass
-class LlvmModule:
-    functions: List[LlvmFunction]
-    constants: ConstantContainer
-    def write_constants(self, file_writer):
-        self.constants.write_constants(file_writer=file_writer)
-    def write_references(self, file_writer):
-        self.constants.write_references(file_writer=file_writer)
-
 class LlvmParser:
 
     def __init__(self):
@@ -561,5 +515,5 @@ class LlvmParser:
         functions = self._extract_functions(without_comments)
         constants = self._extract_constants(without_comments)
         llvm_constants = self._parse_constants(constants=constants)
-        llvm_functions =[LlvmFunctionParser().parse(text=i, constants=llvm_constants) for i in functions]
+        llvm_functions = LlvmFunctionContainer(functions=[LlvmFunctionParser().parse(text=i, constants=llvm_constants) for i in functions])
         return LlvmModule(functions=llvm_functions, constants=llvm_constants)

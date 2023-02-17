@@ -6,7 +6,6 @@ from instance_container_data import InstanceContainerData
 from instance_data import DeclarationData
 from ports import PortContainer
 
-
 @dataclass
 class FunctionDefinition:
     entity_name: str

@@ -11,10 +11,14 @@ def log_entry_and_exit(func):
     This includes parameters names and effective values.
     """
 
+    def _get_argument(key, value) -> str:
+        x = ColorText(key, "yellow")
+        return f"{x} = {value}"
+
     def wrapper(*args, **kwargs):
         frame_info = FrameInfoFactory().get_frame_info(current_frame=inspect.currentframe())
         func_args = inspect.signature(func).bind(*args, **kwargs).arguments
-        func_args_str = ", ".join(map("{0[0]} = {0[1]!r}".format, func_args.items()))
+        func_args_str = ", ".join(_get_argument(key=key, value=value) for key, value in func_args.items())
         file_name = os.path.basename(frame_info.file_name)
         line_number = frame_info.line_number
         function_name = ColorText(func.__name__, "blue")

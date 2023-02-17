@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 
 from llvm_constant import ConstantDeclaration, ReferenceDeclaration
-
+from llvm_function import LlvmFunctionContainer
 
 class FileWriterInterface(ABC):
 
@@ -11,6 +11,6 @@ class FileWriterInterface(ABC):
         pass
 
     @abstractmethod
-    def write_reference(self, reference: ReferenceDeclaration):
+    def write_reference(self, reference: ReferenceDeclaration, functions: LlvmFunctionContainer):
         pass
 

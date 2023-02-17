@@ -5,10 +5,10 @@ from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName
-from llvm_parser import InstructionArgument, LlvmInstruction, LlvmParser
+from llvm_parser import InstructionArgument, LlvmParser
+from llvm_instruction import LlvmInstruction
 from messages import Messages
 from instance_interface import InstanceInterface
-from vhdl_declarations import VhdlDeclarations
 
 class Instance(InstanceInterface):
 
@@ -92,6 +92,4 @@ class Instance(InstanceInterface):
     def get_declaration_data(self) -> DeclarationData:
         data_type = self.instruction.get_data_type()
         assert data_type is not None
-        vhdl_decl = VhdlDeclarations(data_type=data_type)
-        return DeclarationData(instance_name=self.get_instance_name(), entity_name=self.get_tag_name(), type=vhdl_decl)
-
+        return DeclarationData(instance_name=self.get_instance_name(), declaration_name=self.get_tag_name(), data_type=data_type)

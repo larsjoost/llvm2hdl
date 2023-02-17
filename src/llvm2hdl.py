@@ -2,7 +2,7 @@ import os
 import argparse
 
 from instance_statistics import InstanceStatistics
-from file_writer import FunctionGenerator
+from file_writer import VhdlFunctionGenerator
 from llvm_parser import LlvmParser
 from vhdlgen import VhdlGen
 
@@ -39,7 +39,7 @@ def main():
 
     statistics = InstanceStatistics()
 
-    file_generator = FunctionGenerator()
+    file_generator = VhdlFunctionGenerator()
     VhdlGen().parse(file_name=output_file_name, module=llvm_module, file_handle=file_generator)
     
     if args.verbose:
