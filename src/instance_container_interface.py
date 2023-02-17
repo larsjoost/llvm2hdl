@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from instance_data import DeclarationData

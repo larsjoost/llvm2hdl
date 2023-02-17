@@ -2,8 +2,6 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
 from instruction_argument import InstructionArgument
-
-from llvm_type import LlvmType
 from llvm_type_declaration import TypeDeclaration
 from vhdl_instance_name import VhdlInstanceName
 

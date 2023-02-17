@@ -1,6 +1,5 @@
 from typing import List
 
-from file_writer import FunctionContents, VhdlFunctionGenerator
 from function_definition import FunctionDefinition
 from instance_container import InstanceContainer
 from llvm_declarations import LlvmIntegerDeclaration
@@ -9,7 +8,6 @@ from llvm_function import LlvmFunction
 from messages import Messages
 from ports import OutputPort, Port, PortContainer
 from function_logger import log_entry_and_exit
-from vhdl_entity import VhdlEntity
 
 class FunctionParser:
 

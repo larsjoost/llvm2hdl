@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional
 from function_logger import log_entry_and_exit
 
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmReferenceName, LlvmType, LlvmVariableName
+from llvm_type import LlvmReferenceName, LlvmType
 
 @dataclass
 class Constant:

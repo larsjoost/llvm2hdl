@@ -1,6 +1,4 @@
 
-
-from dataclasses import dataclass
 from ports import PortContainer
 from vhdl_port import VhdlPortGenerator
 from vhdl_instance_name import VhdlInstanceName

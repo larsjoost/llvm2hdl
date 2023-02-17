@@ -1,7 +1,6 @@
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional
 from instruction_argument import InstructionArgument
 from llvm_port import LlvmOutputPort
 

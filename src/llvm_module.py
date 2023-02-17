@@ -1,6 +1,5 @@
 
 from dataclasses import dataclass
-from typing import List
 
 from llvm_function import LlvmFunctionContainer
 from llvm_constant_container import ConstantContainer

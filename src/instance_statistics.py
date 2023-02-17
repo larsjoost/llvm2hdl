@@ -16,4 +16,4 @@ class InstanceStatistics:
     def print(self):
         self.msg.note("Instance statistics:")
         for i in self.statistics.keys():
-            self.msg.note(i + ": " + str(self.statistics[i]))
+            self.msg.note(f"{i}: {str(self.statistics[i])}")

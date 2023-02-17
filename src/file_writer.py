@@ -8,7 +8,6 @@ from typing import IO, List, Optional
 from file_writer_interface import FileWriterInterface
 from frame_info import FrameInfoFactory
 from function_logger import log_entry_and_exit
-from instruction_argument import InstructionArgument
 from llvm_constant import ConstantDeclaration, ReferenceDeclaration
 from llvm_function import LlvmFunctionContainer
 from vhdl_entity import VhdlEntity

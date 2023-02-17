@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from llvm_type_declaration import TypeDeclaration
-from vhdl_instance_name import VhdlInstanceName
 
 @dataclass
 class VhdlDeclarations:
