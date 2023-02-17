@@ -161,7 +161,7 @@ class GetelementptrInstructionParser(InstructionParser):
         data_type: List[str] = c[1].rsplit(maxsplit=1)
         # 1) data_type = "ptr", "%a"
         # 2) data_type = "ptr", "%n"
-        array_index : List[str] = c[2].rsplit(maxsplit=1)
+        array_index : List[str] = c[-1].rsplit(maxsplit=1)
         # 1) array_index = "i64", "1"
         # 2) array_index = "i64", "0"
         pointer_offset = int(array_index[-1])

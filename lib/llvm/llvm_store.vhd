@@ -60,18 +60,27 @@ begin
     variable id_v : std_ulogic_vector(0 to c_id_width - 1);
   begin
     if rising_edge(clk) then
-      m_awvalid <= '0';
-      m_wvalid  <= '0';
-      if (data_transfer_i = '1') then
-        m_awvalid           <= '1';
-        m_wvalid            <= '1';
-        m_awaddr            <= std_ulogic_vector(resize(unsigned(b), m_awaddr'length));
-        id_v                := std_ulogic_vector(to_unsigned(id_i, c_id_width));
-        m_awid              <= id_v;
-        m_wid               <= id_v;
-        m_wdata             <= std_ulogic_vector(resize(unsigned(a), m_wdata'length));
-        tag_storage_i(id_i) <= s_tag;
-        id_i                <= (id_i + 1) mod c_id_size;
+      if sreset = '1' then
+        m_awvalid <= '0';
+        m_wvalid  <= '0';
+      else
+        if m_awready = '1' then
+          m_awvalid <= '0';
+        end if;
+        if m_wready = '1' then
+          m_wvalid <= '0';
+        end if;
+        if (data_transfer_i = '1') then
+          m_awvalid           <= '1';
+          m_wvalid            <= '1';
+          m_awaddr            <= std_ulogic_vector(resize(unsigned(b), m_awaddr'length));
+          id_v                := std_ulogic_vector(to_unsigned(id_i, c_id_width));
+          m_awid              <= id_v;
+          m_wid               <= id_v;
+          m_wdata             <= std_ulogic_vector(resize(unsigned(a), m_wdata'length));
+          tag_storage_i(id_i) <= s_tag;
+          id_i                <= (id_i + 1) mod c_id_size;
+        end if;
       end if;
     end if;
   end process;
@@ -98,5 +107,5 @@ begin
   m_arvalid <= '0';
 
   m_rready <= '0';
-  
+
 end architecture rtl;

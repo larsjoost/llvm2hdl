@@ -73,7 +73,7 @@ class AllocaInstruction(InstructionInterface):
         return self.data_type
     def get_generic_map(self) -> Optional[List[str]]:
         data_width = self.data_type.get_data_width()
-        generic_map = [f"size_bytes => {data_width}/8"]
+        generic_map = [f"size_bytes => ({data_width})/8"]
         if self.initialization is not None:
             initialization = ", ".join(self.initialization)
             generic_map.append(f"initialization => ({initialization})")
