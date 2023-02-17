@@ -21,8 +21,6 @@ cd test/cpp
 
 Installation:
 
-conda install --channel=numba llvmlite
-
 apt install clang
 
 Install minimum ghdl version 2.0.0 from https://github.com/ghdl/ghdl or
