@@ -9,9 +9,10 @@ from file_writer_interface import FileWriterInterface
 from frame_info import FrameInfoFactory
 from function_logger import log_entry_and_exit
 from llvm_constant import ConstantDeclaration, ReferenceDeclaration
-from llvm_function import LlvmFunctionContainer
+from llvm_function import LlvmFunction, LlvmFunctionContainer
 from vhdl_entity import VhdlEntity
 from vhdl_function_definition import VhdlFunctionDefinition
+from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_container_data import VhdlInstanceContainerData
 from vhdl_instance_data import VhdlDeclarationData, VhdlDeclarationDataContainer, VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
@@ -46,16 +47,31 @@ class FileWriterReference:
     reference : ReferenceDeclaration
     functions: LlvmFunctionContainer
     def write_reference(self) -> str:
-        name = VhdlEntity().get_entity_name(self.reference.get_name())
-        reference = VhdlEntity().get_entity_name(self.reference.reference.get_name())
+        vhdl_entity = VhdlEntity()
+        name = vhdl_entity.get_entity_name(self.reference.get_name())
+        reference = self.reference.reference.get_name()
+        entity_reference = vhdl_entity.get_entity_name(name=reference)
+        function: Optional[LlvmFunction] = self.functions.get_function(name=reference)
+        assert function is not None, f"Could not find function reference {reference}"
         comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
+        ports: PortContainer = function.get_ports()
+        entity = vhdl_entity.get_entity(entity_name=name, ports=ports)
+        port_names: List[str] = vhdl_entity.get_port_names(ports=ports)    
+        port_map = ", ".join([f"{i} => {i}" for i in port_names])
         return f"""
 {comment}
-configuration {name}_cfg of {reference} is
-    for all : {reference}
-      use configuration work.{name};
-    end for;
-end configuration {name}_cfg;
+
+{VhdlIncludeLibraries().get()}
+
+{entity}
+
+architecture rtl of {name} is
+begin
+  {entity_reference}_1: entity work.{entity_reference}(rtl)
+  port map (
+{port_map}
+  );
+end architecture rtl;
         """
 
 @dataclass
@@ -246,7 +262,7 @@ generic map (
     def _write_component_instantiation(self, instance: VhdlInstanceData) -> None:
         instance_name = instance.instance_name
         entity_name = instance.entity_name
-        self._write_body(f"{instance_name} : entity {instance.library}.{entity_name}")
+        self._write_body(f"{instance_name}_inst : entity {instance.library}.{entity_name}")
         self._write_component_instantiation_generic_map(instance=instance)
         port_map = self._get_component_instantiation_port_map(instance=instance)
         self._write_body(f"port map ({port_map});")
@@ -378,21 +394,7 @@ end block {block_name};
         self._references.append(FileWriterReference(reference=reference, functions=functions))
 
     def _write_include_libraries(self) -> None:
-        self._write_header("""
-
-library ieee;
-use ieee.std_logic_1164.all;
-
-library llvm;
-use llvm.llvm_pkg.conv_std_ulogic_vector;
-use llvm.llvm_pkg.get;
-use llvm.llvm_pkg.integer_array_t;
-use llvm.llvm_pkg.to_std_ulogic_vector;
-
-library memory;
-
-library work;
-        """)
+        self._write_header(VhdlIncludeLibraries().get())
         
     def _write_architecture(self, function: VhdlFunctionDefinition) -> None:
         self._write_header(f"architecture rtl of {function.entity_name} is")
