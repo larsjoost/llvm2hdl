@@ -2,8 +2,8 @@ import os
 import argparse
 
 from instance_statistics import InstanceStatistics
-from file_writer import VhdlFunctionGenerator
 from llvm_parser import LlvmParser
+from messages import Messages
 from vhdlgen import VhdlGen
 
 def arguments():
@@ -19,17 +19,20 @@ def arguments():
     return parser.parse_args()
 
 def main():
+    
     args = arguments()
 
+    msg = Messages(verbose=args.verbose)
+    
     with open(args.file_name, 'r') as file_handle:
         text = file_handle.read()
 
     llvm_parser = LlvmParser()
 
     llvm_module = llvm_parser.parse(text)
-
+ 
     if args.llvm_tree:
-        print(llvm_module)
+        msg.highlight(text=llvm_module)
 
     if args.output_file_name is not None:
         output_file_name = args.output_file_name
@@ -39,7 +42,7 @@ def main():
 
     statistics = InstanceStatistics()
 
-    VhdlGen().parse(file_name=output_file_name, module=llvm_module)
+    VhdlGen(msg=msg).parse(file_name=output_file_name, module=llvm_module)
     
     if args.verbose:
         statistics.print()

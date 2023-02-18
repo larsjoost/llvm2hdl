@@ -2,9 +2,9 @@ import inspect
 import sys
 import os
 from types import FrameType
-from typing import Optional, Union
+from typing import Any, List, Optional, Union
 
-from color_text import ColorText
+from color_text import ColorText, HighLight
 from frame_info import FrameInfoFactory
 
 class Messages:
@@ -51,3 +51,9 @@ class Messages:
             current_frame = inspect.currentframe()
             self._print_formatted(color_text=ColorText("ERROR", "error"),
                                 text=text, current_frame=current_frame)
+
+    def highlight(self, text: Any, highlight_text: Optional[Union[List[str], str]] = None):
+        current_frame = inspect.currentframe()
+        highlighted_text = HighLight().highlight_replace(text=text, highlight=highlight_text)
+        self._print_formatted(color_text=ColorText("HIGHLIGHT", "yellow"),
+        text=highlighted_text, current_frame=current_frame)

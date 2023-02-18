@@ -7,7 +7,7 @@ from vhdl_instance_data import VhdlInstanceData, VhdlInstanceDataFactory
 @dataclass
 class VhdlInstanceContainerData:
     instances: List[VhdlInstanceData]
-    
+
     def get_return_instruction_driver(self) -> str:
         return self.instances[-1].instance_name
 

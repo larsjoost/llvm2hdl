@@ -510,10 +510,17 @@ class LlvmParser:
         parsed_constants = [i for i in [LlvmConstantParser().parse(i) for i in constants] if i is not None]
         return ConstantContainer(declarations=parsed_constants)
 
+    def _parse_function(self, text: str, llvm_constants: ConstantContainer) -> LlvmFunction:
+        return LlvmFunctionParser().parse(text=text, constants=llvm_constants)
+
+    def _parse_functions(self, text: str, llvm_constants: ConstantContainer) -> LlvmFunctionContainer:
+        functions: List[str] = self._extract_functions(text)
+        parsed_funtions = [self._parse_function(text=i, llvm_constants=llvm_constants) for i in functions]
+        return LlvmFunctionContainer(functions=parsed_funtions)
+
     def parse(self, text: str) -> LlvmModule:
         without_comments = self._remove_comments(text)
-        functions = self._extract_functions(without_comments)
         constants = self._extract_constants(without_comments)
         llvm_constants = self._parse_constants(constants=constants)
-        llvm_functions = LlvmFunctionContainer(functions=[LlvmFunctionParser().parse(text=i, constants=llvm_constants) for i in functions])
+        llvm_functions = self._parse_functions(text=without_comments, llvm_constants=llvm_constants)
         return LlvmModule(functions=llvm_functions, constants=llvm_constants)

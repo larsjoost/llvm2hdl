@@ -7,6 +7,7 @@ from ports import PortContainer
 from vhdl_instance_container_data import VhdlInstanceContainerData, VhdlInstanceContainerDataFactory
 from vhdl_instance_data import VhdlDeclarationDataContainer, VhdlDeclarationDataFactory
 from vhdl_instance_name import VhdlInstanceName
+from function_logger import log_entry_and_exit
 
 @dataclass
 class VhdlFunctionDefinition:

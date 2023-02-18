@@ -1,6 +1,9 @@
 """
 Adds color codes to text
 """
+from typing import Any, List, Optional, Union
+
+
 class ColorText:
     """
     Adds color codes to text
@@ -24,21 +27,19 @@ class ColorText:
             "endc": '\033[0m',
             "foreground": '\033[0m',
             "bold": '\033[1m',
-            "underline": '\033[4m'}
-        self.color_lut.update(colors)
+            "underline": '\033[4m',
+        } | colors
         self.text = text
         self.color = color
 
     def add_color(self, text: str) -> str:
         color = self.color
-        if color is not None:
-            if not isinstance(color, list):
-                color = [color]
-            translated_colors = [self.color_lut[i] for i in color]
-            result = "".join(translated_colors) + text + self.color_lut["endc"]
-        else:
-            result = text
-        return result
+        if color is None:
+            return text
+        if not isinstance(color, list):
+            color = [color]
+        translated_colors = [self.color_lut[i] for i in color]
+        return "".join(translated_colors) + text + self.color_lut["endc"]
 
     def get_text(self):
         return self.add_color(self.text)
@@ -54,3 +55,16 @@ class ColorText:
 
     def __repr__(self):
         return self.get_text()
+
+class HighLight:
+
+    def highlight_replace(self, text: Any, highlight: Optional[Union[List[str], str]], color="red") -> str:
+        if highlight is None:
+            return str(text)
+        if not isinstance(highlight, list):
+            highlight = [highlight]
+        highlighted_text = str(text)
+        for i in highlight:
+            highlight_replace = str(ColorText(text=i, color=color))
+            highlighted_text = highlighted_text.replace(i, highlight_replace)
+        return highlighted_text

@@ -46,26 +46,15 @@ class FileWriterConstant:
 class FileWriterReference:
     reference : ReferenceDeclaration
     functions: LlvmFunctionContainer
-    def write_reference(self) -> str:
-        vhdl_entity = VhdlEntity()
-        name = vhdl_entity.get_entity_name(self.reference.get_name())
-        reference = self.reference.reference.get_name()
-        entity_reference = vhdl_entity.get_entity_name(name=reference)
-        function: Optional[LlvmFunction] = self.functions.get_function(name=reference)
-        assert function is not None, f"Could not find function reference {reference}"
-        comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
-        ports: PortContainer = function.get_ports()
-        entity = vhdl_entity.get_entity(entity_name=name, ports=ports)
-        port_names: List[str] = vhdl_entity.get_port_names(ports=ports)    
-        port_map = ", ".join([f"{i} => {i}" for i in port_names])
+    def _get_reference(self, comment: str, include_libraries: str, entity: str, architecture: str, entity_reference: str, port_map: str) -> str:
         return f"""
 {comment}
 
-{VhdlIncludeLibraries().get()}
+{include_libraries}
 
 {entity}
 
-architecture rtl of {name} is
+architecture rtl of {architecture} is
 begin
   {entity_reference}_1: entity work.{entity_reference}(rtl)
   port map (
@@ -74,6 +63,29 @@ begin
 end architecture rtl;
         """
 
+    def _get_port_map(self, ports: PortContainer) -> str:
+        vhdl_entity = VhdlEntity()
+        port_names: List[str] = vhdl_entity.get_port_names(ports=ports)
+        return ", ".join([f"{i} => {i}" for i in port_names])
+
+    def _get_ports(self, reference: str) -> PortContainer:
+        function: Optional[LlvmFunction] = self.functions.get_function(name=reference)
+        assert function is not None, f"Could not find function reference {reference}"
+        return function.get_ports()
+       
+    def write_reference(self) -> str:
+        comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
+        vhdl_entity = VhdlEntity()
+        name = vhdl_entity.get_entity_name(self.reference.get_name())
+        reference = self.reference.reference.get_name()
+        entity_reference = vhdl_entity.get_entity_name(name=reference)
+        ports: PortContainer = self._get_ports(reference=reference)
+        entity = vhdl_entity.get_entity(entity_name=name, ports=ports)
+        port_map = self._get_port_map(ports=ports)
+        include_libraries = VhdlIncludeLibraries().get()
+        return self._get_reference(comment=comment, include_libraries=include_libraries, 
+        entity=entity, architecture=name, entity_reference=entity_reference, port_map=port_map)
+        
 @dataclass
 class FunctionContents:
     header : List[str] =  field(default_factory=list) 
@@ -100,24 +112,25 @@ class InstanceSignals:
         comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
         self.signals.append(Signals(comment=comment, signals=signals))
 
+@dataclass
+class VhdlFunctionContainer:
+    signals : List[VhdlSignal] = field(default_factory=list)
+    instance_signals: InstanceSignals = field(default_factory=lambda : InstanceSignals())
+    constants : List[FileWriterConstant] = field(default_factory=list)
+    references: List[FileWriterReference] = field(default_factory=list)
+    ports: PortContainer = field(default_factory=lambda : PortContainer())
+ 
+@dataclass
 class VhdlFunctionGenerator(FileWriterInterface):
 
-    _signals : List[VhdlSignal]
-    _instance_signals: InstanceSignals
-    _constants : List[FileWriterConstant]
-    _references: List[FileWriterReference]
-    _ports: PortContainer
-    _function_contents: FunctionContents
+    function_contents: FunctionContents = field(default_factory=lambda : FunctionContents())
+    container: VhdlFunctionContainer = field(default_factory=lambda : VhdlFunctionContainer())
 
-    _local_tag_in = "local_tag_in_i"
-    _local_tag_out = "local_tag_out_i"
+    _local_tag_in: str = "local_tag_in_i"
+    _local_tag_out: str = "local_tag_out_i"
         
-    def __init__(self):
+    def __post_init__(self):
         self._msg = Messages()
-        self._signals = []
-        self._instance_signals = InstanceSignals()
-        self._constants = []
-        self._references = []
         
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         return CommentGenerator().get_comment(current_frame=current_frame)
@@ -130,7 +143,7 @@ class VhdlFunctionGenerator(FileWriterInterface):
         self._write_header(f"constant c_tag_width : positive := {tag_width};")
         
     def _write_tag_record(self) -> None:
-        tag_elements = VhdlPortGenerator().get_tag_elements(ports=self._ports, signals=self._signals)
+        tag_elements = VhdlPortGenerator().get_tag_elements(ports=self.container.ports, signals=self.container.signals)
         record_elements = "\n".join(f"{name} {declaration}" for name, declaration in tag_elements)
         self._write_header(f"""
 type tag_t is record
@@ -177,23 +190,23 @@ end function tag_to_std_ulogic_vector;
 
     def _write_signals(self) -> None:
         self._write_header("signal tag_in_i, tag_out_i : tag_t;")
-        signal_declaration = "\n".join(signal.get_signal_declaration() for signal in self._signals)
+        signal_declaration = "\n".join(signal.get_signal_declaration() for signal in self.container.signals)
         self._write_header(signal_declaration)
-        signals = self._instance_signals.get_signals()
+        signals = self.container.instance_signals.get_signals()
         self._write_header(signals)
 
     def _write_declarations_to_header(self) -> None:
-        self._write_total_data_width(signals=self._signals, ports=self._ports)
-        self._write_constants(constants=self._constants)
+        self._write_total_data_width(signals=self.container.signals, ports=self.container.ports)
+        self._write_constants(constants=self.container.constants)
         self._write_tag_record()
-        record_items = VhdlPortGenerator().get_tag_item_names(ports=self._ports, signals=self._signals)
+        record_items = VhdlPortGenerator().get_tag_item_names(ports=self.container.ports, signals=self.container.signals)
         self._write_function_conv_tag(record_items=record_items)
         self._write_function_tag_to_std_ulogic_vector(record_items=record_items)
         self._write_signals()
         self._write_header("begin")
 
     def _write_references_to_trailer(self) -> None:
-        self._write_references(references=self._references)
+        self._write_references(references=self.container.references)
         
     def _print_to_string(self, *args, **kwargs) -> str:
         output = io.StringIO()
@@ -205,18 +218,18 @@ end function tag_to_std_ulogic_vector;
     def _write_body(self, *args, **kwargs):
         content = self._print_to_string(*args, **kwargs)
         comment = self._get_comment(current_frame=inspect.currentframe())
-        self._function_contents.body.append(f"{comment}\n{content}")
+        self.function_contents.body.append(f"{comment}\n{content}")
 
     def _write_header(self, *args, **kwargs):
         content = self._print_to_string(*args, **kwargs)
         comment = self._get_comment(current_frame=inspect.currentframe())
-        self._function_contents.header.append(f"{comment}\n{content}")
+        self.function_contents.header.append(f"{comment}\n{content}")
 
     def _write_trailer(self, *args, **kwargs):
-        self._function_contents.trailer.append(self._print_to_string(*args, **kwargs))
+        self.function_contents.trailer.append(self._print_to_string(*args, **kwargs))
 
     def _write_signal(self, declaration: VhdlDeclarationData) -> None:
-        self._signals.append(VhdlSignal(instance=declaration.instance_name, 
+        self.container.signals.append(VhdlSignal(instance=declaration.instance_name, 
         name=declaration.declaration_name, type=VhdlDeclarations(data_type=declaration.data_type)))
 
     def _flatten(self, xss: List[List[str]]) -> List[str]:
@@ -237,7 +250,7 @@ generic map (
         if instance.memory_interface is not None:
             master = instance.memory_interface.is_master()
             memory_port_map = vhdl_memory_port.get_port_map(name=instance.instance_name, master=master)
-            self._instance_signals.add(vhdl_memory_port.get_port_signals(name=instance.instance_name))
+            self.container.instance_signals.add(vhdl_memory_port.get_port_signals(name=instance.instance_name))
         return memory_port_map
  
     def _get_input_port_map(self, input_port: VhdlInstructionArgument, instance: VhdlInstanceData) -> List[str]:
@@ -245,7 +258,7 @@ generic map (
         memory_interface_name = instance.get_memory_port_name(port=input_port)
         if memory_interface_name is not None:
             vhdl_memory_port = VhdlMemoryPort()
-            self._instance_signals.add(vhdl_memory_port.get_port_signals(name=memory_interface_name))
+            self.container.instance_signals.add(vhdl_memory_port.get_port_signals(name=memory_interface_name))
         return vhdl_port.get_port_map(
             input_port=input_port, memory_interface_name=memory_interface_name
         )
@@ -295,7 +308,7 @@ end process;
 
     def _write_instance_signal_assignments(self, instance: VhdlInstanceData) -> None:
         vhdl_port = VhdlPortGenerator()
-        input_ports_signal_assignment = [vhdl_port.get_port_signal_assignment(input_port=i, ports=self._ports, signals=self._signals) for i in instance.input_ports]
+        input_ports_signal_assignment = [vhdl_port.get_port_signal_assignment(input_port=i, ports=self.container.ports, signals=self.container.signals) for i in instance.input_ports]
         tag_name = instance.get_previous_instance_signal_name("tag_out")
         self._write_body("tag_i <= " + ("tag_in_i" if tag_name is None else tag_name) + ";")
         self._write_body(f"{self._local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
@@ -304,9 +317,9 @@ end process;
     
     def _write_instance(self, instance: VhdlInstanceData) -> None:
         if not instance.is_work_library():
-            self._function_contents.instances.append(instance.entity_name)
+            self.function_contents.instances.append(instance.entity_name)
         vhdl_port = VhdlPortGenerator()
-        self._instance_signals.add(vhdl_port.get_standard_ports_signals(instance=instance))
+        self.container.instance_signals.add(vhdl_port.get_standard_ports_signals(instance=instance))
         block_name = f"{instance.instance_name}_b"
         self._write_body(f"{block_name} : block")
         self._write_instance_signals(instance=instance)
@@ -393,10 +406,10 @@ end block {block_name};
             self._write_signal(declaration=i)
 
     def write_constant(self, constant: ConstantDeclaration):
-        self._constants.append(FileWriterConstant(constant=constant))
+        self.container.constants.append(FileWriterConstant(constant=constant))
 
     def write_reference(self, reference: ReferenceDeclaration, functions: LlvmFunctionContainer):
-        self._references.append(FileWriterReference(reference=reference, functions=functions))
+        self.container.references.append(FileWriterReference(reference=reference, functions=functions))
 
     def _write_include_libraries(self) -> None:
         self._write_header(VhdlIncludeLibraries().get())
@@ -409,15 +422,15 @@ end block {block_name};
         self._write_trailer("end architecture rtl;")
 
     def write_function(self, function: VhdlFunctionDefinition) -> FunctionContents:
-        self._function_contents = FunctionContents()
+        self.function_contents = FunctionContents()    
+        self.container.ports = function.ports
         self._write_header(f"-- Autogenerated by {self._get_comment()}")
-        self._ports = function.ports
         self._write_include_libraries()
         self._write_header(VhdlEntity().get_entity(entity_name=function.entity_name, ports=function.ports))
         self._write_architecture(function=function)
         self._write_declarations_to_header()
         self._write_references_to_trailer()
-        return self._function_contents
+        return self.function_contents
 
 class FilePrinter:
 
