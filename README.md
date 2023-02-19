@@ -5,24 +5,17 @@ to VHDL or Verilog, so that the code can be synthesized to FPGA firmware.
 
 The first milestone is to implement a RISC-V CPU in C++.
 
-The current version can convert a c++ file to VHDL by typing:
+The current version can convert a c++ file to VHDL by typing (LLVM2HDL variable points to llvm2hdl installation):
 
-./cpp2hdl.sh test/cpp/add/add.cpp
+source $LLVM2HDL/setup.sh
 
-Run unit tests by typing:
+cpp2vhdl test/cpp/add/add.cpp
 
-./unit_tests.sh
+Run tests by typing:
 
-Run C++ tests by typing:
-
-cd test/cpp
-
-./tests.sh
+cd $LLVM2HDL; ./tests.sh
 
 Installation:
 
-./install.sh
+cd $LLVM2HDL; ./install.sh
 
-Optional:
-
-apt install gtkwave
