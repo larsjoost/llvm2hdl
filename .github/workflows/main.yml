@@ -1,3 +1,7 @@
+name: Shell Scripts Unit Testing
+
+on: [push]
+
 jobs:
   run_tests:
     runs-on: ubuntu-20.10
