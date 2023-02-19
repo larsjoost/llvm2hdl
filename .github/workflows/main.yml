@@ -7,5 +7,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Run script file
-      run: bash ${GITHUB_WORKSPACE}/test.sh
-      shell: bash
+      run: ./test.sh
+      
