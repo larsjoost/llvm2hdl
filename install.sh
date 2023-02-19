@@ -1,6 +1,6 @@
 #!/bin/bash
 
-apt install -y clang ghdl gtkwave
+sudo apt-get install -y clang ghdl gtkwave
 
 pip install mypy
 
