@@ -5,6 +5,8 @@ set -e
 SCRIPT=$(realpath $0)
 SCRIPTPATH=$(dirname $SCRIPT)
 
+$SCRIPTPATH/install.sh
+
 echo "Checking with mypy"
 mypy src/*.py
 

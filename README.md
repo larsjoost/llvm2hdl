@@ -21,11 +21,7 @@ cd test/cpp
 
 Installation:
 
-apt install clang
-
-Install minimum ghdl version 2.0.0 from https://github.com/ghdl/ghdl or
-
-apt install ghdl
+./install.sh
 
 Optional:
 
