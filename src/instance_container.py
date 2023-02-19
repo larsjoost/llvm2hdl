@@ -5,20 +5,21 @@ from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface, SourceInfo
 from llvm_instruction import LlvmInstruction
-from llvm_parser import LlvmParser, ReturnInstruction
+from llvm_parser import LlvmParser
 from messages import Messages
 from llvm_type import LlvmType
 from ports import Port
 
 class InstanceContainer(InstanceContainerInterface):
 
-    _container: List[Instance] = []
-    _source_info_map: Dict[LlvmType, SourceInfo] = {}
-    _return_value: ReturnInstruction
+    _container: List[Instance]
+    _source_info_map: Dict[LlvmType, SourceInfo]
     
     def __init__(self, instructions: List[LlvmInstruction], input_ports: List[Port]):
         self._msg = Messages()
         self._llvm_parser = LlvmParser()
+        self._container = []
+        self._source_info_map = {}
         for i in instructions:
             self._add_instruction(instruction=i)
         for j in input_ports:

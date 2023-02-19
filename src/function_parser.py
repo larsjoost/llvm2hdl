@@ -15,6 +15,7 @@ class FunctionParser:
         data_type = type.split(' ')[0]
         return LlvmIntegerDeclaration(data_width=int(data_type))
 
+    
     def parse(self, function: LlvmFunction) -> FunctionDefinition:								
         input_ports = function.get_input_ports()
         ports = function.get_ports()
