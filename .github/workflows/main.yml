@@ -1,0 +1,10 @@
+jobs:
+  run_tests:
+    runs-on: ubuntu-20.10
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run script file
+      run: |
+         chmod +x ./test.sh
+         ./test.sh
+      shell: bash
