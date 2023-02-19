@@ -24,9 +24,6 @@ entity llvm_store is
     m_rready  : out std_ulogic;
     m_rid     : in  std_ulogic_vector;
     m_awaddr  : out std_ulogic_vector;
-    m_awid    : out std_ulogic_vector;
-    m_awvalid : out std_ulogic;
-    m_awready : in  std_ulogic;
     m_wready  : in  std_ulogic;
     m_wvalid  : out std_ulogic;
     m_wdata   : out std_ulogic_vector;
@@ -39,7 +36,7 @@ end entity llvm_store;
 
 architecture rtl of llvm_store is
 
-  constant c_id_width : positive := m_awid'length;
+  constant c_id_width : positive := m_wid'length;
   constant c_id_size  : positive := 2 ** c_id_width;
 
   type tag_storage_t is array (0 to c_id_size - 1) of
@@ -51,8 +48,7 @@ architecture rtl of llvm_store is
 
 begin
 
-  s_tready <= (not m_awvalid or m_awready) and
-              (not m_wvalid or m_wready);
+  s_tready <= (not m_wvalid or m_wready);
 
   data_transfer_i <= s_tvalid and s_tready;
 
@@ -61,21 +57,15 @@ begin
   begin
     if rising_edge(clk) then
       if sreset = '1' then
-        m_awvalid <= '0';
-        m_wvalid  <= '0';
+        m_wvalid <= '0';
       else
-        if m_awready = '1' then
-          m_awvalid <= '0';
-        end if;
         if m_wready = '1' then
           m_wvalid <= '0';
         end if;
         if (data_transfer_i = '1') then
-          m_awvalid           <= '1';
           m_wvalid            <= '1';
           m_awaddr            <= std_ulogic_vector(resize(unsigned(b), m_awaddr'length));
           id_v                := std_ulogic_vector(to_unsigned(id_i, c_id_width));
-          m_awid              <= id_v;
           m_wid               <= id_v;
           m_wdata             <= std_ulogic_vector(resize(unsigned(a), m_wdata'length));
           tag_storage_i(id_i) <= s_tag;

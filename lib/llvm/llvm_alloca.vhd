@@ -22,9 +22,6 @@ entity llvm_alloca is
     s_rvalid  : out std_ulogic;
     s_rready  : in  std_ulogic;
     s_awaddr  : in  std_ulogic_vector;
-    s_awid    : in  std_ulogic_vector;
-    s_awvalid : in  std_ulogic;
-    s_awready : out std_ulogic;
     s_wready  : out std_ulogic;
     s_wvalid  : in  std_ulogic;
     s_wdata   : in  std_ulogic_vector;
@@ -77,9 +74,7 @@ begin
     variable awaddr_v : integer range 0 to c_size - 1;
   begin
     if rising_edge(clk) then
-      if s_awvalid = '1' and s_awready = '1' then
-        awaddr_v := to_integer(unsigned(s_awaddr)) mod c_size;
-      end if;
+      awaddr_v := to_integer(unsigned(s_awaddr)) mod c_size;
       if s_wvalid = '1' and s_wready = '1' then
         memory_v(awaddr_v) := s_wdata;
       end if;
@@ -90,8 +85,6 @@ begin
   end process;
 
   s_arready <= '1';
-
-  s_awready <= '1';
 
   s_wready <= '1';
 

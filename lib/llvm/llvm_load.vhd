@@ -23,9 +23,6 @@ entity llvm_load is
     m_rready  : out std_ulogic;
     m_rid     : in  std_ulogic_vector;
     m_awaddr  : out std_ulogic_vector;
-    m_awid    : out std_ulogic_vector;
-    m_awvalid : out std_ulogic;
-    m_awready : in  std_ulogic;
     m_wready  : in  std_ulogic;
     m_wvalid  : out std_ulogic;
     m_wdata   : out std_ulogic_vector;
@@ -94,8 +91,6 @@ begin
   m_bready <= '1';
 
   m_wvalid <= '0';
-
-  m_awvalid <= '0';
   
 end architecture rtl;
 
