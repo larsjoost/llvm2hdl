@@ -3,7 +3,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from function_logger import log_entry_and_exit
 from messages import Messages
 
 class LlvmType(ABC):

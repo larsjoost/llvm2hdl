@@ -6,7 +6,6 @@ from ports import Port, PortContainer, PortGenerator
 from vhdl_declarations import VhdlSignal
 from llvm_parser import LlvmOutputPort
 from messages import Messages
-from function_logger import log_entry_and_exit
 from vhdl_instance_data import VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
 

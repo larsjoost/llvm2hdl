@@ -10,7 +10,6 @@ from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
-from function_logger import log_entry_and_exit
 
 @dataclass
 class VhdlInstanceData:

@@ -1,11 +1,9 @@
 from typing import List
 
 from file_writer import FunctionContents, VhdlFunctionGenerator, FilePrinter
-from function_definition import FunctionDefinition
 from function_parser import FunctionParser
 from llvm_function import LlvmFunction
 from llvm_parser import LlvmModule
-from function_logger import log_entry_and_exit
 from messages import Messages
 from vhdl_function_definition import VhdlFunctionDefinitionFactory
 
@@ -23,7 +21,6 @@ class VhdlGen:
         file_generator = VhdlFunctionGenerator()
         module.write_constants(file_writer=file_generator)
         module.write_references(file_writer=file_generator)
-        self._msg.highlight(text=file_generator, highlight_text=["store", "LlvmFunction"])
         return self._write_function(function=function, file_generator=file_generator)    
 
     def parse(self, file_name: str, module: LlvmModule) -> None:

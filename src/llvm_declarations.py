@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from llvm_constant_container import ConstantContainer
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration, TypeDeclarationFactory
-from function_logger import log_entry_and_exit
 
 class LlvmVoidDeclaration(TypeDeclaration):
 

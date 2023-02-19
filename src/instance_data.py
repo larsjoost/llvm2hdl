@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from llvm_instruction import LlvmInstruction
 from llvm_parser import InstructionArgument, MemoryInterface, LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
-from function_logger import log_entry_and_exit
 
 @dataclass
 class InstanceData:

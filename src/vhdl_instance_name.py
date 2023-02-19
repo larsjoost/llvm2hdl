@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-from function_logger import log_entry_and_exit
-
 @dataclass
 class VhdlInstanceName:
     name: str

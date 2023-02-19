@@ -25,7 +25,7 @@ def main():
     msg = Messages(verbose=args.verbose)
     
     with open(args.file_name, 'r') as file_handle:
-        text = file_handle.read()
+        text = file_handle.readlines()
 
     llvm_parser = LlvmParser()
 

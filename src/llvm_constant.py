@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
-from function_logger import log_entry_and_exit
+from llvm_source_file import LlvmSourceLine
 
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmReferenceName, LlvmType
@@ -53,6 +53,7 @@ class ClassDeclaration(ConstantDeclarationBase):
 
 @dataclass
 class DeclarationContainer:
+    instruction: LlvmSourceLine
     constant_declaration: Optional[ConstantDeclaration] = None
     reference_declaration: Optional[ReferenceDeclaration] = None
     class_declaration: Optional[ClassDeclaration] = None

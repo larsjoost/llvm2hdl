@@ -5,7 +5,6 @@ from instance_container import InstanceContainer
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_function import LlvmFunction
 from messages import Messages
-from function_logger import log_entry_and_exit
 
 class FunctionParser:
 

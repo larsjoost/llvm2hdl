@@ -4,10 +4,9 @@ import inspect
 import io
 import os
 from types import FrameType
-from typing import IO, List, Optional
+from typing import List, Optional
 from file_writer_interface import FileWriterInterface
 from frame_info import FrameInfoFactory
-from function_logger import log_entry_and_exit
 from llvm_constant import ConstantDeclaration, ReferenceDeclaration
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from vhdl_entity import VhdlEntity
@@ -93,6 +92,26 @@ class FunctionContents:
     trailer : List[str]  =  field(default_factory=list)
     instances : List[str]  =  field(default_factory=list)
     
+    def get_description(self, text: str) -> List[str]:
+        return [f"""
+
+--------------------------------------------------------------------------------
+-- {text}
+--------------------------------------------------------------------------------
+
+        """]
+
+    def get_contents(self) -> str:
+        return "".join(self.get_description("Header") + self.header + 
+        self.get_description("Body") + self.body + 
+        self.get_description("Trailer") + self.trailer)
+    def get_instances(self) -> str:
+        return "\n".join(self.instances)
+    def ___str__(self) -> str:
+        return self.get_contents()
+    def __repr__(self) -> str:
+        return self.get_contents()
+
 @dataclass
 class Signals:
     comment : str
@@ -235,14 +254,15 @@ end function tag_to_std_ulogic_vector;
     def _flatten(self, xss: List[List[str]]) -> List[str]:
         return [x for xs in xss for x in xs]
 
-    def _write_component_instantiation_generic_map(self, instance: VhdlInstanceData) -> None:
-        if instance.generic_map is not None:
-            generic_map = ", ".join(instance.generic_map)
-            self._write_body(f"""
+    def _get_component_instantiation_generic_map(self, instance: VhdlInstanceData) -> str:
+        if instance.generic_map is None:
+            return ""
+        generic_map = ", ".join(instance.generic_map)
+        return f"""
 generic map (
 {generic_map}
 )
-            """)
+        """
 
     def _get_component_instantiation_memory_port_map(self, instance: VhdlInstanceData) -> List[str]:
         vhdl_memory_port = VhdlMemoryPort()
@@ -280,11 +300,18 @@ generic map (
     def _write_component_instantiation(self, instance: VhdlInstanceData) -> None:
         instance_name = instance.instance_name
         entity_name = instance.entity_name
-        self._write_body(f"{instance_name}_inst : entity {instance.library}.{entity_name}")
-        self._write_component_instantiation_generic_map(instance=instance)
+        generic_map = self._get_component_instantiation_generic_map(instance=instance)
         port_map = self._get_component_instantiation_port_map(instance=instance)
-        self._write_body(f"port map ({port_map});")
-        
+        self._write_body(f"""
+
+{instance_name}_inst : entity {instance.library}.{entity_name}
+{generic_map}
+port map (
+{port_map}
+);
+
+        """)  
+
     def _write_component_output_signal_assignment(self, instance: VhdlInstanceData) -> None:
         self._write_body(f"""
 
@@ -434,19 +461,13 @@ end block {block_name};
 
 class FilePrinter:
 
-    def _print_list(self, file_handle: IO, data: List[str]) -> None:
-        for i in data:
-            print(i, file=file_handle, end="")
-
     def generate(self, file_name: str, contents: List[FunctionContents]) -> None:
         with open(file_name, 'w', encoding="utf-8") as file_handle:
             for i in contents:
-                self._print_list(file_handle=file_handle, data=i.header)
-                self._print_list(file_handle=file_handle, data=i.body)
-                self._print_list(file_handle=file_handle, data=i.trailer)
+                print(i.get_contents(), file=file_handle, end="")
         base_name = os.path.splitext(file_name)[0]
         instance_file_name = f'{base_name}.inc'
         with open(instance_file_name, 'w', encoding="utf-8") as file_handle:
             for i in contents:
-                print("\n".join(i.instances), file=file_handle)
+                print(i.get_instances(), file=file_handle)
 

@@ -4,7 +4,6 @@ from file_writer_interface import FileWriterInterface
 from llvm_constant import DeclarationContainer
 from llvm_function import LlvmFunctionContainer
 from llvm_type import LlvmVariableName
-from function_logger import log_entry_and_exit
 
 @dataclass
 class ConstantContainer:
