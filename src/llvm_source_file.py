@@ -19,6 +19,8 @@ class LlvmSourceLine:
         return ":" in self.line
     def is_assignment(self) -> bool:
         return "=" in self.line
+    def get_elaborated(self) -> str:
+        return f"Line {self.line_number}: {self.line}"
 
 @dataclass
 class LlvmSourceFile:    

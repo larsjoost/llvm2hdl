@@ -77,15 +77,13 @@ class LlvmParserUtilities:
 @dataclass
 class LlvmInstructionLabel(LlvmInstruction):
     name: str
-    source_line: LlvmSourceLine
     def is_valid(self) -> bool:
         return False
-
+    
 @dataclass
 class LlvmInstructionCommand(LlvmInstruction):
     destination: Optional[LlvmVariableName]
     instruction: InstructionInterface
-    source_line: LlvmSourceLine
     def is_valid(self) -> bool:
         return self.instruction.is_valid()
     def get_destination(self) -> Optional[LlvmVariableName]:
@@ -108,7 +106,7 @@ class LlvmInstructionCommand(LlvmInstruction):
         return self.instruction.is_memory()
     def map_function_arguments(self) -> bool:
         return self.instruction.map_function_arguments()
-
+    
 class LlvmInstructionLabelParser:
 
     def parse(self, source_line: LlvmSourceLine) -> LlvmInstructionLabel:

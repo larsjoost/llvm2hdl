@@ -302,8 +302,9 @@ generic map (
         entity_name = instance.entity_name
         generic_map = self._get_component_instantiation_generic_map(instance=instance)
         port_map = self._get_component_instantiation_port_map(instance=instance)
+        source_line = instance.get_source_line()
         self._write_body(f"""
-
+-- {source_line}
 {instance_name}_inst : entity {instance.library}.{entity_name}
 {generic_map}
 port map (

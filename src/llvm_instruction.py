@@ -1,16 +1,17 @@
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional
 from instruction_argument import InstructionArgument
 from instruction_interface import LlvmOutputPort, MemoryInterface
+from llvm_source_file import LlvmSourceLine
 
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
 
-
 @dataclass
 class LlvmInstruction(ABC):
+    source_line: LlvmSourceLine
     def get_destination(self) -> Optional[LlvmVariableName]:
         return None
     def get_output_port(self) -> Optional[LlvmOutputPort]:
@@ -33,4 +34,6 @@ class LlvmInstruction(ABC):
         return False
     def map_function_arguments(self) -> bool:
         return False
+    def get_source_line(self) -> str:
+        return self.source_line.get_elaborated()        
 

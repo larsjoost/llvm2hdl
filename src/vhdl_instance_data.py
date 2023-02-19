@@ -48,6 +48,8 @@ class VhdlInstanceData:
     def get_output_port_type(self) -> str:
         assert self.output_port is not None, f"Instance {self.instance_name} output port is not defined"
         return self.output_port.get_type_declarations()
+    def get_source_line(self) -> str:
+        return self.instruction.get_source_line()
 
 @dataclass
 class VhdlDeclarationData:
