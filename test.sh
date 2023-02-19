@@ -7,11 +7,5 @@ SCRIPTPATH=$(dirname $SCRIPT)
 
 $SCRIPTPATH/install.sh
 
-echo "Checking with mypy"
-mypy src/*.py
+$SCRIPTPATH/test_all.sh
 
-echo "Running unit tests"
-$SCRIPTPATH/unit_tests.sh
-
-echo "Running module test"
-$SCRIPTPATH/test/cpp/tests.sh
