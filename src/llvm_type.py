@@ -102,13 +102,45 @@ class LlvmIntegerMatch(LlvmTypeMatch):
     def get(self, text: str) -> LlvmType:
         return LlvmInteger(value=int(text))
 
+@dataclass(frozen=True)
+class LlvmFloat(LlvmType):
+    value: float
+    def get_name(self) -> str:
+        return str(self.value)
+    def get_value(self) -> str:
+        return f'{self.value}'
+    
+class LlvmFloatMatch(LlvmTypeMatch):
+    def match(self, text: str) -> bool:
+        try:
+            float(text)
+        except ValueError:
+            return False
+        return True
+    def get(self, text: str) -> LlvmType:
+        return LlvmFloat(value=float(text))
+
+@dataclass(frozen=True)
+class LlvmHex(LlvmType):
+    value: str
+    def get_name(self) -> str:
+        return self.value
+    def get_value(self) -> str:
+        return f'x"{self.value}"'
+    
+class LlvmHexMatch(LlvmTypeMatch):
+    def match(self, text: str) -> bool:
+        return text.startswith("0x")
+    def get(self, text: str) -> LlvmType:
+        return LlvmHex(value=text[2:])
+
 class LlvmTypeFactory:
     text: str
     def __init__(self, text: str):
         self.text = text
         self._msg = Messages()
     def resolve(self) -> LlvmType:
-        types = [LlvmVariableNameMatch(), LlvmConstantNameMatch(), LlvmIntegerMatch()]
+        types = [LlvmVariableNameMatch(), LlvmConstantNameMatch(), LlvmIntegerMatch(), LlvmFloatMatch(), LlvmHexMatch()]
         for i in types:
             if i.match(text=self.text):
                 return i.get(text=self.text)

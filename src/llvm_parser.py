@@ -275,6 +275,7 @@ class DefaultInstructionParser(InstructionParser):
             "trunc i64 %x.coerce to i32"
             "store i32 %a, i32* %a.addr, align 4"
             "load i32, i32* %a.addr, align 4"
+            "fmul float %call, 0x3EE4F8B580000000"
         """
         return {
             "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
@@ -282,7 +283,8 @@ class DefaultInstructionParser(InstructionParser):
             "trunc": InstructionPosition(opcode=0, data_type=4, operands=[(1, 2)]),
             "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
             "store": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (3, 4)]),
-            "load": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)])}
+            "load": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)]),
+            "fmul": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)])}
 
     def _get_instruction_positions(self) -> Dict[str, InstructionPosition]:
         dict_1 = self._get_type_and_two_arguments_instructions()
