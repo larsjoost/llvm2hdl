@@ -2,7 +2,7 @@
 
 sudo apt-get install -y clang ghdl gtkwave
 
-pip install mypy
+pip install mypy xenon
 
 
 

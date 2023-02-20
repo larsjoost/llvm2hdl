@@ -57,10 +57,15 @@ class DeclarationContainer:
     constant_declaration: Optional[ConstantDeclaration] = None
     reference_declaration: Optional[ReferenceDeclaration] = None
     class_declaration: Optional[ClassDeclaration] = None
+    def _constant_match(self, name: Optional[LlvmType]) -> bool:
+        return self.constant_declaration is not None and self.constant_declaration.match(name=name)
+    def _reference_match(self, name: Optional[LlvmType]) -> bool:
+        return self.reference_declaration is not None and self.reference_declaration.match(name=name)
+    def _class_match(self, name: Optional[LlvmType]) -> bool:
+        return self.class_declaration is not None and self.class_declaration.match(name=name)
     def match(self, name: Optional[LlvmType]) -> bool:
-        return (self.constant_declaration is not None and self.constant_declaration.match(name=name)) or \
-        (self.reference_declaration is not None and self.reference_declaration.match(name=name)) or \
-        (self.class_declaration is not None and self.class_declaration.match(name=name))
+        return self._constant_match(name=name) or self._reference_match(name=name) or \
+        self._class_match(name=name)
     def get_values(self) -> Optional[List[str]]:
         if self.constant_declaration is not None:
             return self.constant_declaration.get_values()

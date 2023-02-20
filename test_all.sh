@@ -8,6 +8,9 @@ SCRIPTPATH=$(dirname $SCRIPT)
 echo "Checking with mypy"
 mypy src/*.py
 
+echo "Checking code quality"
+xenon -b A -a A src/
+
 echo "Running unit tests"
 $SCRIPTPATH/unit_tests.sh
 
