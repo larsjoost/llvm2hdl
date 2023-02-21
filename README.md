@@ -5,7 +5,7 @@ to VHDL or Verilog, so that the code can be synthesized to FPGA firmware.
 
 The first milestone is to implement a RISC-V CPU in C++.
 
-The current version can convert a c++ file to VHDL by typing (LLVM2HDL variable points to llvm2hdl installation):
+The current version can convert a C++ file to VHDL by typing (LLVM2HDL variable points to llvm2hdl installation directory):
 
 source $LLVM2HDL/setup.sh
 
