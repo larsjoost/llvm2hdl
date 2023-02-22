@@ -11,6 +11,14 @@ include_dir=$SCRIPTPATH/lib/test
 
 include_files=$SCRIPTPATH/lib/test/test.cpp
 
-clang++ -S -O3 -fno-discard-value-names -emit-llvm -o $llvm_file_name -I$include_dir $file_name 
+CONTAINER_NAME=cpp2hdl
+
+docker build -t $CONTAINER_NAME -f $SCRIPTPATH/Dockerfile
+
+file_path=$(dirname $file_name)
+
+MOUNT="-v $file_path:$file_path -v $include_dir:$include_dir"
+
+docker run -it $MOUNT -w $(pwd) $CONTAINER_NAME clang++ -S -O3 -fno-discard-value-names -emit-llvm -o $llvm_file_name -I$include_dir $file_name 
 
 $SCRIPTPATH/src/llvm2hdl.sh -f $llvm_file_name 
