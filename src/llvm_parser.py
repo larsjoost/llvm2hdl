@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import re
 from typing import Dict, List, Tuple, Optional, Union
-from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, MemoryInstruction, ReturnInstruction
+from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, ReturnInstruction
 from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
 from llvm_constant import ClassDeclaration, Constant, ConstantDeclaration, DeclarationContainer, ReferenceDeclaration
 from llvm_constant_container import ConstantContainer
@@ -21,15 +21,18 @@ class InstructionPosition:
     opcode: int
     operands: List[Tuple[int, int]]
     data_type: int
-
+    sub_type : Optional[int] = None
+    
 class InstructionPositionParser:
     source : List[str]
     opcode : str
+    sub_type: Optional[str]
     operands : List[InstructionArgument]
     data_type : str
     def __init__(self, instruction: List[str], position: InstructionPosition):
         self.source = instruction
         self.opcode = instruction[position.opcode]
+        self.sub_type = instruction[position.sub_type] if position.sub_type is not None else None
         self.data_type = instruction[position.data_type].replace(",", "")
         self.operands = [self._parse_operand(instruction, item, index) for index, item in enumerate(position.operands)]
     def _parse_operand(self, instruction: List[str], item: Tuple[int, int], index: int) -> InstructionArgument:
@@ -276,6 +279,7 @@ class DefaultInstructionParser(InstructionParser):
             "store i32 %a, i32* %a.addr, align 4"
             "load i32, i32* %a.addr, align 4"
             "fmul float %call, 0x3EE4F8B580000000"
+            "fcmp ule float %0, %mul.i"
         """
         return {
             "icmp": InstructionPosition(opcode=1, data_type=2, operands=[(2, 3), (2, 4)]),
@@ -284,7 +288,8 @@ class DefaultInstructionParser(InstructionParser):
             "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
             "store": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (3, 4)]),
             "load": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)]),
-            "fmul": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)])}
+            "fmul": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)]),
+            "fcmp": InstructionPosition(opcode=0, sub_type=1, data_type=2, operands=[(3, 4)])}
 
     def _get_instruction_positions(self) -> Dict[str, InstructionPosition]:
         dict_1 = self._get_type_and_two_arguments_instructions()
@@ -299,8 +304,9 @@ class DefaultInstructionParser(InstructionParser):
         opcode = utils.get_list_element(a, 0)
         x = InstructionPositionParser(instruction=a, position=position[opcode])
         data_type = LlvmDeclarationFactory().get(x.data_type)
-        return MemoryInstruction(
+        return DefaultInstruction(
             opcode=x.opcode,
+            sub_type=x.sub_type,
             data_type=data_type,
             operands=x.operands,
             output_port_name="m_tdata"

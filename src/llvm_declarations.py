@@ -230,6 +230,33 @@ class LlvmClassDeclarationFactory(TypeDeclarationFactory):
         assert self.constants is not None
         return LlvmClassDeclaration(name=LlvmVariableName(self.data_type), constants=self.constants)
 
+@dataclass
+class LlvmVariableDeclaration(TypeDeclaration):
+    """
+    Declaration: %<name>
+    Example:
+    %call
+    """
+    name: LlvmVariableName
+
+    #TODO: Not implemented yet
+    def get_data_width(self) -> str:
+        return ""
+
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
+        return 1, self.get_data_width()
+
+@dataclass
+class LlvmVariableDeclarationFactory(TypeDeclarationFactory):
+    
+    data_type: str
+    
+    def match(self) -> bool:
+        return self.data_type.startswith('%')
+
+    def get(self) -> TypeDeclaration:
+        return LlvmVariableDeclaration(name=LlvmVariableName(self.data_type))
+
 class LlvmDeclarationFactory:
 
     def get(self, data_type: str, constants: Optional[ConstantContainer] = None) -> TypeDeclaration:
@@ -239,7 +266,8 @@ class LlvmDeclarationFactory:
             LlvmPointerDeclarationFactory(data_type=data_type),
             LlvmIntegerDeclarationFactory(data_type=data_type),
             LlvmArrayDeclarationFactory(data_type=data_type),
-            LlvmClassDeclarationFactory(data_type=data_type, constants=constants)
+            LlvmClassDeclarationFactory(data_type=data_type, constants=constants),
+            LlvmVariableDeclarationFactory(data_type=data_type)
         ]    
         for i in declaration_types:
             if i.match():

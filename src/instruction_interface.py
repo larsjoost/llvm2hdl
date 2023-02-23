@@ -18,8 +18,11 @@ class MemoryInterfaceSlave(MemoryInterface):
     pass
 
 class InstructionGeneral:
-    def get_instance_name(self, opcode: str) -> str:
-        return f"llvm_{opcode}"
+    def get_instance_name(self, opcode: str, sub_type: Optional[str] = None) -> str:
+        name = f"llvm_{opcode}"
+        if sub_type is not None:
+            name = f"{name}_{sub_type}"
+        return name
     def get_library(self) -> str:
         return "llvm"
 

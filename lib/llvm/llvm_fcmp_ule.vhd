@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity llvm_fadd is
+entity llvm_fcmp_ule is
   port (
     clk      : in  std_ulogic;
     sreset   : in  std_ulogic;
@@ -15,18 +15,20 @@ entity llvm_fadd is
     m_tready : in  std_ulogic;
     m_tag    : out std_ulogic_vector;
     m_tdata  : out std_ulogic_vector);
-end entity llvm_fadd;
+end entity llvm_fcmp_ule;
 
 library ieee;
 use ieee.float_pkg.all;
 
-architecture rtl of llvm_fadd is
+architecture rtl of llvm_fcmp_ule is
+
+  constant c_data_width : positive := m_tdata'length;
 
   signal a_i : float;
   signal b_i : float;
-  signal q_i : float;
-
-  signal s_tdata_i : std_ulogic_vector(0 to m_tdata'length - 1);
+  signal q_i : boolean;
+  
+  signal s_tdata_i : std_ulogic_vector(0 to c_data_width - 1);
 
 begin
 
@@ -34,9 +36,9 @@ begin
 
   b_i <= to_float(b);
 
-  q_i <= a_i + b_i;
-
-  s_tdata_i <= to_slv(q_i);
+  q_i <= (abs(a_i) <= abs(b_i));
+  
+  s_i <= (others => '1') when (q_i) else (others => '0');
 
   llvm_buffer_1 : entity work.llvm_buffer(rtl)
     port map (

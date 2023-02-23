@@ -145,13 +145,14 @@ class CallInstruction(InstructionInterface):
         return None
     
 @dataclass
-class MemoryInstruction(InstructionInterface):
+class DefaultInstruction(InstructionInterface):
     opcode: str
+    sub_type: Optional[str]
     data_type: TypeDeclaration
     operands: List[InstructionArgument]
     output_port_name: str
     def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
+        return InstructionGeneral().get_instance_name(opcode=self.opcode, sub_type=self.sub_type)
     def get_library(self) -> str:
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
