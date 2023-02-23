@@ -13,7 +13,9 @@ include_files=$SCRIPTPATH/lib/test/test.cpp
 
 CONTAINER_NAME=cpp2hdl
 
-docker build -t $CONTAINER_NAME -f $SCRIPTPATH/Dockerfile
+cd $SCRIPTPATH
+docker build -t $CONTAINER_NAME .
+cd -
 
 file_path=$(dirname $file_name)
 

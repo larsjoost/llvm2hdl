@@ -17,7 +17,9 @@ done
 
 CONTAINER_NAME=llvm2hdl
 
-docker build -t $CONTAINER_NAME -f $SCRIPTPATH/Dockerfile
+cd $SCRIPTPATH
+docker build -t $CONTAINER_NAME .
+cd -
 
 MOUNT_SCRIPTPATH="-v $SCRIPTPATH:$SCRIPTPATH"
 
