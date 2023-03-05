@@ -5,7 +5,7 @@ from typing import Any, Optional, Union, List
 from color_text import ColorText, HighLight
 from frame_info import FrameInfoFactory
 
-def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None):
+def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None, trigger: Optional[str] = None):
     """
     Decorator to print function call details.
 
@@ -34,9 +34,12 @@ def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None):
             func_args_str = ", ".join(_get_argument(key=key, value=value) for key, value in func_args.items())
             file_name = os.path.basename(frame_info.file_name)
             line_number = frame_info.line_number
-            _print_function_call(file_name=file_name, line_number=line_number, function_name=func.__name__, func_args_str=func_args_str)
+            enable_output = (trigger is None) or (trigger in func_args_str)
+            if enable_output:
+                _print_function_call(file_name=file_name, line_number=line_number, function_name=func.__name__, func_args_str=func_args_str)
             result = func(*args, **kwargs)  
-            _print_function_result(result=result)
+            if enable_output:
+                _print_function_result(result=result)
             return result
 
         return wrapper

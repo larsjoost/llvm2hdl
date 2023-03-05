@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import re
 from typing import Dict, List, Tuple, Optional, Union
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, ReturnInstruction
 from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
@@ -15,6 +14,8 @@ from messages import Messages
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmConstantName, LlvmReferenceName, LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmListDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
+
+from function_logger import log_entry_and_exit
 
 @dataclass
 class InstructionPosition:
@@ -223,10 +224,10 @@ class CallInstructionParser(InstructionParser):
         ignored_functions = ["@llvm.lifetime", "@llvm.memcpy"]
         return any(name.startswith(i) for i in ignored_functions)
 
-    def _get_call_instruction(self, function_name: str, return_type: str, arguments: str) -> CallInstruction:
+    def _get_call_instruction(self, function_name: str, llvm_function: bool, return_type: str, arguments: str) -> CallInstruction:
         data_type = LlvmDeclarationFactory().get(return_type)
         operands = LlvmArgumentParser().parse(arguments=arguments, unnamed=True)
-        return CallInstruction(opcode=function_name, data_type=data_type, operands=operands)
+        return CallInstruction(opcode=function_name, llvm_function=llvm_function, data_type=data_type, operands=operands)
 
     def _split_function_call(self, function_call: str) -> Tuple[str, str]:
         head_split = function_call.split()
@@ -239,15 +240,19 @@ class CallInstructionParser(InstructionParser):
         instruction is expected to be one of: 
             "call i32 @_Z3addii(i32 2, i32 3)"
             "tail call i32 @_Z3addii(i32 2, i32 3)"
+            "tail call float @llvm.fabs.f32(float %sub.i)"
         """
         function_call, function_arguments = self._split_function_call_from_arguments(text=arguments.instruction)
         # 1) head = "call i32 @_Z3addii"
         # 2) head = "tail call i32 @_Z3addii"
         # tail = "i32 2, i32 3"
+
         function_name, return_type = self._split_function_call(function_call=function_call)
+        llvm_function = function_name.startswith("@llvm.")
         if self._is_ignored_function_call(name=function_name):
             return None
-        return self._get_call_instruction(function_name=function_name, return_type=return_type, arguments=function_arguments)
+        function_name = function_name.replace(".", "_")
+        return self._get_call_instruction(function_name=function_name, llvm_function=llvm_function, return_type=return_type, arguments=function_arguments)
 
 class DefaultInstructionParser(InstructionParser):
 
@@ -259,7 +264,7 @@ class DefaultInstructionParser(InstructionParser):
             "ashr i32 %a, %b" 
         """
         position = InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (1, 3)]) 
-        commands = ["fadd", "xor", "and", "or", "ashr", "lshr", "shl"]
+        commands = ["fadd", "fmul", "xor", "and", "or", "ashr", "lshr", "shl"]
         return {i:position for i in commands}
 
     def _get_arithmetic_instructions(self) -> Dict[str, InstructionPosition]:
@@ -278,7 +283,6 @@ class DefaultInstructionParser(InstructionParser):
             "trunc i64 %x.coerce to i32"
             "store i32 %a, i32* %a.addr, align 4"
             "load i32, i32* %a.addr, align 4"
-            "fmul float %call, 0x3EE4F8B580000000"
             "fcmp ule float %0, %mul.i"
         """
         return {
@@ -288,8 +292,7 @@ class DefaultInstructionParser(InstructionParser):
             "select": InstructionPosition(opcode=0, data_type=3, operands=[(1, 2), (3, 4), (5, 6)]),
             "store": InstructionPosition(opcode=0, data_type=1, operands=[(1, 2), (3, 4)]),
             "load": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)]),
-            "fmul": InstructionPosition(opcode=0, data_type=1, operands=[(2, 3)]),
-            "fcmp": InstructionPosition(opcode=0, sub_type=1, data_type=2, operands=[(3, 4)])}
+            "fcmp": InstructionPosition(opcode=0, sub_type=1, data_type=2, operands=[(2, 3), (2, 4)])}
 
     def _get_instruction_positions(self) -> Dict[str, InstructionPosition]:
         dict_1 = self._get_type_and_two_arguments_instructions()

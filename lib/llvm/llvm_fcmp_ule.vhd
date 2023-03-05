@@ -18,14 +18,17 @@ entity llvm_fcmp_ule is
 end entity llvm_fcmp_ule;
 
 library ieee;
-use ieee.float_pkg.all;
+use ieee.float_pkg.float32;
+use ieee.float_pkg.to_float;
+use ieee.float_pkg.to_slv;
+use ieee.float_pkg."abs";
 
 architecture rtl of llvm_fcmp_ule is
 
   constant c_data_width : positive := m_tdata'length;
 
-  signal a_i : float;
-  signal b_i : float;
+  signal a_i : float32;
+  signal b_i : float32;
   signal q_i : boolean;
   
   signal s_tdata_i : std_ulogic_vector(0 to c_data_width - 1);
@@ -38,7 +41,7 @@ begin
 
   q_i <= (abs(a_i) <= abs(b_i));
   
-  s_i <= (others => '1') when (q_i) else (others => '0');
+  s_tdata_i <= (others => '1') when (q_i) else (others => '0');
 
   llvm_buffer_1 : entity work.llvm_buffer(rtl)
     port map (

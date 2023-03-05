@@ -20,6 +20,8 @@ from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
 from messages import Messages
 
+from function_logger import log_entry_and_exit
+
 class CommentGenerator:
     def get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         if current_frame is None:

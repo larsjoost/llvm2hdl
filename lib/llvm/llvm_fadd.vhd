@@ -18,13 +18,16 @@ entity llvm_fadd is
 end entity llvm_fadd;
 
 library ieee;
-use ieee.float_pkg.all;
+use ieee.float_pkg.float32;
+use ieee.float_pkg.to_float;
+use ieee.float_pkg.to_slv;
+use ieee.float_pkg."+";
 
 architecture rtl of llvm_fadd is
 
-  signal a_i : float;
-  signal b_i : float;
-  signal q_i : float;
+  signal a_i : float32;
+  signal b_i : float32;
+  signal q_i : float32;
 
   signal s_tdata_i : std_ulogic_vector(0 to m_tdata'length - 1);
 

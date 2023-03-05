@@ -11,6 +11,8 @@ from llvm_type_declaration import TypeDeclaration
 from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
 
+from function_logger import log_entry_and_exit
+
 @dataclass
 class VhdlInstanceData:
     instance_name: str
@@ -36,8 +38,12 @@ class VhdlInstanceData:
     def map_memory_interface(self) -> bool:
         return self.instruction.map_function_arguments()
     def get_memory_port_name(self, port: VhdlInstructionArgument) -> Optional[str]:
-        memory_interface_name = self.instance_name if self.map_memory_interface() else None
-        return f"{memory_interface_name}_{port.get_name()}" if memory_interface_name is not None else None
+        if not port.is_pointer():
+            return None
+        if not self.map_memory_interface():
+            return None
+        memory_interface_name = self.instance_name
+        return f"{memory_interface_name}_{port.get_name()}"
     def _remove_none_elements(self, elements: List[Any]) -> List[Any]:
         return [i for i in elements if i is not None]
     def get_memory_instance_names(self) -> List[str]:

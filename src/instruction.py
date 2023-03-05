@@ -121,12 +121,13 @@ class GetelementptrInstruction(InstructionInterface):
 @dataclass
 class CallInstruction(InstructionInterface):
     opcode: str
+    llvm_function: bool
     data_type: TypeDeclaration
     operands: List[InstructionArgument]
     def get_instance_name(self) -> str:
         return self.opcode
     def get_library(self) -> str:
-        return "work"
+        return "llvm" if self.llvm_function else "work"
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_generic_map(self) -> Optional[List[str]]:

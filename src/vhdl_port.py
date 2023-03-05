@@ -9,6 +9,8 @@ from messages import Messages
 from vhdl_instance_data import VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
 
+from function_logger import log_entry_and_exit
+
 @dataclass
 class VhdlPortRole(ABC):
     connection: Optional[str] = None 
@@ -208,13 +210,7 @@ class VhdlPortGenerator(PortGenerator):
         ]
 
     def _get_input_port_signal_name(self, input_port: VhdlInstructionArgument) -> str:
-        signal_name = input_port.get_name()
-        array_index = input_port.get_array_index()
-        if array_index is not None:
-            signal_name += f"_{array_index}"
-        if input_port.is_integer():
-            signal_name = f"integer_{signal_name}"
-        return signal_name
+        return input_port.get_input_port_signal_name()
 
     def get_ports(self, port: Port) -> List[str]:
         name = port.get_name()
@@ -243,7 +239,7 @@ class VhdlPortGenerator(PortGenerator):
         return [port_map]
 
     def get_port_signal(self, input_port: VhdlInstructionArgument) -> str:
-        signal_name = self._get_input_port_signal_name(input_port)
+        signal_name = self._get_input_port_signal_name(input_port=input_port)
         data_width = input_port.get_data_width()
         vector_range = f"(0 to {data_width} - 1)"
         return f"signal {signal_name} : std_ulogic_vector{vector_range};"
@@ -259,6 +255,7 @@ class VhdlPortGenerator(PortGenerator):
             signal_name = f"tag_i.{signal_name}"
         return signal_name
     
+    @log_entry_and_exit()
     def _get_port_map_arguments(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[VhdlSignal]) -> List[str]:
         signal_name = self._get_input_port_name(input_port=input_port, ports=ports, signals=signals)
         data_width = input_port.get_data_width()
