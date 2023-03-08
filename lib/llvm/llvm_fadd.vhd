@@ -20,6 +20,7 @@ end entity llvm_fadd;
 library ieee;
 use ieee.float_pkg.float32;
 use ieee.float_pkg.to_float;
+use ieee.float_pkg.to_real;
 use ieee.float_pkg.to_slv;
 use ieee.float_pkg."+";
 
@@ -54,4 +55,21 @@ begin
       m_tag    => m_tag,
       m_tdata  => m_tdata);
 
+  --pragma synthesis_off
+
+  process (clk) is
+  begin 
+    if rising_edge(clk) then
+      if sreset = '1' then
+        null;
+      else
+        if s_tvalid = '1' and s_tready = '1' then
+          report real'image(to_real(a_i)) & " + " & real'image(to_real(b_i)) & " = " & real'image(to_real(q_i));
+        end if;
+      end if;
+    end if;
+  end process;
+   
+  --pragma synthesis_on
+  
 end architecture rtl;

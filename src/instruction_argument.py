@@ -21,8 +21,6 @@ class InstructionArgument:
         return self.data_type.get_array_index()
     def get_name(self) -> str:
         return self.signal_name.get_name()
-    def get_value(self) -> str:
-        return self.signal_name.get_value()
     def get_data_width(self) -> str:
         return self.data_type.get_data_width()
     def is_integer(self) -> bool:

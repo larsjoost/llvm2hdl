@@ -13,7 +13,7 @@ cpp2vhdl test/cpp/add/add.cpp
 
 Run tests by typing:
 
-cd $LLVM2HDL; ./tests.sh
+cd $LLVM2HDL; ./test.sh
 
 Installation:
 

@@ -13,14 +13,12 @@ from vhdl_entity import VhdlEntity
 from vhdl_function_definition import VhdlFunctionDefinition
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_container_data import VhdlInstanceContainerData
-from vhdl_instance_data import VhdlDeclarationData, VhdlDeclarationDataContainer, VhdlInstanceData
+from vhdl_instance_data import VhdlDeclarationData, VhdlDeclarationDataContainer, \
+    VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
-from messages import Messages
-
-from function_logger import log_entry_and_exit
 
 class CommentGenerator:
     def get_comment(self, current_frame: Optional[FrameType] = None) -> str:
@@ -47,7 +45,8 @@ class FileWriterConstant:
 class FileWriterReference:
     reference : ReferenceDeclaration
     functions: LlvmFunctionContainer
-    def _get_reference(self, comment: str, include_libraries: str, entity: str, architecture: str, entity_reference: str, port_map: str) -> str:
+    def _get_reference(self, comment: str, include_libraries: str, entity: str, 
+                       architecture: str, entity_reference: str, port_map: str) -> str:
         return f"""
 {comment}
 
@@ -149,9 +148,6 @@ class VhdlFunctionGenerator(FileWriterInterface):
 
     _local_tag_in: str = "local_tag_in_i"
     _local_tag_out: str = "local_tag_out_i"
-        
-    def __post_init__(self):
-        self._msg = Messages()
         
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         return CommentGenerator().get_comment(current_frame=current_frame)
@@ -331,7 +327,9 @@ end process;
         input_ports_signals = [vhdl_port.get_port_signal(input_port=i) for i in instance.input_ports]
         self._write_body(self._get_comment())
         self._write_body("signal tag_i : tag_t;")
-        self._write_body(f"signal {self._local_tag_in}, {self._local_tag_out} : std_ulogic_vector(0 to c_tag_width - 1);")
+        tag_signals = f"{self._local_tag_in}, {self._local_tag_out}"
+        tag_type = "std_ulogic_vector(0 to c_tag_width - 1)"
+        self._write_body(f"signal {tag_signals} : {tag_type};")
         for i in input_ports_signals:
             self._write_body(i)
         self._write_body(f"signal m_tdata_i : {instance.get_output_port_type()};")

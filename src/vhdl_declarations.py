@@ -22,7 +22,8 @@ class VhdlDeclarations:
         return self.data_type.get_data_width()
 
     def get_initialization(self, values: List[str]) -> str:
-        return "get(integer_array_t'(" + ", ".join(values) + "), " + self.get_data_width() + ")"
+        arguments = ", ".join(values)
+        return f"get(integer_array_t'({arguments}), {self.get_data_width()})"
 
     def is_void(self) -> bool:
         return self.data_type.is_void()

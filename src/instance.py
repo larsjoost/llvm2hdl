@@ -5,9 +5,8 @@ from instance_container_interface import InstanceContainerInterface
 from instance_data import DeclarationData, InstanceData
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName
-from llvm_parser import InstructionArgument, LlvmParser
+from llvm_parser import InstructionArgument
 from llvm_instruction import LlvmInstruction
-from messages import Messages
 from instance_interface import InstanceInterface
 
 class Instance(InstanceInterface):
@@ -19,12 +18,10 @@ class Instance(InstanceInterface):
     _next: Optional[InstanceInterface]
 
     def __init__(self, parent: InstanceContainerInterface, instruction : LlvmInstruction):
-        self._msg = Messages()
         self._parent = parent
         self.instruction = instruction
         self._next = None
         self._prev = None
-        self._llvm_parser = LlvmParser()
 
     def get_instance_index(self) -> int:
         return 1 if self._prev is None else self._prev.get_instance_index() + 1

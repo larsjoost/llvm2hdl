@@ -24,5 +24,6 @@ class FrameInfoFactory:
                 line_number = previous_frame.f_lineno
                 file_name = previous_frame.f_code.co_filename
                 function_name = os.path.basename(previous_frame.f_code.co_name)
-                result = FrameInfo(file_name=file_name, function_name=function_name, line_number=line_number)
+                result = FrameInfo(file_name=file_name, function_name=function_name, 
+                                   line_number=line_number)
         return result

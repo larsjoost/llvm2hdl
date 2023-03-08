@@ -1,11 +1,14 @@
 import inspect
 import os
 from typing import Any, Optional, Union, List
+from functools import wraps
 
 from color_text import ColorText, HighLight
 from frame_info import FrameInfoFactory
 
-def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None, trigger: Optional[str] = None):
+def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None, 
+                       trigger: Optional[str] = None):
+    # sourcery skip: avoid-builtin-shadow
     """
     Decorator to print function call details.
 
@@ -17,10 +20,13 @@ def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None, trigge
             x = ColorText(key, "yellow")
             return f"{x} = {value}"
 
-        def _print_function_call(file_name: str, line_number: int, function_name: str, func_args_str: str) -> None:
+        def _print_function_call(file_name: str, line_number: int, function_name: str, 
+                                 func_args_str: str) -> None:
             function_name = str(ColorText(function_name, "blue"))
-            function_arguments = HighLight().highlight_replace(text=func_args_str, highlight=highlight)
-            function_call = f"{file_name}({line_number}): {function_name}( {function_arguments} ) ="
+            function_arguments = HighLight().highlight_replace(text=func_args_str, 
+                                                               highlight=highlight)
+            id = f"{file_name}({line_number})"
+            function_call = f"{id}: {function_name}( {function_arguments} ) ="
             print(function_call)
 
         def _print_function_result(result: Any) -> None:
@@ -28,6 +34,7 @@ def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None, trigge
             result_text = HighLight().highlight_replace(text=result_text, highlight=highlight)
             print(result_text)
 
+        @wraps(func)
         def wrapper(*args, **kwargs):
             frame_info = FrameInfoFactory().get_frame_info(current_frame=inspect.currentframe())
             func_args = inspect.signature(func).bind(*args, **kwargs).arguments
@@ -36,7 +43,9 @@ def log_entry_and_exit(highlight: Optional[Union[List[str], str]] = None, trigge
             line_number = frame_info.line_number
             enable_output = (trigger is None) or (trigger in func_args_str)
             if enable_output:
-                _print_function_call(file_name=file_name, line_number=line_number, function_name=func.__name__, func_args_str=func_args_str)
+                _print_function_call(file_name=file_name, line_number=line_number, 
+                                     function_name=func.__name__, 
+                                     func_args_str=func_args_str)
             result = func(*args, **kwargs)  
             if enable_output:
                 _print_function_result(result=result)

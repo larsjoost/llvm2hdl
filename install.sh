@@ -2,7 +2,7 @@
 
 sudo apt-get install -y clang ghdl gtkwave
 
-pip install mypy xenon
+pip install mypy xenon ruff
 
 
 

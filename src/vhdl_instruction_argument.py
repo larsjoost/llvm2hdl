@@ -42,10 +42,11 @@ class VhdlInstructionArgument:
 
 class VhdlInstructionArgumentFactory:
 
-    @log_entry_and_exit()
     def get(self, instruction_argument: InstructionArgument) -> VhdlInstructionArgument:
         vhdl_type = VhdlTypeFactory(llvm_type=instruction_argument.signal_name).resolve()
         name = instruction_argument.signal_name.get_name()
         signal_name = VhdlInstanceName(name=name).get_entity_name()
-        return VhdlInstructionArgument(signal_name=signal_name, vhdl_type=vhdl_type, data_type=instruction_argument.data_type, 
-        unnamed=instruction_argument.unnamed, port_name=instruction_argument.port_name)
+        return VhdlInstructionArgument(signal_name=signal_name, vhdl_type=vhdl_type, 
+                                       data_type=instruction_argument.data_type, 
+                                       unnamed=instruction_argument.unnamed, 
+                                       port_name=instruction_argument.port_name)

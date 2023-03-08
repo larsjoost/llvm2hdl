@@ -56,7 +56,8 @@ class LlvmIntegerDeclaration(TypeDeclaration):
     data_width: int
     
     def __post_init__(self) -> None:
-        assert isinstance(self.data_width, int), f"data_width = {self.data_width} is not an integer"
+        assert isinstance(self.data_width, int), \
+            f"data_width = {self.data_width} is not an integer"
     
     def get_data_width(self) -> str:
         return str(self.data_width)
@@ -194,7 +195,9 @@ class LlvmListDeclarationFactory(TypeDeclarationFactory):
         return "," in self.data_type
 
     def get(self) -> TypeDeclaration:
-        data_types = [LlvmIntegerDeclarationFactory(data_type=i).get() for i in self.data_type.split(",")]
+        elements = self.data_type.split(",")
+        data_types = [
+            LlvmIntegerDeclarationFactory(data_type=i).get() for i in elements]
         return LlvmListDeclaration(data_types=data_types)
 
 @dataclass
@@ -228,7 +231,8 @@ class LlvmClassDeclarationFactory(TypeDeclarationFactory):
 
     def get(self) -> TypeDeclaration:
         assert self.constants is not None
-        return LlvmClassDeclaration(name=LlvmVariableName(self.data_type), constants=self.constants)
+        return LlvmClassDeclaration(name=LlvmVariableName(self.data_type), 
+                                    constants=self.constants)
 
 @dataclass
 class LlvmVariableDeclaration(TypeDeclaration):
@@ -259,7 +263,8 @@ class LlvmVariableDeclarationFactory(TypeDeclarationFactory):
 
 class LlvmDeclarationFactory:
 
-    def get(self, data_type: str, constants: Optional[ConstantContainer] = None) -> TypeDeclaration:
+    def get(self, data_type: str, 
+            constants: Optional[ConstantContainer] = None) -> TypeDeclaration:
         declaration_types = [
             LlvmVoidDeclarationFactory(data_type=data_type),
             LlvmFloatDeclarationFactory(data_type=data_type),

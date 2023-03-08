@@ -15,17 +15,21 @@ class ConstantContainer:
             if i.constant_declaration is not None:
                 file_writer.write_constant(constant=i.constant_declaration)
     
-    def write_references(self, file_writer: FileWriterInterface, functions: LlvmFunctionContainer):
+    def write_references(self, file_writer: FileWriterInterface, 
+                         functions: LlvmFunctionContainer):
         for i in self.declarations:
             if i.reference_declaration is not None:
-                file_writer.write_reference(reference=i.reference_declaration, functions=functions)
+                file_writer.write_reference(reference=i.reference_declaration, 
+                                            functions=functions)
     
-    def get_declaration(self, name: Optional[LlvmVariableName]) -> Optional[DeclarationContainer]:
+    def get_declaration(self, name: Optional[LlvmVariableName]) \
+        -> Optional[DeclarationContainer]:
         return next(
             (i for i in self.declarations if i.match(name=name)), None
         )   
     
-    def get_initialization(self, name: Optional[LlvmVariableName]) -> Optional[List[str]]:
+    def get_initialization(self, name: Optional[LlvmVariableName]) \
+        -> Optional[List[str]]:
         declaration = self.get_declaration(name=name)
         return None if declaration is None else declaration.get_values()
 

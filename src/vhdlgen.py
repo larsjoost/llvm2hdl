@@ -4,13 +4,9 @@ from file_writer import FunctionContents, VhdlFunctionGenerator, FilePrinter
 from function_parser import FunctionParser
 from llvm_function import LlvmFunction
 from llvm_parser import LlvmModule
-from messages import Messages
 from vhdl_function_definition import VhdlFunctionDefinitionFactory
 
 class VhdlGen:
-
-    def __init__(self, msg: Messages) -> None:
-        self._msg = msg
 
     def _write_function(self, function: LlvmFunction, file_generator: VhdlFunctionGenerator) -> FunctionContents:
         parsed_functions = FunctionParser().parse(function=function)

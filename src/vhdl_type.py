@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from llvm_type import LlvmConstantName, LlvmFloat, LlvmHex, LlvmInteger, LlvmType, LlvmVariableName
-
-from messages import Messages
+from llvm_type import LlvmConstantName, LlvmFloat, LlvmHex, LlvmInteger, \
+    LlvmType, LlvmVariableName
 
 class VhdlType(ABC):
     @abstractmethod
@@ -126,9 +125,9 @@ class VhdlTypeFactory:
     llvm_type: LlvmType
     def __init__(self, llvm_type: LlvmType):
         self.llvm_type = llvm_type
-        self._msg = Messages()
     def resolve(self) -> VhdlType:
-        types = [VhdlVariableNameMatch(), VhdlConstantNameMatch(), VhdlIntegerMatch(), VhdlFloatMatch(), VhdlHexMatch()]
+        types = [VhdlVariableNameMatch(), VhdlConstantNameMatch(), VhdlIntegerMatch(), 
+                 VhdlFloatMatch(), VhdlHexMatch()]
         for i in types:
             if i.match(llvm_type=self.llvm_type):
                 return i.get(llvm_type=self.llvm_type)

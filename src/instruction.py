@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface, MemoryInterface, MemoryInterfaceSlave
+from instruction_interface import InstructionArgument, InstructionGeneral, \
+    InstructionInterface, MemoryInterface, MemoryInterfaceSlave
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_type_declaration import TypeDeclaration
@@ -106,7 +107,9 @@ class GetelementptrInstruction(InstructionInterface):
     def get_generic_map(self) -> Optional[List[str]]:
         return None
     def get_operands(self) -> Optional[List[InstructionArgument]]:
-        return self.operands + [InstructionArgument(signal_name=LlvmInteger(value=self.offset), data_type=LlvmIntegerDeclaration(data_width=32))]
+        return self.operands + [
+            InstructionArgument(signal_name=LlvmInteger(value=self.offset), 
+                                data_type=LlvmIntegerDeclaration(data_width=32))]
     def is_valid(self) -> bool:
         return True
     def is_memory(self) -> bool:
@@ -153,7 +156,8 @@ class DefaultInstruction(InstructionInterface):
     operands: List[InstructionArgument]
     output_port_name: str
     def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode, sub_type=self.sub_type)
+        return InstructionGeneral().get_instance_name(opcode=self.opcode, 
+                                                      sub_type=self.sub_type)
     def get_library(self) -> str:
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
@@ -172,4 +176,3 @@ class DefaultInstruction(InstructionInterface):
         return LlvmOutputPort(data_type=self.data_type, port_name=self.output_port_name)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
-

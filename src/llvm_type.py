@@ -7,9 +7,6 @@ class LlvmType(ABC):
     @abstractmethod
     def get_name(self) -> str:
         pass
-    @abstractmethod
-    def get_value(self) -> str:
-        pass
     def is_name(self) -> bool:
         return False
     def is_integer(self) -> bool:
@@ -29,13 +26,11 @@ class LlvmName:
 
 class LlvmVariableName(LlvmName, LlvmType):
     """
-    Example %0, %a, %x.coerce
+    Example %0, %a, %x.coerce, @_Z3Addi_1
     """
     def _to_string(self) -> str:
-        return self.name.replace("%", "").replace(".", "_")
+        return self.name.replace("%", "").replace(".", "_").replace("@_", "").replace("@", "")
     def get_name(self) -> str:
-        return self._to_string()
-    def get_value(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:
         return True
@@ -56,8 +51,6 @@ class LlvmConstantName(LlvmName, LlvmType):
         return self.name.split(".")[-1]
     def get_name(self) -> str:
         return self._to_string()
-    def get_value(self) -> str:
-        return self._to_string()
     def is_name(self) -> bool:
         return True
     def match(self) -> bool:
@@ -77,8 +70,6 @@ class LlvmReferenceName(LlvmName, LlvmType):
         return self.name.split(".")[-1]
     def get_name(self) -> str:
         return self._to_string()
-    def get_value(self) -> str:
-        return self._to_string()
     def is_name(self) -> bool:
         return True
     def match(self) -> bool:
@@ -89,8 +80,6 @@ class LlvmInteger(LlvmType):
     value: int
     def get_name(self) -> str:
         return str(self.value)
-    def get_value(self) -> str:
-        return f'x"{self.value:x}"'
     def is_integer(self) -> bool:
         return True
     
@@ -105,8 +94,6 @@ class LlvmFloat(LlvmType):
     value: float
     def get_name(self) -> str:
         return str(self.value)
-    def get_value(self) -> str:
-        return f'{self.value}'
     
 class LlvmFloatMatch(LlvmTypeMatch):
     def match(self, text: str) -> bool:
@@ -123,8 +110,6 @@ class LlvmHex(LlvmType):
     value: str
     def get_name(self) -> str:
         return self.value
-    def get_value(self) -> str:
-        return f'x"{self.value}"'
     
 class LlvmHexMatch(LlvmTypeMatch):
     def match(self, text: str) -> bool:
@@ -138,7 +123,8 @@ class LlvmTypeFactory:
         self.text = text
         self._msg = Messages()
     def resolve(self) -> LlvmType:
-        types = [LlvmVariableNameMatch(), LlvmConstantNameMatch(), LlvmIntegerMatch(), LlvmFloatMatch(), LlvmHexMatch()]
+        types = [LlvmVariableNameMatch(), LlvmConstantNameMatch(), LlvmIntegerMatch(), 
+                 LlvmFloatMatch(), LlvmHexMatch()]
         for i in types:
             if i.match(text=self.text):
                 return i.get(text=self.text)
