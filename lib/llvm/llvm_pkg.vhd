@@ -8,6 +8,10 @@ use ieee.numeric_std.resize;
 library ieee;
 use ieee.float_pkg.float;
 use ieee.float_pkg.to_float;
+use ieee.float_pkg.float32;
+use ieee.float_pkg.float64;
+use ieee.float_pkg.float128;
+use ieee.float_pkg.to_real;
 use ieee.float_pkg.to_slv;
 
 package llvm_pkg is
@@ -49,6 +53,10 @@ package llvm_pkg is
   function to_std_ulogic_vector(arg : std_ulogic_vector)
     return std_ulogic_vector;
 
+  function to_real (
+    arg : std_ulogic_vector)
+    return real;
+  
 end package llvm_pkg;
 
 package body llvm_pkg is
@@ -134,4 +142,23 @@ package body llvm_pkg is
     return arg;
   end function to_std_ulogic_vector;
 
+  function to_real (
+    arg : std_ulogic_vector)
+    return real is
+  begin
+    case arg'length is
+      when 32 =>
+        return to_real(float32(arg));
+      when 64 =>
+        return to_real(float64(arg));
+      when 128 =>
+        return to_real(float128(arg));
+      when others =>
+        --pragma synthesis_off
+        report "Unsupported argument length = " & integer'image(arg'length) severity failure;
+        --pragma synthesis_on
+    end case;
+    return 0.0;
+  end function to_real;
+  
 end package body llvm_pkg;

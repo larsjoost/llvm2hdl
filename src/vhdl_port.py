@@ -256,7 +256,8 @@ class VhdlPortGenerator(PortGenerator):
         return signal_name
     
     @log_entry_and_exit()
-    def _get_port_map_arguments(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[VhdlSignal]) -> List[str]:
+    def _get_port_map_arguments(self, input_port: VhdlInstructionArgument, 
+                                ports: PortContainer, signals: List[VhdlSignal]) -> List[str]:
         signal_name = self._get_input_port_name(input_port=input_port, ports=ports, signals=signals)
         data_width = input_port.get_data_width()
         arguments = [signal_name, data_width]
@@ -265,7 +266,8 @@ class VhdlPortGenerator(PortGenerator):
             arguments.append(array_index)
         return arguments
 
-    def get_port_signal_assignment(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[VhdlSignal]) -> str:
+    def get_port_signal_assignment(self, input_port: VhdlInstructionArgument, 
+                                   ports: PortContainer, signals: List[VhdlSignal]) -> str:
         signal_name = self._get_input_port_signal_name(input_port)
         arguments = self._get_port_map_arguments(input_port=input_port, ports=ports, signals=signals)
         argument_list = ", ".join(arguments)

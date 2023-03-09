@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Optional
 from llvm_type import LlvmConstantName, LlvmFloat, LlvmHex, LlvmInteger, \
     LlvmType, LlvmVariableName
 
@@ -14,6 +15,8 @@ class VhdlType(ABC):
         return False
     def is_integer(self) -> bool:
         return False
+    def get_data_width(self) -> Optional[int]:
+        return None
 
 class VhdlTypeMatch(ABC):
     @abstractmethod
@@ -113,7 +116,9 @@ class VhdlHex(VhdlType):
     def get_name(self) -> str:
         return f"hex_{self.value}"
     def get_value(self) -> str:
-        return f'x"{self.value}"'
+        return f'to_real(x"{self.value}")'
+    def get_data_width(self) -> Optional[int]:
+        return len(self.value) * 4
     
 class VhdlHexMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
