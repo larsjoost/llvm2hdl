@@ -5,7 +5,6 @@ from instruction_argument import InstructionArgument
 from llvm_type_declaration import TypeDeclaration
 from vhdl_instance_name import VhdlInstanceName
 
-from function_logger import log_entry_and_exit
 from vhdl_type import VhdlType, VhdlTypeFactory
 
 @dataclass
@@ -31,7 +30,6 @@ class VhdlInstructionArgument:
         return self.data_type.get_data_width()
     def is_integer(self) -> bool:
         return self.vhdl_type.is_integer()
-    @log_entry_and_exit()
     def get_input_port_signal_name(self) -> str:
         signal_name = self.vhdl_type.get_name()
         array_index = self.get_array_index()

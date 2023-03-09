@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from dataclasses import dataclass
 from llvm_instruction import LlvmInstruction

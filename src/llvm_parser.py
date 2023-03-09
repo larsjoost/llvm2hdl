@@ -15,8 +15,6 @@ from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmConstantName, LlvmReferenceName, LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmArrayDeclarationFactory, LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmListDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 
-from function_logger import log_entry_and_exit
-
 @dataclass
 class InstructionPosition:
     opcode: int

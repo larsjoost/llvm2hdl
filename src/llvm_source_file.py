@@ -65,11 +65,13 @@ class LlvmSourceFileParser:
         )
 
     def _index_function_start(self, lines: List[LlvmSourceLine]) -> Optional[int]:
-        end_condition: Callable[[LlvmSourceLine], bool] = lambda x: x.is_function_start()
+        def end_condition(x):
+            return x.is_function_start()
         return self._index(lines=lines, end_condition=end_condition)
 
     def _index_function_end(self, lines: List[LlvmSourceLine]) -> Optional[int]:
-        end_condition: Callable[[LlvmSourceLine], bool] = lambda x: x.is_function_end()
+        def end_condition(x):
+            return x.is_function_end()
         return self._index(lines=lines, end_condition=end_condition)
 
     @dataclass
