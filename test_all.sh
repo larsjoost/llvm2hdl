@@ -12,7 +12,7 @@ echo "Checking code quality"
 xenon -b A -a A src/
 
 echo "Checking with ruff"
-ruff check --ignore E501 src/*.py
+ruff check src/*.py
 
 echo "Running unit tests"
 $SCRIPTPATH/unit_tests.sh

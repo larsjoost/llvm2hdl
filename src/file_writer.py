@@ -13,12 +13,13 @@ from vhdl_entity import VhdlEntity
 from vhdl_function_definition import VhdlFunctionDefinition
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_container_data import VhdlInstanceContainerData
-from vhdl_instance_data import VhdlDeclarationData, VhdlDeclarationDataContainer, \
-    VhdlInstanceData
+from vhdl_instance_data import VhdlDeclarationData, VhdlDeclarationDataContainer, VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
+
+from function_logger import log_entry_and_exit
 
 class CommentGenerator:
     def get_comment(self, current_frame: Optional[FrameType] = None) -> str:
@@ -68,9 +69,10 @@ end architecture rtl;
         port_names: List[str] = vhdl_entity.get_port_names(ports=ports)
         return ", ".join([f"{i} => {i}" for i in port_names])
 
-    def _get_ports(self, reference: str) -> PortContainer:
-        function: Optional[LlvmFunction] = self.functions.get_function(name=reference)
-        assert function is not None, f"Could not find function reference {reference}"
+    def _get_ports(self, reference : ReferenceDeclaration) -> PortContainer:
+        name = reference.reference.get_name()
+        function: Optional[LlvmFunction] = self.functions.get_function(name=name)
+        assert function is not None, f'Could not find function reference {name} in "{reference.instruction.get_elaborated()}" instantiated at {reference.instantiation_point}'
         return function.get_ports()
        
     def write_reference(self) -> str:
@@ -79,7 +81,7 @@ end architecture rtl;
         name = vhdl_entity.get_entity_name(self.reference.get_name())
         reference = self.reference.reference.get_name()
         entity_reference = vhdl_entity.get_entity_name(name=reference)
-        ports: PortContainer = self._get_ports(reference=reference)
+        ports: PortContainer = self._get_ports(reference=self.reference)
         entity = vhdl_entity.get_entity(entity_name=name, ports=ports)
         port_map = self._get_port_map(ports=ports)
         include_libraries = VhdlIncludeLibraries().get()

@@ -1,0 +1,7 @@
+[tool.ruff]
+
+# Never enforce `E501` (line length violations).
+ignore = ["E501"]
+
+[tool.vulture]
+min_confidence = 80

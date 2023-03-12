@@ -40,9 +40,6 @@ class Instance(InstanceInterface):
     def get_instance_tag_name(self, instance: Optional[InstanceInterface], default: str) -> str:
         return default if instance is None else instance.get_tag_name()	
 
-    def get_previous_tag_name(self) -> str:
-        return self.get_instance_tag_name(self._prev, "tag_in_i")	
-
     def _get_output_tag_name(self) -> str:
         return "tag_out_i" if self._next is None else self.get_tag_name()	
 

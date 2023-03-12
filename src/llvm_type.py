@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Optional
 
 from messages import Messages
+
+from function_logger import log_entry_and_exit
 
 class LlvmType(ABC):
     @abstractmethod
@@ -11,6 +14,8 @@ class LlvmType(ABC):
         return False
     def is_integer(self) -> bool:
         return False
+    def get_offset(self) -> Optional[int]:
+        return None
 
 class LlvmTypeMatch(ABC):
     @abstractmethod
@@ -106,6 +111,18 @@ class LlvmFloatMatch(LlvmTypeMatch):
         return LlvmFloat(value=float(text))
 
 @dataclass(frozen=True)
+class LlvmBoolean(LlvmType):
+    value: str
+    def get_name(self) -> str:
+        return self.value
+
+class LlvmBooleanMatch(LlvmTypeMatch):
+    def match(self, text: str) -> bool:
+        return text in {"true", "false"}
+    def get(self, text: str) -> LlvmType:
+        return LlvmBoolean(value=text)
+
+@dataclass(frozen=True)
 class LlvmHex(LlvmType):
     value: str
     def get_name(self) -> str:
@@ -117,6 +134,15 @@ class LlvmHexMatch(LlvmTypeMatch):
     def get(self, text: str) -> LlvmType:
         return LlvmHex(value=text[2:])
 
+@dataclass(frozen=True)
+class LlvmPointer(LlvmType):
+    name: LlvmVariableName
+    offset: int
+    def get_name(self) -> str:
+        return self.name.get_name()
+    def get_offset(self) -> Optional[int]:
+        return self.offset
+
 class LlvmTypeFactory:
     text: str
     def __init__(self, text: str):
@@ -124,7 +150,7 @@ class LlvmTypeFactory:
         self._msg = Messages()
     def resolve(self) -> LlvmType:
         types = [LlvmVariableNameMatch(), LlvmConstantNameMatch(), LlvmIntegerMatch(), 
-                 LlvmFloatMatch(), LlvmHexMatch()]
+                 LlvmFloatMatch(), LlvmHexMatch(), LlvmBooleanMatch()]
         for i in types:
             if i.match(text=self.text):
                 return i.get(text=self.text)

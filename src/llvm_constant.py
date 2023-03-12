@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
+from instantiation_point import InstantiationPoint
 from llvm_source_file import LlvmSourceLine
 
 from llvm_type_declaration import TypeDeclaration
@@ -12,6 +13,8 @@ class Constant:
 
 @dataclass
 class ConstantDeclarationBase:
+    instruction: LlvmSourceLine
+    instantiation_point: InstantiationPoint
     name: LlvmType
     def get_name(self) -> str:
         return self.name.get_name()

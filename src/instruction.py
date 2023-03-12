@@ -149,6 +149,33 @@ class CallInstruction(InstructionInterface):
         return None
     
 @dataclass
+class LoadInstruction(InstructionInterface):
+    opcode: str
+    data_type: TypeDeclaration
+    output_port_name: Optional[LlvmVariableName]
+    operands: List[InstructionArgument]
+    def get_instance_name(self) -> str:
+        return InstructionGeneral().get_instance_name(opcode=self.opcode)
+    def get_library(self) -> str:
+        return InstructionGeneral().get_library()
+    def get_data_type(self) -> TypeDeclaration:
+        return self.data_type
+    def get_generic_map(self) -> Optional[List[str]]:
+        return None
+    def get_operands(self) -> Optional[List[InstructionArgument]]:
+        return self.operands
+    def is_valid(self) -> bool:
+        return False
+    def is_memory(self) -> bool:
+        return False
+    def map_function_arguments(self) -> bool:
+        return False
+    def get_output_port(self) -> Optional[LlvmOutputPort]:
+        return None
+    def get_memory_interface(self) -> Optional[MemoryInterface]:
+        return None
+
+@dataclass
 class DefaultInstruction(InstructionInterface):
     opcode: str
     sub_type: Optional[str]

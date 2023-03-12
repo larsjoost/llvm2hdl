@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
+from llvm_type import LlvmType, LlvmTypeFactory
+
 class TypeDeclaration(ABC):
     
     @abstractmethod
@@ -29,6 +31,9 @@ class TypeDeclaration(ABC):
     def get_array_index(self) -> Optional[str]:
         return None
 
+    def resolve_type(self, data_type: str) -> LlvmType:
+        return LlvmTypeFactory(data_type).resolve()
+    
 class TypeDeclarationFactory(ABC):
 
     @abstractmethod

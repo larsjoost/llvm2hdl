@@ -3,7 +3,7 @@ import re
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 from llvm_constant_container import ConstantContainer
-from llvm_type import LlvmVariableName
+from llvm_type import LlvmPointer, LlvmType, LlvmTypeFactory, LlvmVariableName
 from llvm_type_declaration import TypeDeclaration, TypeDeclarationFactory
 
 class LlvmVoidDeclaration(TypeDeclaration):
@@ -114,6 +114,19 @@ class LlvmPointerDeclaration(TypeDeclaration):
         
     def get_data_width(self) -> str:
         return "32"
+
+    def resolve_type(self, data_type: str) -> LlvmType:
+        # 1) data_type = "([4 x float], ptr @_ZZ3firfE6buffer, i64 0, i64 1)"
+        # 2) data_type = "@_ZZ3firfE6buffer"
+        if "," not in data_type:
+            return LlvmTypeFactory(data_type).resolve()
+        split_data_type = data_type.strip("()").split(",")
+        # 1) split_data_type = ["[4 x float], "ptr @_ZZ3firfE6buffer", "i64 0", "i64 1"]
+        name = split_data_type[1].split()[-1]
+        # name = @_ZZ3firfE6buffer
+        offset = int(split_data_type[-1].split()[-1])
+        # offset = 1
+        return LlvmPointer(name=LlvmVariableName(name=name), offset=offset)
 
 @dataclass
 class LlvmPointerDeclarationFactory(TypeDeclarationFactory):
