@@ -12,14 +12,14 @@ class ConstantContainer:
 
     def write_constants(self, file_writer: FileWriterInterface):
         for i in self.declarations:
-            if i.constant_declaration is not None:
-                file_writer.write_constant(constant=i.constant_declaration)
+            if i.is_constant():
+                file_writer.write_constant(constant=i.declaration)
     
     def write_references(self, file_writer: FileWriterInterface, 
                          functions: LlvmFunctionContainer):
         for i in self.declarations:
-            if i.reference_declaration is not None:
-                file_writer.write_reference(reference=i.reference_declaration, 
+            if i.is_reference():
+                file_writer.write_reference(reference=i.declaration, 
                                             functions=functions)
     
     def get_declaration(self, name: Optional[LlvmVariableName]) \

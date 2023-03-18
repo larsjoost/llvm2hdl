@@ -12,12 +12,14 @@ class Constant:
     data_type: TypeDeclaration
 
 @dataclass
-class ConstantDeclarationBase:
+class DeclarationBase:
     instruction: LlvmSourceLine
     instantiation_point: InstantiationPoint
     name: LlvmType
     def get_name(self) -> str:
         return self.name.get_name()
+    def get_type(self) -> Optional[TypeDeclaration]:
+        return None
     def _is_name(self, name: LlvmType) -> bool:
         return self.name.get_name() == name.get_name()
     def match(self, name: Optional[LlvmType]) -> bool:
@@ -28,26 +30,44 @@ class ConstantDeclarationBase:
         return None
     def is_reference(self) -> bool:
         return False
-
+    def is_constant(self) -> bool:
+        return False
+    def get_reference(self) -> Optional[str]:
+        return None
+    
 @dataclass
-class ConstantDeclaration(ConstantDeclarationBase):
+class ConstantDeclaration(DeclarationBase):
     type: TypeDeclaration
     values: List[Constant]
+    def get_type(self) -> Optional[TypeDeclaration]:
+        return self.type
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
         return self.type.get_dimensions()
     def get_values(self) -> Optional[List[str]]:
         return [i.value for i in self.values]
     def get_data_width(self) -> Optional[str]:
         return self.type.get_data_width()
-
-@dataclass
-class ReferenceDeclaration(ConstantDeclarationBase):
-    reference: LlvmReferenceName
-    def is_reference(self) -> bool:
+    def is_constant(self) -> bool:
         return True
 
 @dataclass
-class ClassDeclaration(ConstantDeclarationBase):
+class ReferenceDeclaration(DeclarationBase):
+    reference: LlvmReferenceName
+    def is_reference(self) -> bool:
+        return True
+    def get_reference(self) -> Optional[str]:
+        return self.reference.get_name()
+
+@dataclass
+class ClassDeclaration(DeclarationBase):
+    type: TypeDeclaration
+    def get_dimensions(self) -> Tuple[int, Optional[str]]:
+        return self.type.get_dimensions()
+    def get_data_width(self) -> Optional[str]:
+        return self.type.get_data_width()
+
+@dataclass
+class GlobalVariableDeclaration(DeclarationBase):
     type: TypeDeclaration
     def get_dimensions(self) -> Tuple[int, Optional[str]]:
         return self.type.get_dimensions()
@@ -57,25 +77,14 @@ class ClassDeclaration(ConstantDeclarationBase):
 @dataclass
 class DeclarationContainer:
     instruction: LlvmSourceLine
-    constant_declaration: Optional[ConstantDeclaration] = None
-    reference_declaration: Optional[ReferenceDeclaration] = None
-    class_declaration: Optional[ClassDeclaration] = None
-    def _constant_match(self, name: Optional[LlvmType]) -> bool:
-        return self.constant_declaration is not None and self.constant_declaration.match(name=name)
-    def _reference_match(self, name: Optional[LlvmType]) -> bool:
-        return self.reference_declaration is not None and self.reference_declaration.match(name=name)
-    def _class_match(self, name: Optional[LlvmType]) -> bool:
-        return self.class_declaration is not None and self.class_declaration.match(name=name)
+    declaration: DeclarationBase
     def match(self, name: Optional[LlvmType]) -> bool:
-        return self._constant_match(name=name) or self._reference_match(name=name) or \
-        self._class_match(name=name)
+        return self.declaration.match(name=name)
     def get_values(self) -> Optional[List[str]]:
-        if self.constant_declaration is not None:
-            return self.constant_declaration.get_values()
-        return None
+        return self.declaration.get_values()
     def get_data_width(self) -> Optional[str]:
-        if self.constant_declaration is not None:
-            return self.constant_declaration.get_data_width()
-        if self.class_declaration is not None:
-            return self.class_declaration.get_data_width()
-        return None
+        return self.declaration.get_data_width()
+    def is_reference(self) -> bool:
+        return self.declaration.is_reference()
+    def is_constant(self) -> bool:
+        return self.declaration.is_constant()

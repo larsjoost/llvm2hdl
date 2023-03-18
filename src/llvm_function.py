@@ -28,4 +28,6 @@ class LlvmFunctionContainer:
 
     def get_function(self, name: str) -> Optional[LlvmFunction]:
         return next((i for i in self.functions if i.name == name), None)
-            
+
+    def get_function_names(self) -> List[str]:
+        return [i.name for i in self.functions]      

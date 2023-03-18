@@ -9,8 +9,6 @@ from messages import Messages
 from vhdl_instance_data import VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
 
-from function_logger import log_entry_and_exit
-
 @dataclass
 class VhdlPortRole(ABC):
     connection: Optional[str] = None 

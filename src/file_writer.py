@@ -7,7 +7,7 @@ from types import FrameType
 from typing import List, Optional
 from file_writer_interface import FileWriterInterface
 from frame_info import FrameInfoFactory
-from llvm_constant import ConstantDeclaration, ReferenceDeclaration
+from llvm_constant import DeclarationBase
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from vhdl_entity import VhdlEntity
 from vhdl_function_definition import VhdlFunctionDefinition
@@ -18,8 +18,6 @@ from vhdl_instruction_argument import VhdlInstructionArgument
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
-
-from function_logger import log_entry_and_exit
 
 class CommentGenerator:
     def get_comment(self, current_frame: Optional[FrameType] = None) -> str:
@@ -32,9 +30,11 @@ class CommentGenerator:
 
 @dataclass
 class FileWriterConstant:
-    constant : ConstantDeclaration
+    constant : DeclarationBase
     def write_constant(self) -> str:
-        vhdl_declaration = VhdlDeclarations(self.constant.type)
+        data_type = self.constant.get_type()
+        assert data_type is not None
+        vhdl_declaration = VhdlDeclarations(data_type=data_type)
         values = self.constant.get_values()
         if values is None:
             return ""
@@ -44,7 +44,7 @@ class FileWriterConstant:
 
 @dataclass
 class FileWriterReference:
-    reference : ReferenceDeclaration
+    reference : DeclarationBase
     functions: LlvmFunctionContainer
     def _get_reference(self, comment: str, include_libraries: str, entity: str, 
                        architecture: str, entity_reference: str, port_map: str) -> str:
@@ -69,17 +69,21 @@ end architecture rtl;
         port_names: List[str] = vhdl_entity.get_port_names(ports=ports)
         return ", ".join([f"{i} => {i}" for i in port_names])
 
-    def _get_ports(self, reference : ReferenceDeclaration) -> PortContainer:
-        name = reference.reference.get_name()
-        function: Optional[LlvmFunction] = self.functions.get_function(name=name)
-        assert function is not None, f'Could not find function reference {name} in "{reference.instruction.get_elaborated()}" instantiated at {reference.instantiation_point}'
+    def _get_ports(self, reference : DeclarationBase) -> PortContainer:
+        reference_name = reference.get_reference()
+        assert reference_name is not None
+        function: Optional[LlvmFunction] = self.functions.get_function(name=reference_name)
+        instantiation_point = reference.instantiation_point.show()
+        instruction = reference.instruction.get_elaborated()
+        function_names = ", ".join(self.functions.get_function_names())
+        assert function is not None, f'Could not find function reference {reference_name} among the following functions {function_names} in "{instruction}" instantiated at {instantiation_point}'
         return function.get_ports()
        
     def write_reference(self) -> str:
         comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
         vhdl_entity = VhdlEntity()
         name = vhdl_entity.get_entity_name(self.reference.get_name())
-        reference = self.reference.reference.get_name()
+        reference = self.reference.get_name()
         entity_reference = vhdl_entity.get_entity_name(name=reference)
         ports: PortContainer = self._get_ports(reference=self.reference)
         entity = vhdl_entity.get_entity(entity_name=name, ports=ports)
@@ -435,10 +439,10 @@ end block {block_name};
         for i in declarations.declarations:
             self._write_signal(declaration=i)
 
-    def write_constant(self, constant: ConstantDeclaration):
+    def write_constant(self, constant: DeclarationBase):
         self.container.constants.append(FileWriterConstant(constant=constant))
 
-    def write_reference(self, reference: ReferenceDeclaration, functions: LlvmFunctionContainer):
+    def write_reference(self, reference: DeclarationBase, functions: LlvmFunctionContainer):
         self.container.references.append(FileWriterReference(reference=reference, functions=functions))
 
     def _write_include_libraries(self) -> None:

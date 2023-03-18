@@ -1,16 +1,16 @@
 
 from abc import ABC, abstractmethod
 
-from llvm_constant import ConstantDeclaration, ReferenceDeclaration
+from llvm_constant import DeclarationBase
 from llvm_function import LlvmFunctionContainer
 
 class FileWriterInterface(ABC):
 
     @abstractmethod
-    def write_constant(self, constant: ConstantDeclaration):
+    def write_constant(self, constant: DeclarationBase):
         pass
 
     @abstractmethod
-    def write_reference(self, reference: ReferenceDeclaration, functions: LlvmFunctionContainer):
+    def write_reference(self, reference: DeclarationBase, functions: LlvmFunctionContainer):
         pass
 

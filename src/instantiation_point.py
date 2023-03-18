@@ -9,5 +9,5 @@ class InstantiationPoint:
     def __init__(self) -> None:
         self.frame_info = FrameInfoFactory().get_frame_info(current_frame=inspect.currentframe())
 
-    def __str__(self) -> str:
+    def show(self) -> str:
         return f"{self.frame_info.file_name}({self.frame_info.line_number})"
