@@ -6,6 +6,9 @@ from llvm_constant_container import ConstantContainer
 from llvm_type import LlvmPointer, LlvmType, LlvmTypeFactory, LlvmVariableName
 from llvm_type_declaration import TypeDeclaration, TypeDeclarationFactory
 
+
+from function_logger import log_entry_and_exit
+
 class LlvmVoidDeclaration(TypeDeclaration):
 
     def get_dimensions(self) -> Tuple[int, str]:
@@ -170,6 +173,13 @@ class LlvmArrayDeclaration(TypeDeclaration):
         index, data_type = self._get_dimensions()
         return f"{index}*{data_type}"
 
+class LlvmTypeResolver:
+    def get(self, data_type: str, declaration_types: List[TypeDeclarationFactory]) -> TypeDeclaration:
+        for i in declaration_types:
+            if i.match():
+                return i.get()
+        assert False, f"Could not resolve data type: {data_type}"
+
 @dataclass
 class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
     
@@ -178,9 +188,17 @@ class LlvmArrayDeclarationFactory(TypeDeclarationFactory):
     def match(self) -> bool:
         return " x " in self.data_type
 
+    def _parse_data_type(self, data_type: str) -> TypeDeclaration:
+        declaration_types = [ 
+            LlvmFloatDeclarationFactory(data_type=data_type),
+            LlvmIntegerDeclarationFactory(data_type=data_type)
+        ]    
+        return LlvmTypeResolver().get(data_type=data_type, declaration_types=declaration_types)
+    
     def get(self) -> TypeDeclaration:
         x = self.data_type.split(" x ")
-        y = LlvmIntegerDeclarationFactory(data_type=x[1]).get()
+        data_type = x[1]
+        y = self._parse_data_type(data_type=data_type)
         return LlvmArrayDeclaration(x=LlvmConstantDeclaration(x[0]), y=y)
 
 @dataclass
@@ -287,10 +305,7 @@ class LlvmDeclarationFactory:
             LlvmClassDeclarationFactory(data_type=data_type, constants=constants),
             LlvmVariableDeclarationFactory(data_type=data_type)
         ]    
-        for i in declaration_types:
-            if i.match():
-                return i.get()
-        assert False, f"Could not resolve data type: {data_type}"
+        return LlvmTypeResolver().get(data_type=data_type, declaration_types=declaration_types)
 
 class VectorDeclaration(TypeDeclaration):
     
