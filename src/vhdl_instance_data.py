@@ -10,6 +10,8 @@ from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction_argument import VhdlInstructionArgument, \
     VhdlInstructionArgumentFactory
 
+from function_logger import log_entry_and_exit
+
 @dataclass
 class VhdlInstanceData:
     instance_name: str

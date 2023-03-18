@@ -35,7 +35,7 @@ class VhdlVariableName(VhdlName, VhdlType):
     Example %0, %a, %x.coerce
     """
     def get_name(self) -> str:
-        return self.name
+        return f"var_{self.name}"
     def get_value(self) -> str:
         return self.name
     def is_name(self) -> bool:

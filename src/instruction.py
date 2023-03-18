@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from instruction_interface import InstructionArgument, InstructionGeneral, \
-    InstructionInterface, MemoryInterface, MemoryInterfaceSlave
+    InstructionInterface, MemoryInterface, MemoryInterfaceMaster, MemoryInterfaceSlave
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_type_declaration import TypeDeclaration
@@ -165,15 +165,15 @@ class LoadInstruction(InstructionInterface):
     def get_operands(self) -> Optional[List[InstructionArgument]]:
         return self.operands
     def is_valid(self) -> bool:
-        return False
+        return True
     def is_memory(self) -> bool:
         return False
     def map_function_arguments(self) -> bool:
         return False
     def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return None
-    def get_memory_interface(self) -> Optional[MemoryInterface]:
-        return None
+        return LlvmOutputPort(data_type=self.data_type, port_name="m_tdata")
+    def get_memory_interface(self) -> Optional[MemoryInterface]:    
+        return MemoryInterfaceMaster()
 
 @dataclass
 class DefaultInstruction(InstructionInterface):

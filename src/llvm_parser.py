@@ -58,6 +58,14 @@ class LlvmParserUtilities:
     def _remove_empty_elements(self, x: List[str]) -> List[str]:
         return [i for i in x if len(i) > 0]
 
+    def _new_depth(self, letter: str, depth: int, string: str) -> int:
+        if letter == "(":
+            depth += 1
+        elif letter == ")":
+            depth += -1
+        assert depth >= 0, f"Found more left paranthesis than right paranthesis in {string}"
+        return depth
+
     def _split_top(self, string: str, splitter: str) -> List[str]:
         ''' Splits strings at occurance of 'splitter' but only if not enclosed by brackets.
             Removes all whitespace immediately after each splitter.
@@ -65,17 +73,13 @@ class LlvmParserUtilities:
         outlist = []
         outstring: List[str] = []
         depth = 0
-        for c in string:
-            if c == "(":
-                depth += 1
-            elif c == ")":
-                depth -= 1
-                assert depth >= 0, f"Found more left paranthesis than right paranthesis in {string}"
-            if not depth and c == splitter:
+        for letter in string:
+            depth = self._new_depth(letter=letter, depth=depth, string=string)
+            if not depth and letter == splitter:
                 outlist.append("".join(outstring))
                 outstring = []
             else:
-                outstring.append(c)
+                outstring.append(letter)
         outlist.append("".join(outstring))
         return outlist
     
@@ -187,7 +191,6 @@ class BitCastInstructionParser(InstructionParser):
 
 class GetelementptrInstructionParser(InstructionParser):
 
-    @log_entry_and_exit()
     def parse(self, arguments: InstructionParserArguments) -> InstructionInterface:
         """
         1) instruction = "getelementptr inbounds i32, ptr %a, i64 1"
@@ -425,7 +428,6 @@ class LlvmArgumentParser:
     def __init__(self) -> None:
         self._msg = Messages()
 
-    @log_entry_and_exit()   
     def _parse_argument(self, argument_item: str, unnamed: bool) -> InstructionArgument:
         utils = LlvmParserUtilities()
         # 1) i = "i32 2"
@@ -444,18 +446,17 @@ class LlvmArgumentParser:
         # 2) signal_name = "%n"
         return InstructionArgument(signal_name=argument, data_type=data_type, unnamed=unnamed)
 
-    @log_entry_and_exit()   
     def parse(self, arguments: str, unnamed: bool = False) -> List[InstructionArgument]:
         """
         arguments = "i32 2, i32* nonnull %n"
         arguments = ptr nocapture noundef readonly %a
         arguments = ptr noundef nonnull align 4 dereferenceable(8 %a, i32 noundef 1, i32 noundef 2
         """
-        result = []
         utils = LlvmParserUtilities()
-        for i in utils.split_top_comma(arguments):
-            result.append(self._parse_argument(argument_item=i, unnamed=unnamed))
-        return result
+        return [
+            self._parse_argument(argument_item=i, unnamed=unnamed)
+            for i in utils.split_top_comma(arguments)
+        ]
 
 class LlvmInstructionParser:
 

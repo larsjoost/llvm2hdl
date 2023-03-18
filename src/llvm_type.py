@@ -4,8 +4,6 @@ from typing import Optional
 
 from messages import Messages
 
-from function_logger import log_entry_and_exit
-
 class LlvmType(ABC):
     @abstractmethod
     def get_name(self) -> str:
