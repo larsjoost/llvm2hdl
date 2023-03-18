@@ -29,4 +29,4 @@ MOUNT_FILE_PATH="-v $FILE_PATH:$FILE_PATH"
 
 MOUNT="$MOUNT_SCRIPTPATH $MOUNT_FILE_PATH"
 
-docker run -i $MOUNT -w $(pwd) $CONTAINER_NAME python3 $SCRIPTPATH/llvm2hdl.py $ALL_ARGUMENTS
+docker run --rm -i $MOUNT -w $(pwd) $CONTAINER_NAME python3 $SCRIPTPATH/llvm2hdl.py $ALL_ARGUMENTS

@@ -76,4 +76,4 @@ if [ ! -w $INSTALL_DIR ]; then
     exit 1
 fi
     
-docker run -it -e PATH --rm $WORKING_DIR $MOUNT_DIR $DOCKER_IMAGE_NAME bash -c "$COMMAND"
+docker run --rm -it -e PATH --rm $WORKING_DIR $MOUNT_DIR $DOCKER_IMAGE_NAME bash -c "$COMMAND"

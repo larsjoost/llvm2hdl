@@ -23,7 +23,7 @@ ghdl_arguments="--std=08 -Wno-hide"
 
 cd $file_path
 
-ghdl -a $ghdl_arguments $SCRIPTPATH/../lib/test/test_main.vhd
+ghdl -i $ghdl_arguments $SCRIPTPATH/../lib/test/test_main.vhd
 
 ghdl -m $ghdl_arguments test_main
 

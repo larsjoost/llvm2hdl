@@ -83,7 +83,8 @@ end architecture rtl;
         comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
         vhdl_entity = VhdlEntity()
         name = vhdl_entity.get_entity_name(self.reference.get_name())
-        reference = self.reference.get_name()
+        reference = self.reference.get_reference()
+        assert reference is not None
         entity_reference = vhdl_entity.get_entity_name(name=reference)
         ports: PortContainer = self._get_ports(reference=self.reference)
         entity = vhdl_entity.get_entity(entity_name=name, ports=ports)

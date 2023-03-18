@@ -21,6 +21,6 @@ file_path=$(dirname $file_name)
 
 MOUNT="-v $file_path:$file_path -v $include_dir:$include_dir"
 
-docker run -i $MOUNT -w $(pwd) $CONTAINER_NAME clang++ -S -O3 -fno-discard-value-names -emit-llvm -o $llvm_file_name -I$include_dir $file_name 
+docker run --rm -i $MOUNT -w $(pwd) $CONTAINER_NAME clang++ -S -O3 -fno-discard-value-names -emit-llvm -o $llvm_file_name -I$include_dir $file_name 
 
 $SCRIPTPATH/src/llvm2hdl.sh -f $llvm_file_name 
