@@ -80,7 +80,7 @@ end architecture rtl;
         return function.get_ports()
        
     def write_reference(self) -> str:
-        comment = CommentGenerator().get_comment(current_frame=inspect.currentframe())
+        comment = CommentGenerator().get_comment()
         vhdl_entity = VhdlEntity()
         name = vhdl_entity.get_entity_name(self.reference.get_name())
         reference = self.reference.get_reference()
@@ -182,7 +182,9 @@ class VhdlFunctionGenerator(FileWriterInterface):
     def _write_tag_record(self) -> None:
         tag_elements = VhdlPortGenerator().get_tag_elements(ports=self.container.ports, signals=self.container.signals)
         record_elements = "\n".join(f"{name} {declaration}" for name, declaration in tag_elements)
+        comment = CommentGenerator().get_comment() 
         self._write_header(f"""
+{comment}
 type tag_t is record
 {record_elements}
 end record;
@@ -190,8 +192,9 @@ end record;
         
     def _write_function_conv_tag(self, record_items: List[str]) -> None:
         assign_items = ", ".join([f"result_v.{i}" for i in record_items])
+        comment = CommentGenerator().get_comment() 
         self._write_header(f"""
-
+{comment}
 function conv_tag (
   arg : std_ulogic_vector(0 to c_tag_width - 1)) return tag_t is
   variable result_v : tag_t;
@@ -204,8 +207,9 @@ end function conv_tag;
         
     def _write_function_tag_to_std_ulogic_vector(self, record_items: List[str]) -> None:
         assign_arg = " & ".join([f"arg.{i}" for i in record_items])
+        comment = CommentGenerator().get_comment() 
         self._write_header(f"""
-        
+{comment}        
 function tag_to_std_ulogic_vector (
   arg : tag_t) return std_ulogic_vector is
 begin
@@ -337,8 +341,9 @@ port map (
         """)  
 
     def _write_component_output_signal_assignment(self, instance: VhdlInstanceData) -> None:
+        comment = CommentGenerator().get_comment() 
         self._write_body(f"""
-
+{comment}
 process (all)
 begin
   {instance.tag_name} <= conv_tag({self._local_tag_out});
@@ -390,7 +395,9 @@ end process;
         for j in instances.instances:
             self._write_instance(instance=j)
         return_driver = instances.get_return_instruction_driver()
+        comment = CommentGenerator().get_comment() 
         self._write_body(f"""
+{comment}
 m_tvalid <= {return_driver}_m_tvalid_i;
 {return_driver}_m_tready_i <= m_tready;
 m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);
@@ -430,8 +437,9 @@ m_tag <= tag_out_i.tag;
         signal_assigments = "\n".join([f"{i};" for i in signal_assigment_list])
         memory_interface_name = f"memory_arbiter_{memory_name}"
         port_map = self._get_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
+        comment = CommentGenerator().get_comment() 
         self._write_body(f"""
-
+{comment}
 {block_name}: block
 constant c_size : positive := {number_of_memory_instances};
 {signals}
