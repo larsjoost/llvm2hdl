@@ -49,7 +49,7 @@ class FileWriterReference:
     def _get_reference(self, comment: str, include_libraries: str, entity: str, 
                        architecture: str, entity_reference: str, port_map: str) -> str:
         return f"""
-{comment}
+{comment} References
 
 {include_libraries}
 
@@ -93,6 +93,18 @@ end architecture rtl;
         return self._get_reference(comment=comment, include_libraries=include_libraries, 
         entity=entity, architecture=name, entity_reference=entity_reference, port_map=port_map)
         
+@dataclass
+class FileWriterVariable:
+    variable : DeclarationBase
+    def write_variable(self) -> str:
+        comment = CommentGenerator().get_comment() 
+        name = self.variable.get_name()
+        data_width = self.variable.get_data_width()
+        return f"""
+{comment} Global variables
+signal {name} : std_ulogic_vector(0 to {data_width} - 1);
+        """
+
 @dataclass
 class FunctionContents:
     header : List[str] =  field(default_factory=list) 
@@ -145,6 +157,7 @@ class VhdlFunctionContainer:
     instance_signals: InstanceSignals = field(default_factory=lambda : InstanceSignals())
     constants : List[FileWriterConstant] = field(default_factory=list)
     references: List[FileWriterReference] = field(default_factory=list)
+    variables: List[FileWriterVariable] = field(default_factory=list)
     ports: PortContainer = field(default_factory=lambda : PortContainer())
  
 @dataclass
@@ -212,6 +225,10 @@ end function tag_to_std_ulogic_vector;
         for i in references:
             self._write_trailer(i.write_reference())
 
+    def _write_variables(self, variables: List[FileWriterVariable]) -> None:
+        for i in variables:
+            self._write_header(i.write_variable())
+
     def _write_signals(self) -> None:
         self._write_header("signal tag_in_i, tag_out_i : tag_t;")
         signal_declaration = "\n".join(signal.get_signal_declaration() for signal in self.container.signals)
@@ -220,6 +237,7 @@ end function tag_to_std_ulogic_vector;
         self._write_header(signals)
 
     def _write_declarations_to_header(self) -> None:
+        self._write_variables(variables=self.container.variables)
         self._write_total_data_width(signals=self.container.signals, ports=self.container.ports)
         self._write_constants(constants=self.container.constants)
         self._write_tag_record()
@@ -445,6 +463,9 @@ end block {block_name};
 
     def write_reference(self, reference: DeclarationBase, functions: LlvmFunctionContainer):
         self.container.references.append(FileWriterReference(reference=reference, functions=functions))
+
+    def write_variable(self, variable: DeclarationBase):
+        self.container.variables.append(FileWriterVariable(variable=variable))
 
     def _write_include_libraries(self) -> None:
         self._write_header(VhdlIncludeLibraries().get())

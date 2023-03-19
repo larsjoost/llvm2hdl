@@ -4,7 +4,7 @@ from instruction_argument import InstructionArgument
 from llvm_declarations import LlvmIntegerDeclaration, LlvmPointerDeclaration
 
 from llvm_type import LlvmInteger, LlvmVariableName
-from llvm_parser import ConstantContainer, GetelementptrInstructionParser, InstructionParserArguments, LlvmArgumentParser
+from llvm_parser import GlobalsContainer, GetelementptrInstructionParser, InstructionParserArguments, LlvmArgumentParser
 
 from messages import Messages
 
@@ -14,7 +14,7 @@ class TestGetelementptrInstructionParser(unittest.TestCase):
         x = GetelementptrInstructionParser()
         instruction = "getelementptr inbounds [4 x i32], ptr %n, i64 0, i64 1"
         destination = LlvmVariableName(name='%arrayidx')
-        constants = ConstantContainer(declarations=[])
+        constants = GlobalsContainer(declarations=[])
         expected = GetelementptrInstruction(opcode='getelementptr', data_type=LlvmPointerDeclaration(), operands=[InstructionArgument(signal_name=LlvmVariableName(name='%n'), data_type=LlvmPointerDeclaration(), unnamed=False, port_name=None)], offset=1)
         got = x.parse(arguments=InstructionParserArguments(instruction=instruction, destination=destination, constants=constants))
         self.assertEqual(got, expected)

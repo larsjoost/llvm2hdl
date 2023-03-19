@@ -14,3 +14,6 @@ class FileWriterInterface(ABC):
     def write_reference(self, reference: DeclarationBase, functions: LlvmFunctionContainer):
         pass
 
+    @abstractmethod
+    def write_variable(self, variable: DeclarationBase):
+        pass

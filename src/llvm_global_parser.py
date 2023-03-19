@@ -34,7 +34,7 @@ class LlvmGlobalParserBase(ABC):
         pass
 
     @abstractmethod
-    def match(self, source: List[str]) -> bool:
+    def match(self, source: List[str]   ) -> bool:
         pass
 
 class LlvmGlobalClassParser(LlvmGlobalParserBase):
@@ -103,7 +103,7 @@ class LlvmGlobalVariableParser(LlvmGlobalParserBase):
         data_type = self._get_array_data_type(source=source)
         declaration = GlobalVariableDeclaration(instruction=instruction, 
                                                           instantiation_point=InstantiationPoint(),
-                                                          name=LlvmReferenceName(name),
+                                                          name=LlvmVariableName(name),
                                                           type=data_type)
         return DeclarationContainer(instruction=instruction, declaration=declaration)
 

@@ -15,8 +15,7 @@ class VhdlGen:
 
     def _generate_function(self, module: LlvmModule, function: LlvmFunction) -> FunctionContents:
         file_generator = VhdlFunctionGenerator()
-        module.write_constants(file_writer=file_generator)
-        module.write_references(file_writer=file_generator)
+        module.write_globals(file_writer=file_generator)
         return self._write_function(function=function, file_generator=file_generator)    
 
     def parse(self, file_name: str, module: LlvmModule) -> None:

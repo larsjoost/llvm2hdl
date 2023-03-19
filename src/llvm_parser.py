@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Union
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, LoadInstruction, ReturnInstruction
 from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
-from llvm_constant_container import ConstantContainer
+from llvm_globals_container import GlobalsContainer
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from llvm_global_parser import LlvmGlobalParser
 from llvm_instruction import LlvmInstruction
@@ -153,7 +153,7 @@ class LlvmInstructionLabelParser:
 class InstructionParserArguments:
     instruction: str
     destination: Optional[LlvmVariableName]
-    constants: ConstantContainer
+    constants: GlobalsContainer
 
 class InstructionParser(ABC):
 
@@ -404,7 +404,7 @@ class LlvmInstructionCommandParser:
                 parser = i
         return parser.parse(arguments=arguments)
 
-    def parse(self, source_line: LlvmSourceLine, constants: ConstantContainer) -> Optional[LlvmInstructionCommand]:
+    def parse(self, source_line: LlvmSourceLine, constants: GlobalsContainer) -> Optional[LlvmInstructionCommand]:
         """
         1)    %add = add nsw i32 %b, %a
         2)    ret i32 %add
@@ -457,12 +457,12 @@ class LlvmArgumentParser:
 
 class LlvmInstructionParser:
 
-    def _parse_line(self, line: LlvmSourceLine, constants: ConstantContainer) -> Optional[LlvmInstruction]:
+    def _parse_line(self, line: LlvmSourceLine, constants: GlobalsContainer) -> Optional[LlvmInstruction]:
         if line.is_label():
             return LlvmInstructionLabelParser().parse(source_line=line)
         return LlvmInstructionCommandParser().parse(source_line=line, constants=constants)
 
-    def parse(self, lines: List[LlvmSourceLine], constants: ConstantContainer) -> List[LlvmInstruction]:
+    def parse(self, lines: List[LlvmSourceLine], constants: GlobalsContainer) -> List[LlvmInstruction]:
         """
         entry:
             %add = add nsw i32 %b, %a
@@ -494,7 +494,7 @@ class LlvmFunctionParser:
         function_name, return_type = self._parse_parentesis(left_parenthis_split=left_parenthis_split)
         return function_name, arguments, return_type
 
-    def parse(self, source_function: LlvmSourceFunction, constants: ConstantContainer) -> LlvmFunction:
+    def parse(self, source_function: LlvmSourceFunction, constants: GlobalsContainer) -> LlvmFunction:
         """
         define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) local_unnamed_addr #0 {
         entry:
@@ -514,14 +514,14 @@ class LlvmParser:
     def __init__(self):
         self._msg = Messages()
 
-    def _parse_globals(self, constants: LlvmSourceConstants) -> ConstantContainer:
+    def _parse_globals(self, constants: LlvmSourceConstants) -> GlobalsContainer:
         parsed_constants = [LlvmGlobalParser().parse(i) for i in constants.lines]
-        return ConstantContainer(declarations=parsed_constants)
+        return GlobalsContainer(declarations=parsed_constants)
 
-    def _parse_function(self, source_function: LlvmSourceFunction, llvm_constants: ConstantContainer) -> LlvmFunction:
+    def _parse_function(self, source_function: LlvmSourceFunction, llvm_constants: GlobalsContainer) -> LlvmFunction:
         return LlvmFunctionParser().parse(source_function=source_function, constants=llvm_constants)
 
-    def _parse_functions(self, source_file: LlvmSourceFile, llvm_constants: ConstantContainer) -> LlvmFunctionContainer:
+    def _parse_functions(self, source_file: LlvmSourceFile, llvm_constants: GlobalsContainer) -> LlvmFunctionContainer:
         functions: LlvmSourceFunctions = LlvmSourceFileParser().extract_functions(source_file=source_file)
         parsed_funtions = [self._parse_function(source_function=i, llvm_constants=llvm_constants) for i in functions.functions]
         return LlvmFunctionContainer(functions=parsed_funtions)
@@ -531,4 +531,4 @@ class LlvmParser:
         constants = LlvmSourceFileParser().extract_constants(source_file=source_file)
         llvm_constants = self._parse_globals(constants=constants)
         llvm_functions = self._parse_functions(source_file=source_file, llvm_constants=llvm_constants)
-        return LlvmModule(functions=llvm_functions, constants=llvm_constants)
+        return LlvmModule(functions=llvm_functions, globals=llvm_constants)

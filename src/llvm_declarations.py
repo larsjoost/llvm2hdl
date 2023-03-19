@@ -2,12 +2,9 @@
 import re
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
-from llvm_constant_container import ConstantContainer
+from llvm_globals_container import GlobalsContainer
 from llvm_type import LlvmPointer, LlvmType, LlvmTypeFactory, LlvmVariableName
 from llvm_type_declaration import TypeDeclaration, TypeDeclarationFactory
-
-
-from function_logger import log_entry_and_exit
 
 class LlvmVoidDeclaration(TypeDeclaration):
 
@@ -239,7 +236,7 @@ class LlvmClassDeclaration(TypeDeclaration):
     %class.ClassTest
     """
     name: LlvmVariableName
-    constants: ConstantContainer
+    constants: GlobalsContainer
 
     def get_data_width(self) -> str:
         data_width = self.constants.get_data_width(name=self.name)        
@@ -253,7 +250,7 @@ class LlvmClassDeclaration(TypeDeclaration):
 class LlvmClassDeclarationFactory(TypeDeclarationFactory):
     
     data_type: str
-    constants: Optional[ConstantContainer]
+    constants: Optional[GlobalsContainer]
 
     def match(self) -> bool:
         if self.constants is None:
@@ -295,7 +292,7 @@ class LlvmVariableDeclarationFactory(TypeDeclarationFactory):
 class LlvmDeclarationFactory:
 
     def get(self, data_type: str, 
-            constants: Optional[ConstantContainer] = None) -> TypeDeclaration:
+            constants: Optional[GlobalsContainer] = None) -> TypeDeclaration:
         declaration_types = [
             LlvmVoidDeclarationFactory(data_type=data_type),
             LlvmFloatDeclarationFactory(data_type=data_type),

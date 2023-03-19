@@ -32,6 +32,8 @@ class DeclarationBase:
         return False
     def is_constant(self) -> bool:
         return False
+    def is_variable(self) -> bool:
+        return False
     def get_reference(self) -> Optional[str]:
         return None
     
@@ -73,6 +75,8 @@ class GlobalVariableDeclaration(DeclarationBase):
         return self.type.get_dimensions()
     def get_data_width(self) -> Optional[str]:
         return self.type.get_data_width()
+    def is_variable(self) -> bool:
+        return True
 
 @dataclass
 class DeclarationContainer:
@@ -88,3 +92,5 @@ class DeclarationContainer:
         return self.declaration.is_reference()
     def is_constant(self) -> bool:
         return self.declaration.is_constant()
+    def is_variable(self) -> bool:
+        return self.declaration.is_variable()
