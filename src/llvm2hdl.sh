@@ -17,10 +17,14 @@ done
 
 CONTAINER_NAME=llvm2hdl
 
-cd $SCRIPTPATH
-docker build -t $CONTAINER_NAME .
-cd -
+IMAGE_EXISTS=$(docker images -q $CONTAINER_NAME)
 
+if [ -z "$IMAGE_EXISTS" ]; then
+    cd $SCRIPTPATH
+    docker build -t $CONTAINER_NAME .
+    cd -
+fi
+    
 MOUNT_SCRIPTPATH="-v $SCRIPTPATH:$SCRIPTPATH"
 
 FILE_PATH="$(dirname $file_name)"

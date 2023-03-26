@@ -13,10 +13,14 @@ include_files=$SCRIPTPATH/lib/test/test.cpp
 
 CONTAINER_NAME=cpp2hdl
 
-cd $SCRIPTPATH
-docker build -t $CONTAINER_NAME .
-cd -
+IMAGE_EXISTS=$(docker images -q $CONTAINER_NAME)
 
+if [ -z "$IMAGE_EXISTS" ]; then
+    cd $SCRIPTPATH
+    docker build -t $CONTAINER_NAME .
+    cd -
+fi
+    
 file_path=$(dirname $file_name)
 
 MOUNT="-v $file_path:$file_path -v $include_dir:$include_dir"

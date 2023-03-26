@@ -93,15 +93,18 @@ port map (
 
         """)  
 
-    def _write_instance_signal_assignments(self, instance: VhdlInstanceData, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
+    def _write_input_port_signal_assignments(self, instance: VhdlInstanceData, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
         vhdl_port = VhdlPortGenerator()
         input_ports_signal_assignment = [vhdl_port.get_port_signal_assignment(input_port=i, ports=container.ports, signals=container.signals) for i in instance.input_ports]
+        for i in input_ports_signal_assignment:
+            function_contents.write_body(i)
+        
+    def _write_instance_signal_assignments(self, instance: VhdlInstanceData, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
         tag_name = instance.get_previous_instance_signal_name("tag_out")
         function_contents.write_body("tag_i <= " + ("tag_in_i" if tag_name is None else tag_name) + ";")
         function_contents.write_body(f"{self._local_tag_in} <= tag_to_std_ulogic_vector(tag_i);")
-        for i in input_ports_signal_assignment:
-            function_contents.write_body(i)
-                   
+        self._write_input_port_signal_assignments(instance=instance, function_contents=function_contents, container=container)
+
     def _write_component_output_signal_assignment(self, instance: VhdlInstanceData, function_contents: VhdlFunctionContents) -> None:
         comment = VhdlCommentGenerator().get_comment() 
         function_contents.write_body(f"""
@@ -114,6 +117,13 @@ end process;
 
         """)
         
+    def _write_instance_contents(self, block_name: str, instance: VhdlInstanceData, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
+        function_contents.write_body("begin")
+        self._write_instance_signal_assignments(instance=instance, function_contents=function_contents, container=container)
+        self._write_component_instantiation(instance=instance, function_contents=function_contents, container=container)
+        self._write_component_output_signal_assignment(instance=instance, function_contents=function_contents)
+        function_contents.write_body(f"end block {block_name};")
+ 
     def _write_instance(self, instance: VhdlInstanceData, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
         if not instance.is_work_library():
             function_contents.append_instance(instance.entity_name)
@@ -122,19 +132,16 @@ end process;
         block_name = f"{instance.instance_name}_b"
         function_contents.write_body(f"{block_name} : block")
         self._write_instance_signals(instance=instance, function_contents=function_contents)
-        function_contents.write_body("begin")
-        self._write_instance_signal_assignments(instance=instance, function_contents=function_contents, container=container)
-        self._write_component_instantiation(instance=instance, function_contents=function_contents, container=container)
-        self._write_component_output_signal_assignment(instance=instance, function_contents=function_contents)
-        function_contents.write_body(f"end block {block_name};")
+        self._write_instance_contents(block_name=block_name, instance=instance, function_contents=function_contents, container=container)
  
-    def write_instances(self, instances: VhdlInstanceContainerData, ports: PortContainer, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
+    def _write_input_tag_assignment(self, ports: PortContainer, function_contents: VhdlFunctionContents) -> None:
         function_contents.write_body("tag_in_i.tag <= s_tag;")
-        for i in ports.ports:
-            if i.is_input():
-                function_contents.write_body(f"tag_in_i.{i.get_name()} <= {i.get_name()};")
-        for j in instances.instances:
-            self._write_instance(instance=j, function_contents=function_contents, container=container)
+        for port in ports.ports:
+            if port.is_input():
+                name = port.get_name()
+                function_contents.write_body(f"tag_in_i.{name} <= {name};")
+
+    def _write_output_tag_assignment(self, instances: VhdlInstanceContainerData, function_contents: VhdlFunctionContents) -> None:
         return_driver = instances.get_return_instruction_driver()
         comment = VhdlCommentGenerator().get_comment() 
         function_contents.write_body(f"""
@@ -144,3 +151,9 @@ m_tvalid <= {return_driver}_m_tvalid_i;
 m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);
 m_tag <= tag_out_i.tag;
         """)
+
+    def write_instances(self, instances: VhdlInstanceContainerData, ports: PortContainer, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
+        self._write_input_tag_assignment(ports=ports, function_contents=function_contents)
+        for instance in instances.instances:
+            self._write_instance(instance=instance, function_contents=function_contents, container=container)
+        self._write_output_tag_assignment(instances=instances, function_contents=function_contents)
