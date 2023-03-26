@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from instance_container_data import InstanceContainerData
+from llvm_globals_container import GlobalsContainer
 from vhdl_instance_data import VhdlInstanceData, VhdlInstanceDataFactory
 
 @dataclass
@@ -23,6 +24,6 @@ class VhdlInstanceContainerData:
 
 class VhdlInstanceContainerDataFactory:
 
-    def get(self, instance_container: InstanceContainerData) -> VhdlInstanceContainerData:
-        instances = [VhdlInstanceDataFactory().get(i) for i in instance_container.instances]
+    def get(self, instance_container: InstanceContainerData, globals: GlobalsContainer) -> VhdlInstanceContainerData:
+        instances = [VhdlInstanceDataFactory().get(instance_data=i, globals=globals) for i in instance_container.instances]
         return VhdlInstanceContainerData(instances=instances)

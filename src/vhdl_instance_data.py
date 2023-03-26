@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 
 from instance_data import DeclarationData, InstanceData
 from instruction_interface import MemoryInterface
+from llvm_globals_container import GlobalsContainer
 from llvm_instruction import LlvmInstruction
 from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
@@ -56,6 +57,8 @@ class VhdlInstanceData:
         return self.output_port.get_type_declarations()
     def get_source_line(self) -> str:
         return self.instruction.get_source_line()
+    def access_register(self) -> bool:
+        return any(i.access_register() for i in self.input_ports)
 
 @dataclass
 class VhdlDeclarationData:
@@ -80,14 +83,14 @@ class VhdlDeclarationDataContainer:
 
 class VhdlInstanceDataFactory:
     
-    def get(self, instance_data: InstanceData) -> VhdlInstanceData:
+    def get(self, instance_data: InstanceData, globals: GlobalsContainer) -> VhdlInstanceData:
         instance_name = VhdlInstanceName(name=instance_data.instance_name).get_entity_name()
         entity_name = VhdlInstanceName(name=instance_data.entity_name, library=instance_data.library).get_entity_name()
         tag_name = VhdlInstanceName(name=instance_data.tag_name).get_entity_name()
         previous_instance_name = None
         if instance_data.previous_instance_name is not None:
             previous_instance_name = VhdlInstanceName(name=instance_data.previous_instance_name).get_entity_name()
-        input_ports = [VhdlInstructionArgumentFactory().get(instruction_argument=i) for i in instance_data.input_ports]
+        input_ports = [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals) for i in instance_data.input_ports]
         return VhdlInstanceData(instance_name=instance_name,
         entity_name=entity_name, 
         library=instance_data.library,

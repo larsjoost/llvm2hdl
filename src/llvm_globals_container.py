@@ -3,7 +3,7 @@ from typing import List, Optional
 from file_writer_interface import FileWriterInterface
 from llvm_constant import DeclarationContainer
 from llvm_function import LlvmFunctionContainer
-from llvm_type import LlvmVariableName
+from llvm_type import LlvmType, LlvmVariableName
 
 @dataclass
 class GlobalsContainer:
@@ -27,8 +27,10 @@ class GlobalsContainer:
             if i.is_variable():
                 file_writer.write_variable(variable=i.declaration)
     
-    def get_declaration(self, name: Optional[LlvmVariableName]) \
+    def get_declaration(self, name: Optional[LlvmType]) \
         -> Optional[DeclarationContainer]:
+        if name is None or not name.is_name():
+            return None
         return next(
             (i for i in self.declarations if i.match(name=name)), None
         )   
@@ -41,3 +43,4 @@ class GlobalsContainer:
     def get_data_width(self, name: LlvmVariableName) -> Optional[str]:
         declaration = self.get_declaration(name=name)
         return None if declaration is None else declaration.get_data_width()
+
