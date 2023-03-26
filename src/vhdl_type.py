@@ -45,7 +45,7 @@ class VhdlVariableNameMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
         return isinstance(llvm_type, LlvmVariableName)
     def get(self, llvm_type: LlvmType) -> VhdlType:
-        return VhdlVariableName(name=llvm_type.get_name())
+        return VhdlVariableName(name=llvm_type.translate_name())
 
 class VhdlConstantName(VhdlName, VhdlType):
     """
@@ -62,7 +62,7 @@ class VhdlConstantNameMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
         return isinstance(llvm_type, LlvmConstantName)
     def get(self, llvm_type: LlvmType) -> VhdlType:
-        return VhdlConstantName(name=llvm_type.get_name())
+        return VhdlConstantName(name=llvm_type.translate_name())
 
 class VhdlReferenceName(VhdlName, VhdlType):
     """
@@ -93,7 +93,7 @@ class VhdlIntegerMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
         return isinstance(llvm_type, LlvmInteger)
     def get(self, llvm_type: LlvmType) -> VhdlType:
-        return VhdlInteger(value=int(llvm_type.get_name()))
+        return VhdlInteger(value=int(llvm_type.translate_name()))
 
 @dataclass(frozen=True)
 class VhdlFloat(VhdlType):
@@ -108,7 +108,7 @@ class VhdlFloatMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
         return isinstance(llvm_type, LlvmFloat)
     def get(self, llvm_type: LlvmType) -> VhdlType:
-        return VhdlFloat(value=float(llvm_type.get_name()))
+        return VhdlFloat(value=float(llvm_type.translate_name()))
 
 @dataclass(frozen=True)
 class VhdlHex(VhdlType):
@@ -124,7 +124,7 @@ class VhdlHexMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
         return isinstance(llvm_type, LlvmHex)
     def get(self, llvm_type: LlvmType) -> VhdlType:
-        return VhdlHex(value=llvm_type.get_name())
+        return VhdlHex(value=llvm_type.translate_name())
 
 @dataclass(frozen=True)
 class VhdlPointer(VhdlType):
@@ -143,7 +143,7 @@ class VhdlPointerMatch(VhdlTypeMatch):
     def get(self, llvm_type: LlvmType) -> VhdlType:
         offset = llvm_type.get_offset()
         assert offset is not None
-        return VhdlPointer(value=llvm_type.get_name(), offset=offset)
+        return VhdlPointer(value=llvm_type.translate_name(), offset=offset)
 
 @dataclass(frozen=True)
 class VhdlBoolean(VhdlType):
@@ -157,7 +157,7 @@ class VhdlBooleanMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
         return isinstance(llvm_type, LlvmBoolean)
     def get(self, llvm_type: LlvmType) -> VhdlType:
-        return VhdlBoolean(value=llvm_type.get_name())
+        return VhdlBoolean(value=llvm_type.translate_name())
 
 class VhdlTypeFactory:
     llvm_type: LlvmType

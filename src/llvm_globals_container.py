@@ -27,13 +27,17 @@ class GlobalsContainer:
             if i.is_variable():
                 file_writer.write_variable(variable=i.declaration)
     
+    def _get_match(self, name: Optional[LlvmType]) \
+        -> Optional[DeclarationContainer]:
+        return next(
+            (i for i in self.declarations if i.match(name=name)), None
+        )   
+
     def get_declaration(self, name: Optional[LlvmType]) \
         -> Optional[DeclarationContainer]:
         if name is None or not name.is_name():
             return None
-        return next(
-            (i for i in self.declarations if i.match(name=name)), None
-        )   
+        return self._get_match(name=name)
     
     def get_initialization(self, name: Optional[LlvmVariableName]) \
         -> Optional[List[str]]:

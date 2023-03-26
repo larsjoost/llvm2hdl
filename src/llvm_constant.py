@@ -17,11 +17,11 @@ class DeclarationBase:
     instantiation_point: InstantiationPoint
     name: LlvmType
     def get_name(self) -> str:
-        return self.name.get_name()
+        return self.name.translate_name()
     def get_type(self) -> Optional[TypeDeclaration]:
         return None
     def _is_name(self, name: LlvmType) -> bool:
-        return self.name.get_name() == name.get_name()
+        return self.name.equals(other=name)
     def match(self, name: Optional[LlvmType]) -> bool:
         return False if name is None else self._is_name(name=name)
     def get_values(self) -> Optional[List[str]]:
@@ -60,7 +60,7 @@ class ReferenceDeclaration(DeclarationBase):
     def is_reference(self) -> bool:
         return True
     def get_reference(self) -> Optional[str]:
-        return self.reference.get_name()
+        return self.reference.translate_name()
 
 @dataclass
 class ClassDeclaration(DeclarationBase):

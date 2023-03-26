@@ -27,10 +27,23 @@ class VhdlRegisterAccessGroup(VhdlInstantiationGroupBase):
             return False
         self.instances.append(instance)
         return True
+    def _get_function_call(self, instance: VhdlInstanceData) -> str:
+        arguments = ", ".join(instance.get_input_port_names())
+        return f"{instance.entity_name}({arguments})"
+    def _get_instance_calls(self) -> List[str]:
+        return [self._get_function_call(instance=i) for i in self.instances]
+    def _write_process(self, function_contents: VhdlFunctionContents, instance_calls: List[str]) -> None:
+        body = "\n".join(instance_calls)
+        function_contents.write_body(f"""
+process (clk)
+begin
+{body}
+end process;
+        """)
+
     def write_instances(self, function_contents: VhdlFunctionContents, container: VhdlFunctionContainer) -> None:
-        pass
- 
-pass
+        instance_calls = self._get_instance_calls()
+        self._write_process(function_contents=function_contents, instance_calls=instance_calls)
 
 @dataclass    
 class VhdlInstanceGroup(VhdlInstantiationGroupBase):

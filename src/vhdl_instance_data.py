@@ -59,6 +59,8 @@ class VhdlInstanceData:
         return self.instruction.get_source_line()
     def access_register(self) -> bool:
         return any(i.access_register() for i in self.input_ports)
+    def get_input_port_names(self) -> List[str]:
+        return [i.get_name() for i in self.input_ports]
 
 @dataclass
 class VhdlDeclarationData:

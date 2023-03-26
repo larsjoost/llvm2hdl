@@ -6,7 +6,7 @@ from messages import Messages
 
 class LlvmType(ABC):
     @abstractmethod
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         pass
     def is_name(self) -> bool:
         return False
@@ -14,6 +14,10 @@ class LlvmType(ABC):
         return False
     def get_offset(self) -> Optional[int]:
         return None
+    def get_name(self) -> Optional[str]:
+        return None
+    def equals(self, other) -> bool:
+        return False
 
 class LlvmTypeMatch(ABC):
     @abstractmethod
@@ -33,12 +37,14 @@ class LlvmVariableName(LlvmName, LlvmType):
     """
     def _to_string(self) -> str:
         return self.name.replace("%", "").replace(".", "_").replace("@_", "").replace("@", "")
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:
         return True
-    def equals(self, other: LlvmName) -> bool:
-        return self.name == other.name
+    def equals(self, other: LlvmType) -> bool:
+        return self.get_name() == other.get_name()
+    def get_name(self) -> str:
+        return self.name
 
 class LlvmVariableNameMatch(LlvmTypeMatch):
     def match(self, text: str) -> bool:
@@ -52,12 +58,16 @@ class LlvmConstantName(LlvmName, LlvmType):
     """
     def _to_string(self) -> str:
         return self.name.split(".")[-1]
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:
         return True
     def match(self) -> bool:
         return self.name.startswith("@")
+    def equals(self, other: LlvmType) -> bool:
+        return self.get_name() == other.get_name()
+    def get_name(self) -> str:
+        return self.name
 
 class LlvmConstantNameMatch(LlvmTypeMatch):
     def match(self, text: str) -> bool:
@@ -71,7 +81,7 @@ class LlvmReferenceName(LlvmName, LlvmType):
     """
     def _to_string(self) -> str:
         return self.name.split(".")[-1]
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:
         return True
@@ -81,7 +91,7 @@ class LlvmReferenceName(LlvmName, LlvmType):
 @dataclass(frozen=True)
 class LlvmInteger(LlvmType):
     value: int
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return str(self.value)
     def is_integer(self) -> bool:
         return True
@@ -95,7 +105,7 @@ class LlvmIntegerMatch(LlvmTypeMatch):
 @dataclass(frozen=True)
 class LlvmFloat(LlvmType):
     value: float
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return str(self.value)
     
 class LlvmFloatMatch(LlvmTypeMatch):
@@ -111,7 +121,7 @@ class LlvmFloatMatch(LlvmTypeMatch):
 @dataclass(frozen=True)
 class LlvmBoolean(LlvmType):
     value: str
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return self.value
 
 class LlvmBooleanMatch(LlvmTypeMatch):
@@ -123,7 +133,7 @@ class LlvmBooleanMatch(LlvmTypeMatch):
 @dataclass(frozen=True)
 class LlvmHex(LlvmType):
     value: str
-    def get_name(self) -> str:
+    def translate_name(self) -> str:
         return self.value
     
 class LlvmHexMatch(LlvmTypeMatch):
@@ -136,8 +146,8 @@ class LlvmHexMatch(LlvmTypeMatch):
 class LlvmPointer(LlvmType):
     name: LlvmVariableName
     offset: int
-    def get_name(self) -> str:
-        return self.name.get_name()
+    def translate_name(self) -> str:
+        return self.name.translate_name()
     def get_offset(self) -> Optional[int]:
         return self.offset
 

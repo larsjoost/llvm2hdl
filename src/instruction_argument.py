@@ -20,7 +20,7 @@ class InstructionArgument:
     def get_array_index(self) -> Optional[str]:
         return self.data_type.get_array_index()
     def get_name(self) -> str:
-        return self.signal_name.get_name()
+        return self.signal_name.translate_name()
     def get_data_width(self) -> str:
         return self.data_type.get_data_width()
     def is_integer(self) -> bool:

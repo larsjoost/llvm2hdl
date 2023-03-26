@@ -15,7 +15,7 @@ class LlvmOutputPort:
         return False
     def get_name(self) -> Optional[str]:
         if isinstance(self.port_name, LlvmVariableName):
-            return self.port_name.get_name()
+            return self.port_name.translate_name()
         return self.port_name
     def is_void(self) -> bool:
         return self.data_type.is_void()

@@ -48,7 +48,7 @@ class VhdlInstructionArgumentFactory:
 
     def get(self, instruction_argument: InstructionArgument, globals: GlobalsContainer) -> VhdlInstructionArgument:
         vhdl_type = VhdlTypeFactory(llvm_type=instruction_argument.signal_name).resolve()
-        name = instruction_argument.signal_name.get_name()
+        name = instruction_argument.signal_name.translate_name()
         signal_name = VhdlInstanceName(name=name).get_entity_name()
         global_declaration = globals.get_declaration(name=instruction_argument.signal_name)
         return VhdlInstructionArgument(signal_name=signal_name, vhdl_type=vhdl_type, 

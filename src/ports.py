@@ -25,7 +25,7 @@ class Port(ABC, PortBase):
         output_signal_name=self.name,
         data_type=self.data_type)
     def get_name(self) -> str:
-        return self.name.get_name()
+        return self.name.translate_name()
     def is_void(self) -> bool:
         return self.data_type.is_void()
 
