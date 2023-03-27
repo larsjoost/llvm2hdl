@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 library work;
 use work.llvm_pkg.integer_array_t;
 use work.llvm_pkg.c_integer_array_default;
+use work.llvm_pkg.to_string;
 
 entity llvm_alloca is
   generic (
@@ -114,5 +115,15 @@ begin
 
   a <= std_ulogic_vector(to_unsigned(0, a'length));
 
+  --pragma synthesis_off
+
+  process is
+  begin  
+    report "Initialization = " & to_string(Initialization);
+    wait;
+  end process;
+  
+  --pragma synthesis_on
+  
 end architecture rtl;
 

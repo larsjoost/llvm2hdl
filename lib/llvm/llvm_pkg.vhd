@@ -4,6 +4,7 @@ use ieee.numeric_std.to_signed;
 use ieee.numeric_std.signed;
 use ieee.numeric_std.unsigned;
 use ieee.numeric_std.resize;
+use ieee.numeric_std.to_integer;
 
 library ieee;
 use ieee.float_pkg.float;
@@ -19,6 +20,10 @@ package llvm_pkg is
   type integer_array_t is array (natural range <>) of integer;
 
   constant c_integer_array_default : integer_array_t(0 to 0) := (others => 0);
+
+  function to_string (
+    arg : integer_array_t)
+    return string;
 
   function get(data : std_ulogic_vector; data_width : positive; index : natural := 0)
     return std_ulogic_vector;
@@ -56,11 +61,26 @@ package llvm_pkg is
   function to_real (
     arg : std_ulogic_vector)
     return real;
-  
+
+  function std_ulogic_vector_to_hex (
+    arg : std_ulogic_vector)
+    return string;
+
 end package llvm_pkg;
 
 package body llvm_pkg is
 
+  function to_string (
+    arg : integer_array_t)
+    return string is
+    alias arg_a : integer_array_t(0 to arg'length - 1) is arg;
+  begin
+    if arg'length = 1 then
+      return integer'image(arg_a(0));
+    end if;
+    return integer'image(arg_a(0)) & ", " & to_string(arg_a(1 to arg'length - 1));
+  end function to_string;
+  
   function get(data : std_ulogic_vector; data_width : positive; index : natural := 0)
     return std_ulogic_vector is
     constant c_data_width : positive := data_width * (index + 1);
@@ -156,9 +176,27 @@ package body llvm_pkg is
       when others =>
         --pragma synthesis_off
         report "Unsupported argument length = " & integer'image(arg'length) severity failure;
-        --pragma synthesis_on
+    --pragma synthesis_on
     end case;
     return 0.0;
   end function to_real;
-  
+
+  function std_ulogic_vector_to_hex (
+    arg : std_ulogic_vector)
+    return string is
+    alias arg_a          : std_ulogic_vector(arg'length - 1 downto 0) is arg;
+    constant c_hex_width : positive := 4;
+    constant c_hex_convert_width : positive := minimum(c_hex_width, arg'length);
+    constant hex_lookup  : string := "0123456789abcdef";
+    variable hex_index_v : natural;
+    variable hex_i       : string(1 to 1);
+  begin
+    hex_index_v   := to_integer(unsigned(arg_a(c_hex_convert_width - 1 downto 0))) + 1;
+    hex_i         := hex_lookup(hex_index_v to hex_index_v);
+    if arg'length <= c_hex_width then
+      return hex_i;
+    end if;
+    return std_ulogic_vector_to_hex(arg_a(arg'length - 1 downto c_hex_width)) & hex_i;
+  end function std_ulogic_vector_to_hex;
+
 end package body llvm_pkg;

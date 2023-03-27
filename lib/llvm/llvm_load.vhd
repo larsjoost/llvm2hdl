@@ -33,6 +33,9 @@ entity llvm_load is
     );
 end entity llvm_load;
 
+library work;
+use work.llvm_pkg.std_ulogic_vector_to_hex;
+
 architecture rtl of llvm_load is
 
   constant c_id_width : positive := m_arid'length;
@@ -64,6 +67,9 @@ begin
         m_arid              <= id_v;
         tag_storage_i(id_i) <= s_tag;
         id_i                <= (id_i + 1) mod c_id_size;
+        --pragma synthesis_off
+        report "Load from address 0x" & std_ulogic_vector_to_hex(a);
+        --pragma synthesis_on
       end if;
     end if;
   end process;
@@ -82,6 +88,9 @@ begin
             m_tag    <= tag_storage_i(to_integer(unsigned(m_rid)));
             m_tvalid <= '1';
             m_tdata  <= m_rdata;
+            --pragma synthesis_off
+            report "Load data 0x" & std_ulogic_vector_to_hex(m_rdata);
+            --pragma synthesis_on
           end if;
         end if;
       end if;
