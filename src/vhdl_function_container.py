@@ -4,12 +4,14 @@
 from dataclasses import dataclass, field
 import inspect
 from typing import List, Optional
+from function_container_interface import FunctionContainerInterface
+from signal_interface import SignalInterface
 from vhdl_comment_generator import VhdlCommentGenerator
 from llvm_constant import DeclarationBase
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from ports import PortContainer
 
-from vhdl_declarations import VhdlDeclarations, VhdlSignal
+from vhdl_declarations import VhdlDeclarations
 from vhdl_entity import VhdlEntity
 from vhdl_include_libraries import VhdlIncludeLibraries
 
@@ -110,10 +112,19 @@ class InstanceSignals:
         self.signals.append(Signals(comment=comment, signals=signals))
 
 @dataclass
-class VhdlFunctionContainer:
-    signals : List[VhdlSignal] = field(default_factory=list)
+class VhdlFunctionContainer(FunctionContainerInterface):
+    signals : List[SignalInterface] = field(default_factory=list)
     instance_signals: InstanceSignals = field(default_factory=lambda : InstanceSignals())
     constants : List[FileWriterConstant] = field(default_factory=list)
     references: List[FileWriterReference] = field(default_factory=list)
     variables: List[FileWriterVariable] = field(default_factory=list)
     ports: PortContainer = field(default_factory=lambda : PortContainer())
+
+    def add_instance_signals(self, signals: List[str]) -> None:
+        self.instance_signals.add(signals=signals)
+        
+    def get_signals(self) -> List[SignalInterface]:
+        return self.signals
+
+    def get_ports(self) -> PortContainer:
+        return self.ports

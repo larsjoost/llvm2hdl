@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface, SourceInfo
-from llvm_instruction import LlvmInstruction
+from llvm_instruction import LlvmInstructionInterface
 from llvm_type import LlvmType
 from ports import Port
 
@@ -13,7 +13,7 @@ class InstanceContainer(InstanceContainerInterface):
     _container: List[Instance]
     _source_info_map: Dict[LlvmType, SourceInfo]
     
-    def __init__(self, instructions: List[LlvmInstruction], input_ports: List[Port]):
+    def __init__(self, instructions: List[LlvmInstructionInterface], input_ports: List[Port]):
         self._container = []
         self._source_info_map = {}
         for i in instructions:
@@ -26,13 +26,12 @@ class InstanceContainer(InstanceContainerInterface):
     def get_source(self, search_source: LlvmType) -> Optional[SourceInfo]:
         return self._source_info_map.get(search_source, None)
 
-    def _add_instruction(self, instruction : LlvmInstruction) -> None:
+    def _add_instruction(self, instruction : LlvmInstructionInterface) -> None:
         if not instruction.is_valid():
             return
         instance = Instance(self, instruction)
         with contextlib.suppress(IndexError):
             last_instance: Instance = self._container[-1]
-            last_instance._next = instance
             instance._prev = last_instance
         destination = instruction.get_destination()
         if destination is not None:

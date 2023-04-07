@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from dataclasses import dataclass
-from llvm_instruction import LlvmInstruction
+from llvm_instruction import LlvmInstructionInterface
 from llvm_parser import InstructionArgument, MemoryInterface, LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 
@@ -12,11 +12,10 @@ class InstanceData:
     library: str
     output_port: Optional[LlvmOutputPort]
     tag_name: str
-    generic_map: Optional[List[str]]
     input_ports: List[InstructionArgument]
     previous_instance_name: Optional[str]
     memory_interface: Optional[MemoryInterface]
-    instruction: LlvmInstruction
+    instruction: LlvmInstructionInterface
 
 @dataclass
 class DeclarationData:

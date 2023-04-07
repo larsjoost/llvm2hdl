@@ -6,21 +6,19 @@ from instance_data import DeclarationData, InstanceData
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName
 from llvm_parser import InstructionArgument
-from llvm_instruction import LlvmInstruction
+from llvm_instruction import LlvmInstructionInterface
 from instance_interface import InstanceInterface
 
 class Instance(InstanceInterface):
 
-    instruction: LlvmInstruction
+    instruction: LlvmInstructionInterface
 
     _parent: InstanceContainerInterface
     _prev: Optional[InstanceInterface]
-    _next: Optional[InstanceInterface]
 
-    def __init__(self, parent: InstanceContainerInterface, instruction : LlvmInstruction):
+    def __init__(self, parent: InstanceContainerInterface, instruction : LlvmInstructionInterface):
         self._parent = parent
         self.instruction = instruction
-        self._next = None
         self._prev = None
 
     def get_instance_index(self) -> int:
@@ -39,9 +37,6 @@ class Instance(InstanceInterface):
 
     def get_instance_tag_name(self, instance: Optional[InstanceInterface], default: str) -> str:
         return default if instance is None else instance.get_tag_name()	
-
-    def _get_output_tag_name(self) -> str:
-        return "tag_out_i" if self._next is None else self.get_tag_name()	
 
     def get_data_type(self) -> Optional[TypeDeclaration]:
         return self.instruction.get_data_type()
@@ -69,18 +64,17 @@ class Instance(InstanceInterface):
         instance_name = self.get_instance_name()
         entity_name = self.instruction.get_instance_name()
         output_port = self.instruction.get_output_port()
-        tag_name = self._get_output_tag_name()
+        tag_name = self.get_tag_name()
         previous_instance_name = None
         if self._prev is not None:
             previous_instance_name = self._prev.get_instance_name()
         input_ports = self._get_input_ports(operands=self.instruction.get_operands())
-        generic_map = self.instruction.get_generic_map()
         memory_interface = self.instruction.get_memory_interface()
         library = self.instruction.get_library()
         assert entity_name is not None
         assert library is not None
         return InstanceData(instance_name=instance_name, entity_name=entity_name, library=library, 
-        output_port=output_port, tag_name=tag_name, generic_map=generic_map, input_ports=input_ports, 
+        output_port=output_port, tag_name=tag_name, input_ports=input_ports, 
         previous_instance_name=previous_instance_name, memory_interface=memory_interface, instruction=self.instruction)
 
     def get_declaration_data(self) -> DeclarationData:

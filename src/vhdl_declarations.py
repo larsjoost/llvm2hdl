@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from llvm_type_declaration import TypeDeclaration
+from signal_interface import SignalInterface
 
 @dataclass
 class VhdlDeclarations:
@@ -29,7 +30,7 @@ class VhdlDeclarations:
         return self.data_type.is_void()
 
 @dataclass
-class VhdlSignal:
+class VhdlSignal(SignalInterface):
     instance : str
     name : str
     type : VhdlDeclarations

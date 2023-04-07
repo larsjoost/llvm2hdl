@@ -12,7 +12,7 @@ class VhdlGen:
     def _write_function(self, function: LlvmFunction, file_generator: VhdlFunctionGenerator, globals: GlobalsContainer) -> VhdlFunctionContents:
         parsed_functions = FunctionParser().parse(function=function)
         translated_vhdl_function = VhdlFunctionDefinitionFactory().get(function_definition=parsed_functions, globals=globals)
-        return file_generator.write_function(function=translated_vhdl_function)    
+        return file_generator.write_function(function=translated_vhdl_function, globals=globals)    
 
     def _generate_function(self, module: LlvmModule, function: LlvmFunction) -> VhdlFunctionContents:
         file_generator = VhdlFunctionGenerator()

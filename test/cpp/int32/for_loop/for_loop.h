@@ -2,4 +2,4 @@
 
 #define SIZE 3
 
-int for_loop(int a[SIZE]);
+int for_loop(const int a[SIZE]);

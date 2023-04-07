@@ -2,20 +2,10 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from instruction_argument import InstructionArgument
+from language_generator import LanguageGenerator
 from llvm_port import LlvmOutputPort
-
 from llvm_type_declaration import TypeDeclaration
-
-class MemoryInterface(ABC):
-    def is_master(self) -> bool:
-        return False
-
-class MemoryInterfaceMaster(MemoryInterface):
-    def is_master(self) -> bool:
-        return True
-
-class MemoryInterfaceSlave(MemoryInterface):
-    pass
+from memory_interface import MemoryInterface
 
 class InstructionGeneral:
     def get_instance_name(self, opcode: str, sub_type: Optional[str] = None) -> str:
@@ -37,9 +27,6 @@ class InstructionInterface(ABC):
     def get_data_type(self) -> TypeDeclaration:
         pass
     @abstractmethod
-    def get_generic_map(self) -> Optional[List[str]]:
-        pass
-    @abstractmethod
     def get_operands(self) -> Optional[List[InstructionArgument]]:
         pass
     @abstractmethod
@@ -57,4 +44,6 @@ class InstructionInterface(ABC):
     @abstractmethod
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         pass
-
+    @abstractmethod
+    def generate_code(self, generator: LanguageGenerator) -> None:
+        pass

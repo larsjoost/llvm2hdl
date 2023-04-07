@@ -3,11 +3,11 @@ from dataclasses import dataclass
 from typing import Generator, List, Optional, Tuple, Union
 
 from ports import Port, PortContainer, PortGenerator
-from vhdl_declarations import VhdlSignal
+from signal_interface import SignalInterface
 from llvm_parser import LlvmOutputPort
 from messages import Messages
-from vhdl_instance_data import VhdlInstanceData
 from vhdl_instruction_argument import VhdlInstructionArgument
+from vhdl_signal_name import VhdlSignalName
 
 @dataclass
 class VhdlPortRole(ABC):
@@ -16,24 +16,24 @@ class VhdlPortRole(ABC):
         return False
     def is_slave(self) -> bool:
         return False
-    def get_signal_name(self, instance: VhdlInstanceData, name: str) -> str:
+    def get_signal_name(self, instance_name: str, previous_instance_name: Optional[str], name: str) -> str:
         return name
 
 @dataclass
 class VhdlMasterPort(VhdlPortRole):
     def is_master(self) -> bool:
         return True
-    def get_signal_name(self, instance: VhdlInstanceData, name: str) -> str:
-        return instance.get_own_instance_signal_name(name)
+    def get_signal_name(self, instance_name: str, previous_instance_name: Optional[str], name: str) -> str:
+        return VhdlSignalName(instance_name=instance_name, signal_name=name).get_signal_name()
 
 @dataclass
 class VhdlSlavePort(VhdlPortRole):
     def is_slave(self) -> bool:
         return True
-    def get_signal_name(self, instance: VhdlInstanceData, name: str) -> str:
-        signal_name = instance.get_previous_instance_signal_name(name)
-        if signal_name is None:
+    def get_signal_name(self, instance_name: str, previous_instance_name: Optional[str], name: str) -> str:
+        if previous_instance_name is None:
             return name
+        signal_name = VhdlSignalName(instance_name=previous_instance_name, signal_name=name).get_signal_name()
         if self.connection is not None:
             return signal_name.replace(name, self.connection)
         return signal_name
@@ -86,10 +86,10 @@ class VhdlPort(ABC, VhdlPortBase):
         return self.role.is_master()
     def is_slave(self) -> bool:
         return self.role.is_slave()
-    def get_signal_name(self, instance: VhdlInstanceData) -> str:
-        return self.role.get_signal_name(instance=instance, name=self.name)
-    def get_port_map(self, instance: VhdlInstanceData) -> str:
-        signal_name = self.get_signal_name(instance=instance)
+    def get_signal_name(self, instance_name: str, previous_instance_name: Optional[str]) -> str:
+        return self.role.get_signal_name(instance_name=instance_name, previous_instance_name=previous_instance_name, name=self.name)
+    def get_port_map(self, instance_name: str, previous_instance_name: Optional[str]) -> str:
+        signal_name = self.get_signal_name(instance_name=instance_name, previous_instance_name=previous_instance_name)
         return f"{self.name} => {signal_name}"
     def get_type(self) -> str:
         return "std_ulogic" if self.data_width.is_boolean() else "std_ulogic_vector"
@@ -191,7 +191,7 @@ class VhdlPortGenerator(PortGenerator):
     def __init__(self) -> None:
         self._msg = Messages()
 
-    def get_tag_elements(self, ports: PortContainer, signals: List[VhdlSignal]) -> Generator[Tuple[str, str], None, None]:
+    def get_tag_elements(self, ports: PortContainer, signals: List[SignalInterface]) -> Generator[Tuple[str, str], None, None]:
         yield ("tag", ": std_ulogic_vector(0 to s_tag'length - 1);")
         for port in ports.ports:
             if port.is_input():
@@ -202,7 +202,7 @@ class VhdlPortGenerator(PortGenerator):
         for signal in signals:
             yield signal.get_record_item()
 
-    def get_tag_item_names(self, ports: PortContainer, signals : List[VhdlSignal]) -> List[str]:
+    def get_tag_item_names(self, ports: PortContainer, signals : List[SignalInterface]) -> List[str]:
         return [
             name for name, _ in self.get_tag_elements(ports=ports, signals=signals)
         ]
@@ -242,19 +242,19 @@ class VhdlPortGenerator(PortGenerator):
         vector_range = f"(0 to {data_width} - 1)"
         return f"signal {signal_name} : std_ulogic_vector{vector_range};"
 
-    def _is_tag_element(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[VhdlSignal]) -> bool:
+    def _is_tag_element(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[SignalInterface]) -> bool:
         name = input_port.signal_name
         tag_item_names = self.get_tag_item_names(ports=ports, signals=signals)
         return name in tag_item_names
 
-    def _get_input_port_name(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[VhdlSignal]) -> str:
+    def _get_input_port_name(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[SignalInterface]) -> str:
         signal_name = input_port.get_value()
         if self._is_tag_element(input_port=input_port, ports=ports, signals=signals):
             signal_name = f"tag_i.{signal_name}"
         return signal_name
     
     def _get_port_map_arguments(self, input_port: VhdlInstructionArgument, 
-                                ports: PortContainer, signals: List[VhdlSignal]) -> List[str]:
+                                ports: PortContainer, signals: List[SignalInterface]) -> List[str]:
         signal_name = self._get_input_port_name(input_port=input_port, ports=ports, signals=signals)
         data_width = input_port.get_data_width()
         arguments = [signal_name, data_width]
@@ -264,23 +264,26 @@ class VhdlPortGenerator(PortGenerator):
         return arguments
 
     def get_port_signal_assignment(self, input_port: VhdlInstructionArgument, 
-                                   ports: PortContainer, signals: List[VhdlSignal]) -> str:
+                                   ports: PortContainer, signals: List[SignalInterface]) -> str:
         signal_name = self._get_input_port_signal_name(input_port)
         arguments = self._get_port_map_arguments(input_port=input_port, ports=ports, signals=signals)
         argument_list = ", ".join(arguments)
         return f"{signal_name} <= get({argument_list});"
 
-    def get_standard_ports_map(self, instance: VhdlInstanceData) -> List[str]:
-        return [i.get_port_map(instance=instance) for i in self._standard_ports]
+    def get_standard_ports_map(self, instance_name: str, previous_instance_name: Optional[str]) -> List[str]:
+        return [i.get_port_map(instance_name=instance_name, previous_instance_name=previous_instance_name) for i in self._standard_ports]
     
-    def _get_standard_port_signals(self, instance: VhdlInstanceData, port: VhdlPort) -> Optional[str]:
+    def _get_signal_name(self, instance_name: str, signal_name: str) -> str:
+        return f"{instance_name}_{signal_name}_i"
+    
+    def _get_standard_port_signals(self, instance_name: str, port: VhdlPort) -> Optional[str]:
         if not port.is_master():
             return None
-        signal_name = instance.get_own_instance_signal_name(port.name)
+        signal_name = self._get_signal_name(instance_name=instance_name, signal_name=port.name)
         return signal_name + port.get_port_type()
 
-    def get_standard_ports_signals(self, instance: VhdlInstanceData) -> List[str]:
-        result = [self._get_standard_port_signals(instance=instance, port=i) for i in self._standard_ports]
+    def get_standard_ports_signals(self, instance_name: str) -> List[str]:
+        result = [self._get_standard_port_signals(instance_name=instance_name, port=i) for i in self._standard_ports]
         return [i for i in result if i is not None]
 
     def get_standard_ports_definition(self) -> List[str]:

@@ -13,4 +13,4 @@ class FunctionParser:
         instances = instance_container.get_instances()
         declarations = instance_container.get_declarations()
         return FunctionDefinition(entity_name=entity_name, instances=instances, 
-                                  declarations=declarations,ports=ports)
+                                  declarations=declarations,ports=ports, function=function)
