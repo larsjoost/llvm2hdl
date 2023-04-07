@@ -6,7 +6,7 @@ from llvm_constant import DeclarationBase
 from llvm_function import LlvmFunctionContainer
 from llvm_globals_container import GlobalsContainer
 from signal_interface import SignalInterface
-from vhdl_comment_generator import VhdlCommentGenerator
+from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_entity import VhdlEntity
 from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable, VhdlFunctionContainer
 from vhdl_function_contents import VhdlFunctionContents
@@ -26,7 +26,7 @@ class VhdlFunctionGenerator(FileWriterInterface):
     container: VhdlFunctionContainer = VhdlFunctionContainer()
 
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
-        return VhdlCommentGenerator().get_comment(current_frame=current_frame)
+        return VhdlCodeGenerator().get_comment(current_frame=current_frame)
         
     def _write_total_data_width(self, signals: List[SignalInterface], ports: PortContainer) -> None:
         total_data_width = [i.get_data_width() for i in signals]
@@ -38,7 +38,7 @@ class VhdlFunctionGenerator(FileWriterInterface):
     def _write_tag_record(self) -> None:
         tag_elements = VhdlPortGenerator().get_tag_elements(ports=self.container.ports, signals=self.container.signals)
         record_elements = "\n".join(f"{name} {declaration}" for name, declaration in tag_elements)
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         self.function_contents.write_declaration(f"""
 {comment}
 type tag_t is record
@@ -48,7 +48,7 @@ end record;
         
     def _write_function_conv_tag(self, record_items: List[str]) -> None:
         assign_items = ", ".join([f"result_v.{i}" for i in record_items])
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         self.function_contents.write_declaration(f"""
 {comment}
 function conv_tag (
@@ -63,7 +63,7 @@ end function conv_tag;
         
     def _write_function_tag_to_std_ulogic_vector(self, record_items: List[str]) -> None:
         assign_arg = " & ".join([f"arg.{i}" for i in record_items])
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         self.function_contents.write_declaration(f"""
 {comment}        
 function tag_to_std_ulogic_vector (
@@ -146,7 +146,7 @@ end function tag_to_std_ulogic_vector;
         signal_assigments = "\n".join([f"{i};" for i in signal_assigment_list])
         memory_interface_name = f"memory_arbiter_{memory_name}"
         port_map = self._get_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         self.function_contents.write_body(f"""
 {comment}
 {block_name}: block

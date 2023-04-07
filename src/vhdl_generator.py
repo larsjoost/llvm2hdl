@@ -10,7 +10,7 @@ from language_generator import LanguageGenerator, LanguageGeneratorCallData, Lan
 from llvm_globals_container import GlobalsContainer
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
-from vhdl_comment_generator import VhdlCommentGenerator
+from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
@@ -70,6 +70,14 @@ class VhdlInstanceGenerator(VhdlGeneratorInterface):
     _local_tag_in: str = "local_tag_in_i"
     _local_tag_out: str = "local_tag_out_i"   
    
+    def _get_instance_name(self) -> str:
+        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.data.instance_name)
+
+    def _get_previous_instance_name(self) -> Optional[str]:
+        if self.previous_instance_name is None:
+            return None
+        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.previous_instance_name)
+
     def add_process_call(self, data: LanguageGeneratorCallData) -> None: 
         assert False, "add_process_callback should not be called"
 
@@ -84,7 +92,7 @@ class VhdlInstanceGenerator(VhdlGeneratorInterface):
         return self.data.library == "work"
 
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
-        return VhdlCommentGenerator().get_comment(current_frame=current_frame)        
+        return VhdlCodeGenerator().get_comment(current_frame=current_frame)        
 
     def _write_input_port_signal_assignments(self, function_contents: FunctionContentsInterface, container: FunctionContainerInterface, globals: GlobalsContainer) -> None:
         vhdl_port = VhdlPortGenerator()
@@ -93,9 +101,10 @@ class VhdlInstanceGenerator(VhdlGeneratorInterface):
             function_contents.write_body(i)
 
     def _get_previous_instance_signal_name(self, signal_name: str) -> Optional[str]:
-        if self.previous_instance_name is None:
+        name = self._get_previous_instance_name()
+        if name is None:
             return None
-        return VhdlSignalName(instance_name=self.previous_instance_name, signal_name=signal_name).get_signal_name()
+        return VhdlSignalName(instance_name=name, signal_name=signal_name).get_signal_name()
     
     def _write_instance_signal_assignments(self, function_contents: FunctionContentsInterface, container: FunctionContainerInterface, globals: GlobalsContainer) -> None:
         tag_name = self._get_previous_instance_signal_name("tag_out")
@@ -120,8 +129,8 @@ port map (
         memory_port_map = []
         if self.data.memory_interface is not None:
             master = self.data.memory_interface.is_master()
-            memory_port_map = vhdl_memory_port.get_port_map(name=self.data.instance_name, master=master)
-            container.add_instance_signals(vhdl_memory_port.get_port_signals(name=self.data.instance_name))
+            memory_port_map = vhdl_memory_port.get_port_map(name=self._get_instance_name(), master=master)
+            container.add_instance_signals(vhdl_memory_port.get_port_signals(name=self._get_instance_name()))
         return memory_port_map
 
     def _get_memory_port_name(self, port: VhdlInstructionArgument) -> Optional[str]:
@@ -129,7 +138,7 @@ port map (
             return None
         if not self.data.map_memory_interface:
             return None
-        memory_interface_name = self.data.instance_name
+        memory_interface_name = self._get_instance_name()
         return f"{memory_interface_name}_{port.get_name()}"
 
     def _get_input_port_map(self, input_port: VhdlInstructionArgument, container: FunctionContainerInterface) -> List[str]:
@@ -154,8 +163,8 @@ port map (
         input_ports_map = ["-- Input ports"] + self._get_input_port_maps(container=container, globals=globals)
         output_port_map = ["-- Output ports"] + vhdl_port.get_output_port_map(output_port=self.data.output_port)
         memory_port_map = ["-- Memory ports"] + self._get_component_instantiation_memory_port_map(container=container)
-        standard_port_map =  ["-- Standard port map"] + vhdl_port.get_standard_ports_map(instance_name=self.data.instance_name, 
-                                                                                         previous_instance_name=self.previous_instance_name)
+        standard_port_map =  ["-- Standard port map"] + vhdl_port.get_standard_ports_map(instance_name=self._get_instance_name(), 
+                                                                                         previous_instance_name=self._get_previous_instance_name())
         tag_port_map = ["-- Tag port map"] + [f"s_tag => {self._local_tag_in}", f"m_tag => {self._local_tag_out}"]
         ports = input_ports_map + output_port_map + memory_port_map + standard_port_map + tag_port_map
         return ",\n".join(ports)
@@ -185,18 +194,18 @@ generic map (
                                     generic_map=generic_map, port_map=port_map)
 
     def _get_tag_name(self) -> str:
-        tag_name = f"{self.data.instance_name}_tag_out_i"
+        tag_name = f"{self._get_instance_name()}_tag_out_i"
         return VhdlInstanceName(name=tag_name).get_entity_name()
 
     def _write_component_output_signal_assignment(self, function_contents: FunctionContentsInterface) -> None:
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         tag_name = self._get_tag_name()
         function_contents.write_body(f"""
 {comment}
 process (all)
 begin
   {tag_name} <= conv_tag({self._local_tag_out});
-  {tag_name}.{self.data.instance_name} <= m_tdata_i;
+  {tag_name}.{self._get_instance_name()} <= m_tdata_i;
 end process;
 
         """)
@@ -233,7 +242,7 @@ end process;
         if not self._is_work_library():
             function_contents.append_instance(self._entity_name())
         vhdl_port = VhdlPortGenerator()
-        container.add_instance_signals(vhdl_port.get_standard_ports_signals(instance_name=self.data.instance_name))
+        container.add_instance_signals(vhdl_port.get_standard_ports_signals(instance_name=self._get_instance_name()))
         block_name = f"{self._instance_name()}_b"
         function_contents.write_body(f"{block_name} : block")
         self._write_instance_signals(function_contents=function_contents, globals=globals)

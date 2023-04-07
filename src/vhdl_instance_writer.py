@@ -1,6 +1,6 @@
 
 from language_generator import LanguageGenerator
-from vhdl_comment_generator import VhdlCommentGenerator
+from vhdl_code_generator import VhdlCodeGenerator
 from ports import PortContainer
 from vhdl_function_container import VhdlFunctionContainer
 from vhdl_function_definition import VhdlFunctionDefinition
@@ -17,7 +17,7 @@ class VhdlInstanceWriter:
 
     def _write_output_tag_assignment(self, instances: VhdlInstanceContainerData, generator: LanguageGenerator) -> None:
         return_driver = instances.get_return_instruction_driver()
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         generator.write_body(f"""
 {comment}
 m_tvalid <= {return_driver}_m_tvalid_i;

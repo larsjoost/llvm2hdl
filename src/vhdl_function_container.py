@@ -6,7 +6,7 @@ import inspect
 from typing import List, Optional
 from function_container_interface import FunctionContainerInterface
 from signal_interface import SignalInterface
-from vhdl_comment_generator import VhdlCommentGenerator
+from vhdl_code_generator import VhdlCodeGenerator
 from llvm_constant import DeclarationBase
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from ports import PortContainer
@@ -67,7 +67,7 @@ end architecture rtl;
         return function.get_ports()
        
     def write_reference(self) -> str:
-        comment = VhdlCommentGenerator().get_comment()
+        comment = VhdlCodeGenerator().get_comment()
         vhdl_entity = VhdlEntity()
         name = vhdl_entity.get_entity_name(self.reference.get_name())
         reference = self.reference.get_reference()
@@ -84,7 +84,7 @@ end architecture rtl;
 class FileWriterVariable:
     variable : DeclarationBase
     def write_variable(self) -> str:
-        comment = VhdlCommentGenerator().get_comment() 
+        comment = VhdlCodeGenerator().get_comment() 
         name = self.variable.get_name()
         data_width = self.variable.get_data_width()
         return f"""
@@ -107,8 +107,7 @@ class InstanceSignals:
             result += "\n" + i.comment + "\n"
             result += "\n".join(f"signal {instance_signal};" for instance_signal in i.signals)
         return result
-    def add(self, signals: List[str]) -> None:
-        comment = VhdlCommentGenerator().get_comment(current_frame=inspect.currentframe())
+    def add(self, signals: List[str], comment: str) -> None:
         self.signals.append(Signals(comment=comment, signals=signals))
 
 @dataclass
@@ -121,7 +120,8 @@ class VhdlFunctionContainer(FunctionContainerInterface):
     ports: PortContainer = field(default_factory=lambda : PortContainer())
 
     def add_instance_signals(self, signals: List[str]) -> None:
-        self.instance_signals.add(signals=signals)
+        comment = VhdlCodeGenerator().get_comment(current_frame=inspect.currentframe())
+        self.instance_signals.add(signals=signals, comment=comment)
         
     def get_signals(self) -> List[SignalInterface]:
         return self.signals

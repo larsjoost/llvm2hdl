@@ -12,6 +12,7 @@ from llvm_port import LlvmOutputPort
 from llvm_source_file import LlvmSourceLine
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
+from vhdl_code_generator import VhdlCodeGenerator
 
 @dataclass    
 class LanguageGeneratorInstanceData:
@@ -33,13 +34,9 @@ class LanguageGeneratorCallData:
     operands: List[InstructionArgument]
     source_line: LlvmSourceLine
 
-    def _get_variable_name(self, name: str) -> str:
-        return f"{name}_v"
-
     def _get_variable_declaration(self, operand: InstructionArgument) -> str:
-        variable_name = self._get_variable_name(operand.get_name())
-        return f"variable {variable_name} : std_ulogic_vector({operand.get_data_width()} - 1 downto 0);"
-
+        return VhdlCodeGenerator().get_variable_declaration(name=operand.get_name(), data_width=operand.get_data_width())
+        
     def get_variable_declarations(self) -> List[str]:
         return [self._get_variable_declaration(operand=i) for i in self.operands]
 

@@ -6,7 +6,7 @@ from types import FrameType
 from typing import List, Optional
 from function_contents_interface import FunctionContentsInterface
 
-from vhdl_comment_generator import VhdlCommentGenerator
+from vhdl_code_generator import VhdlCodeGenerator
 
 
 @dataclass
@@ -19,7 +19,7 @@ class VhdlFunctionContents(FunctionContentsInterface):
     instances : List[str]  =  field(default_factory=list)
     
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
-        return VhdlCommentGenerator().get_comment(current_frame=current_frame)
+        return VhdlCodeGenerator().get_comment(current_frame=current_frame)
         
     def _print_to_string(self, *args, **kwargs) -> str:
         with io.StringIO() as output:
