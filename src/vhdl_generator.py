@@ -297,6 +297,16 @@ class VhdlGenerator(LanguageGenerator):
     def return_operation(self, data_type: TypeDeclaration, operands: List[InstructionArgument]) -> None:
         pass
 
+    def _write_return(self, function_contents: FunctionContentsInterface) -> None:
+        return_driver = self._previous_instance_name
+        function_contents.write_body(f"""
+m_tvalid <= {return_driver}_m_tvalid_i;
+{return_driver}_m_tready_i <= m_tready;
+m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);
+m_tag <= tag_out_i.tag;
+        """)
+
     def generate_code(self, function_contents: FunctionContentsInterface, container: FunctionContainerInterface, globals: GlobalsContainer) -> None:
         for generator in self._generators:
             generator.generate_code(function_contents=function_contents, container=container, globals=globals)
+        self._write_return(function_contents=function_contents)
