@@ -20,7 +20,6 @@ class LanguageGeneratorInstanceData:
     opcode: str
     data_type: TypeDeclaration
     operands: List[InstructionArgument]
-    instance_name: str
     output_port: Optional[LlvmOutputPort]
     map_memory_interface: bool
     memory_interface: Optional[MemoryInterface]
@@ -47,7 +46,7 @@ class LanguageGenerator(ABC):
         pass
 
     @abstractmethod
-    def instance(self, data: LanguageGeneratorInstanceData) -> None:
+    def instance(self, data: LanguageGeneratorInstanceData, opcode_name: str) -> None:
         pass
 
     @abstractmethod

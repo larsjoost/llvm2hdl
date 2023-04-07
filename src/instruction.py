@@ -153,9 +153,9 @@ class CallInstruction(InstructionInterface):
         return None
     def generate_code(self, generator: LanguageGenerator) -> None:
         data = LanguageGeneratorInstanceData(library=self.get_library(), opcode=self.opcode, data_type=self.data_type, 
-                                             operands=self.operands, instance_name=self.get_instance_name(), output_port=self.get_output_port(), 
+                                             operands=self.operands, output_port=self.get_output_port(), 
                                              map_memory_interface=True, memory_interface=None, source_line=self.source_line)
-        generator.instance(data=data)
+        generator.instance(data=data, opcode_name=self.get_instance_name())
     
 @dataclass
 class LoadInstruction(InstructionInterface):
@@ -184,9 +184,9 @@ class LoadInstruction(InstructionInterface):
         return MemoryInterfaceMaster()
     def generate_code(self, generator: LanguageGenerator) -> None:
         data = LanguageGeneratorInstanceData(library=self.get_library(), opcode=self.opcode, data_type=self.data_type, 
-                                             operands=self.operands, instance_name=self.get_instance_name(), output_port=self.get_output_port(), 
+                                             operands=self.operands, output_port=self.get_output_port(), 
                                              map_memory_interface=False, memory_interface=None, source_line=self.source_line)
-        generator.instance(data=data)
+        generator.instance(data=data, opcode_name=self.get_instance_name())
 
 @dataclass
 class DefaultInstruction(InstructionInterface):
@@ -217,6 +217,6 @@ class DefaultInstruction(InstructionInterface):
         return None
     def generate_code(self, generator: LanguageGenerator) -> None:
         data = LanguageGeneratorInstanceData(library=self.get_library(), opcode=self.opcode, data_type=self.data_type, 
-                                             operands=self.operands, instance_name=self.get_instance_name(), output_port=self.get_output_port(), 
+                                             operands=self.operands, output_port=self.get_output_port(), 
                                              map_memory_interface=False, memory_interface=None, source_line=self.source_line)
-        generator.instance(data=data)
+        generator.instance(data=data, opcode_name=self.get_instance_name())

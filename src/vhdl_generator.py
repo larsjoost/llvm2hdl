@@ -65,28 +65,24 @@ end process;
 class VhdlInstanceGenerator(VhdlGeneratorInterface):
     data: LanguageGeneratorInstanceData
     instance_index: int
+    entity_name: str
+    instance_name: str
     previous_instance_name: Optional[str]
     
     _local_tag_in: str = "local_tag_in_i"
     _local_tag_out: str = "local_tag_out_i"   
    
     def _get_instance_name(self) -> str:
-        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.data.instance_name)
+        return self.instance_name
 
     def _get_previous_instance_name(self) -> Optional[str]:
-        if self.previous_instance_name is None:
-            return None
-        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.previous_instance_name)
+        return self.previous_instance_name
 
     def add_process_call(self, data: LanguageGeneratorCallData) -> None: 
         assert False, "add_process_callback should not be called"
 
-    def _instance_name(self) -> str:
-        instance_name = f"{self.data.instance_name}_{str(self.instance_index)}"
-        return VhdlInstanceName(name=instance_name).get_entity_name()
-
     def _entity_name(self) -> str:
-        return VhdlInstanceName(name=self.data.instance_name, library=self.data.library).get_entity_name()
+        return VhdlInstanceName(name=self.entity_name, library=self.data.library).get_entity_name()
 
     def _is_work_library(self) -> bool:
         return self.data.library == "work"
@@ -184,7 +180,7 @@ generic map (
 
     def _write_component_instantiation(self, function_contents: FunctionContentsInterface, container: FunctionContainerInterface, 
                                        globals: GlobalsContainer) -> None:
-        instance_name = self._instance_name()
+        instance_name = self._get_instance_name()
         entity_name = self._entity_name()
         generic_map = self._get_component_instantiation_generic_map(generic_map=self.data.generic_map)
         port_map = self._get_component_instantiation_port_map(container=container, globals=globals)
@@ -223,7 +219,7 @@ end process;
         
     def _get_output_port_type(self) -> str:
         assert self.data.output_port is not None, \
-            f"Instance {self.data.instance_name} output port is not defined"
+            f"Instance {self._get_instance_name()} output port is not defined"
         return self.data.output_port.get_type_declarations()
 
     def _write_instance_signals(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
@@ -243,7 +239,7 @@ end process;
             function_contents.append_instance(self._entity_name())
         vhdl_port = VhdlPortGenerator()
         container.add_instance_signals(vhdl_port.get_standard_ports_signals(instance_name=self._get_instance_name()))
-        block_name = f"{self._instance_name()}_b"
+        block_name = f"{self._get_instance_name()}_b"
         function_contents.write_body(f"{block_name} : block")
         self._write_instance_signals(function_contents=function_contents, globals=globals)
         self._write_instance_contents(block_name=block_name, function_contents=function_contents, container=container, globals=globals)
@@ -276,12 +272,15 @@ class VhdlGenerator(LanguageGenerator):
         pass
     
     def write_signal_declaration(self, name: Optional[LlvmVariableName], data_type: TypeDeclaration) -> None:
-        pass
+        pass    
 
-    def instance(self, data: LanguageGeneratorInstanceData) -> None:
-        self._generators.append(VhdlInstanceGenerator(data=data, instance_index=self._instance_index, previous_instance_name=self._previous_instance_name))
+    def instance(self, data: LanguageGeneratorInstanceData, opcode_name: str) -> None:
+        entity_name = VhdlCodeGenerator().get_vhdl_name(llvm_name=opcode_name)
+        instance_name = f"{entity_name}_{self._instance_index}"
+        self._generators.append(VhdlInstanceGenerator(data=data, instance_index=self._instance_index, entity_name=entity_name, 
+                                                      instance_name=instance_name, previous_instance_name=self._previous_instance_name))
         self._instance_index += 1
-        self._previous_instance_name = data.instance_name
+        self._previous_instance_name = instance_name
 
     def _get_last_process(self) -> VhdlGeneratorInterface:
         if len(self._generators) == 0 or not self._generators[-1].is_process():
