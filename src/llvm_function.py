@@ -2,9 +2,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from function_container_interface import FunctionContainerInterface
 from instruction_argument import InstructionArgument
-from language_generator import LanguageGenerator
 from llvm_instruction import LlvmInstructionInterface
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
@@ -22,9 +20,6 @@ class LlvmFunction:
         output_port: List[Port] = [OutputPort(name=LlvmVariableName("m_tdata"), data_type=self.return_type)]
         input_ports: List[Port] = self.get_input_ports()
         return PortContainer(input_ports + output_port)
-    def generate_code(self, generator: LanguageGenerator, container: FunctionContainerInterface) -> None:
-        for i in self.instructions:
-            i.generate_code(generator=generator, container=container)
 
 @dataclass
 class LlvmFunctionContainer:

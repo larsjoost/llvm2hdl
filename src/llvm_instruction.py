@@ -1,11 +1,14 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from language_generator import LanguageGenerator
+
 from function_container_interface import FunctionContainerInterface
 from instruction_argument import InstructionArgument
 from instruction_interface import LlvmOutputPort, MemoryInterface
-from language_generator import LanguageGenerator
 from llvm_source_file import LlvmSourceLine
 
 from llvm_type import LlvmVariableName
@@ -39,5 +42,5 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
     def get_source_line(self) -> str:
         return self.source_line.get_elaborated()        
     @abstractmethod
-    def generate_code(self, generator: LanguageGenerator, container: FunctionContainerInterface) -> None:
+    def generate_code(self, generator: "LanguageGenerator", container: FunctionContainerInterface) -> None:
         pass    

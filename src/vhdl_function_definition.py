@@ -22,7 +22,8 @@ class VhdlFunctionDefinition:
     def get_memory_port_names(self) -> List[str]:
         return self.ports.get_memory_port_names()
     def generate_code(self, generator: LanguageGenerator, container: VhdlFunctionContainer):
-        self.function.generate_code(generator=generator, container=container)
+        for i in self.function.instructions:
+            i.generate_code(generator=generator, container=container)
 
 class VhdlFunctionDefinitionFactory:
 
