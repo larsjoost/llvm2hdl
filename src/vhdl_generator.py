@@ -189,13 +189,13 @@ generic map (
                                     instance_name=instance_name, library=self.data.library, entity=entity_name, 
                                     generic_map=generic_map, port_map=port_map)
 
-    def _get_tag_name(self) -> str:
+    def get_tag_name(self) -> str:
         tag_name = f"{self._get_instance_name()}_tag_out_i"
         return VhdlInstanceName(name=tag_name).get_entity_name()
 
     def _write_component_output_signal_assignment(self, function_contents: FunctionContentsInterface) -> None:
         comment = VhdlCodeGenerator().get_comment() 
-        tag_name = self._get_tag_name()
+        tag_name = self.get_tag_name()
         function_contents.write_body(f"""
 {comment}
 process (all)
@@ -260,13 +260,13 @@ class VhdlGenerator(LanguageGenerator):
     _contents: VhdlFunctionContents
     _generators: List[VhdlGeneratorInterface]
     _instance_index: int
-    _previous_instance_name: Optional[str]
+    _previous_instance: Optional[VhdlInstanceGenerator]
 
     def __init__(self, contents: VhdlFunctionContents):
         self._contents = contents
         self._generators = []
         self._instance_index = 1
-        self._previous_instance_name = None
+        self._previous_instance = None
 
     def write_instance(self, instance):
         pass
@@ -274,13 +274,19 @@ class VhdlGenerator(LanguageGenerator):
     def write_signal_declaration(self, name: Optional[LlvmVariableName], data_type: TypeDeclaration) -> None:
         pass    
 
+    def _get_previous_instance_name(self) -> Optional[str]:
+        if self._previous_instance is None:
+            return None
+        return self._previous_instance.instance_name
+
     def instance(self, data: LanguageGeneratorInstanceData, opcode_name: str) -> None:
         entity_name = VhdlCodeGenerator().get_vhdl_name(llvm_name=opcode_name)
         instance_name = f"{entity_name}_{self._instance_index}"
-        self._generators.append(VhdlInstanceGenerator(data=data, instance_index=self._instance_index, entity_name=entity_name, 
-                                                      instance_name=instance_name, previous_instance_name=self._previous_instance_name))
+        instance = VhdlInstanceGenerator(data=data, instance_index=self._instance_index, entity_name=entity_name, 
+                                        instance_name=instance_name, previous_instance_name=self._get_previous_instance_name())
+        self._generators.append(instance)
         self._instance_index += 1
-        self._previous_instance_name = instance_name
+        self._previous_instance = instance
 
     def _get_last_process(self) -> VhdlGeneratorInterface:
         if len(self._generators) == 0 or not self._generators[-1].is_process():
@@ -298,8 +304,11 @@ class VhdlGenerator(LanguageGenerator):
         pass
 
     def _write_return(self, function_contents: FunctionContentsInterface) -> None:
-        return_driver = self._previous_instance_name
+        return_driver = self._get_previous_instance_name()
+        assert self._previous_instance is not None, "No instance was created"
+        previous_instance_tag_name = self._previous_instance.get_tag_name()
         function_contents.write_body(f"""
+tag_out_i <= {previous_instance_tag_name};
 m_tvalid <= {return_driver}_m_tvalid_i;
 {return_driver}_m_tready_i <= m_tready;
 m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);
