@@ -14,10 +14,8 @@ from vhdl_function_definition import VhdlFunctionDefinition
 from vhdl_generator import VhdlGenerator
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_container_data import VhdlInstanceContainerData
-from vhdl_instance_data import VhdlDeclarationData, VhdlDeclarationDataContainer
 from vhdl_instance_writer import VhdlInstanceWriter
 from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
-from vhdl_declarations import VhdlDeclarations, VhdlSignal
 from ports import PortContainer
 
 class VhdlFunctionGenerator(FileWriterInterface):
@@ -109,10 +107,6 @@ end function tag_to_std_ulogic_vector;
     def _write_references_to_trailer(self) -> None:
         self._write_references(references=self.container.references)
         
-    def _write_signal(self, declaration: VhdlDeclarationData) -> None:
-        self.container.signals.append(VhdlSignal(instance=declaration.instance_name, 
-        name=declaration.declaration_name, type=VhdlDeclarations(data_type=declaration.data_type)))
-
     def _get_memory_arbiter_port_map(self, memory_master_name: str, memory_slave_name: str) -> str:
         vhdl_memory_port = VhdlMemoryPort()
         slave_memory_port_map = vhdl_memory_port.get_port_map(name=memory_slave_name, master=False)
@@ -171,10 +165,6 @@ end block {block_name};
         for memory_name in instances.get_memory_names() + memory_port_names:
             self._write_memory_arbiter(instances=instances, memory_name=memory_name)
         
-    def _write_declarations(self, declarations: VhdlDeclarationDataContainer):
-        for i in declarations.declarations:
-            self._write_signal(declaration=i)
-
     def write_constant(self, constant: DeclarationBase):
         self.container.constants.append(FileWriterConstant(constant=constant))
 
@@ -188,7 +178,6 @@ end block {block_name};
         self.function_contents.write_header(VhdlIncludeLibraries().get())
         
     def _write_architecture(self, function: VhdlFunctionDefinition, globals: GlobalsContainer) -> None:
-        self._write_declarations(declarations=function.declarations)
         generator = VhdlGenerator(contents=self.function_contents)
         VhdlInstanceWriter().write_instances(function=function, generator=generator, container=self.container)
         generator.generate_code(function_contents=self.function_contents, container=self.container, globals=globals)

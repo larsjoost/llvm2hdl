@@ -79,11 +79,12 @@ begin
 
 {self._to_string(self.body)}  
         
+end architecture rtl;
+
 {self.get_description("Trailer")} 
 
 {self._to_string(self.trailer)}
 
-end architecture rtl;
         """
     def get_instances(self) -> str:
         return "\n".join(self.instances)

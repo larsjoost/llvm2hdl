@@ -18,3 +18,7 @@ class FunctionContainerInterface(ABC):
     @abstractmethod
     def get_ports(self) -> PortContainer:
         pass
+
+    @abstractmethod
+    def add_signal(self, signal: SignalInterface) -> None:
+        pass

@@ -128,3 +128,6 @@ class VhdlFunctionContainer(FunctionContainerInterface):
 
     def get_ports(self) -> PortContainer:
         return self.ports
+    
+    def add_signal(self, signal: SignalInterface) -> None:
+        self.signals.append(signal)
