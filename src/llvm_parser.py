@@ -1,11 +1,9 @@
 
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Union
-from function_container_interface import FunctionContainerInterface
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, LoadInstruction, ReturnInstruction
 from instruction_argument import InstructionArgument, InstructionArgumentContainer
 from instruction_interface import InstructionInterface, LlvmOutputPort, MemoryInterface
-from language_generator import LanguageGenerator
 from llvm_globals_container import GlobalsContainer
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from llvm_global_parser import LlvmGlobalParser
@@ -117,8 +115,6 @@ class LlvmInstructionLabel(LlvmInstructionInterface):
     name: str
     def is_valid(self) -> bool:
         return False
-    def generate_code(self, generator: LanguageGenerator, container: FunctionContainerInterface) -> None:
-        pass
     
 @dataclass
 class LlvmInstructionCommand(LlvmInstructionInterface):

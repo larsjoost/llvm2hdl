@@ -9,6 +9,8 @@ from llvm_parser import GlobalsContainer, GetelementptrInstructionParser, LlvmIn
 
 class TestGetelementptrInstructionParser(unittest.TestCase):        
 
+    maxDiff = None
+
     def test_parse(self):
         x = GetelementptrInstructionParser()
         instruction = "getelementptr inbounds [4 x i32], ptr %n, i64 0, i64 1"
@@ -24,6 +26,8 @@ class TestGetelementptrInstructionParser(unittest.TestCase):
         self.assertEqual(got, expected)
         
 class TestArgumentParser(unittest.TestCase):        
+
+    maxDiff = None
 
     def test_argument_parser(self):
         x = LlvmArgumentParser()
