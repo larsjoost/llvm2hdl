@@ -1,11 +1,8 @@
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional
 
-if TYPE_CHECKING:
-    from language_generator import LanguageGenerator
-
-from instruction_argument import InstructionArgument
+from instruction_argument import InstructionArgument, InstructionArgumentContainer
 from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 from memory_interface import MemoryInterface
@@ -30,7 +27,7 @@ class InstructionInterface(ABC):
     def get_data_type(self) -> TypeDeclaration:
         pass
     @abstractmethod
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         pass
     @abstractmethod
     def is_valid(self) -> bool:
@@ -48,5 +45,5 @@ class InstructionInterface(ABC):
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         pass
     @abstractmethod
-    def generate_code(self, generator: "LanguageGenerator") -> None:
+    def get_external_pointer_names(self) -> List[str]:
         pass

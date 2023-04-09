@@ -15,7 +15,7 @@ from llvm_type_declaration import TypeDeclaration
 from vhdl_code_generator import VhdlCodeGenerator
 
 @dataclass    
-class LanguageGeneratorInstanceData:
+class LanguageGeneratorInstructionData:
     library: str
     opcode: str
     data_type: TypeDeclaration
@@ -46,11 +46,7 @@ class LanguageGenerator(ABC):
         pass
 
     @abstractmethod
-    def instance(self, data: LanguageGeneratorInstanceData, opcode_name: str) -> None:
-        pass
-
-    @abstractmethod
-    def write_body(self, text: str) -> None:
+    def add_instruction(self, data: LanguageGeneratorInstructionData, opcode_name: str) -> None:
         pass
 
     @abstractmethod

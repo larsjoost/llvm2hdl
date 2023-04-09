@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from typing import List, Optional
+from instruction_argument import InstructionArgumentContainer
 
-from source_info import SourceInfo
-from instance_container_interface import InstanceContainerInterface
+from source_info import SourceInfo, SourceInfoMap
 from instance_data import DeclarationData, InstanceData
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName
@@ -9,25 +10,15 @@ from llvm_parser import InstructionArgument
 from llvm_instruction import LlvmInstructionInterface
 from instance_interface import InstanceInterface
 
+@dataclass
 class Instance(InstanceInterface):
 
     instruction: LlvmInstructionInterface
 
-    _parent: InstanceContainerInterface
-    _prev: Optional[InstanceInterface]
-
-    def __init__(self, parent: InstanceContainerInterface, instruction : LlvmInstructionInterface):
-        self._parent = parent
-        self.instruction = instruction
-        self._prev = None
-
-    def get_instance_index(self) -> int:
-        return 1 if self._prev is None else self._prev.get_instance_index() + 1
-
     def get_instance_name(self) -> str:
         instance_name = self.instruction.get_instance_name()
         assert instance_name is not None
-        return f"{instance_name}_{str(self.get_instance_index())}"
+        return instance_name
 
     def get_tag_name(self) -> str:
         return f"{self.get_instance_name()}_tag_out_i"
@@ -41,8 +32,8 @@ class Instance(InstanceInterface):
     def get_data_type(self) -> Optional[TypeDeclaration]:
         return self.instruction.get_data_type()
 
-    def _resolve_operand(self, operand: InstructionArgument) -> InstructionArgument:
-        source: Optional[SourceInfo] = self._parent.get_source(search_source=operand.signal_name)
+    def _resolve_operand(self, operand: InstructionArgument, source_info: SourceInfoMap) -> InstructionArgument:
+        source: Optional[SourceInfo] = source_info.get_source(search_source=operand.signal_name)
         if source is not None:
             operand.signal_name = source.output_signal_name
         return operand
@@ -54,28 +45,25 @@ class Instance(InstanceInterface):
         output_signal_name=self.get_output_signal_name(),
         data_type=data_type)
 
-    def _get_input_ports(self, operands: Optional[List[InstructionArgument]]) -> List[InstructionArgument]:
+    def _get_input_ports(self, operands: Optional[InstructionArgumentContainer], source_info: SourceInfoMap) -> List[InstructionArgument]:
         input_ports: List[InstructionArgument] = []
         if operands is not None:
-            input_ports.extend(self._resolve_operand(operand) for operand in operands)
+            input_ports.extend(self._resolve_operand(operand=operand, source_info=source_info) for operand in operands.arguments)
         return input_ports
 
-    def get_instance_data(self) -> InstanceData:
+    def get_instance_data(self, source_info: SourceInfoMap) -> InstanceData:
         instance_name = self.get_instance_name()
         entity_name = self.instruction.get_instance_name()
         output_port = self.instruction.get_output_port()
         tag_name = self.get_tag_name()
-        previous_instance_name = None
-        if self._prev is not None:
-            previous_instance_name = self._prev.get_instance_name()
-        input_ports = self._get_input_ports(operands=self.instruction.get_operands())
+        input_ports = self._get_input_ports(operands=self.instruction.get_operands(), source_info=source_info)
         memory_interface = self.instruction.get_memory_interface()
         library = self.instruction.get_library()
         assert entity_name is not None
         assert library is not None
         return InstanceData(instance_name=instance_name, entity_name=entity_name, library=library, 
         output_port=output_port, tag_name=tag_name, input_ports=input_ports, 
-        previous_instance_name=previous_instance_name, memory_interface=memory_interface, instruction=self.instruction)
+        memory_interface=memory_interface, instruction=self.instruction)
 
     def get_declaration_data(self) -> DeclarationData:
         data_type = self.instruction.get_data_type()

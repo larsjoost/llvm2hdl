@@ -3,12 +3,13 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Union
 from function_container_interface import FunctionContainerInterface
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, LoadInstruction, ReturnInstruction
+from instruction_argument import InstructionArgumentContainer
 from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
 from language_generator import LanguageGenerator
 from llvm_globals_container import GlobalsContainer
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from llvm_global_parser import LlvmGlobalParser
-from llvm_instruction import LlvmInstructionInterface
+from llvm_instruction import LlvmInstructionContainer, LlvmInstructionInterface
 from llvm_intruction_parser import LlvmInstructionParserInterface, LlvmInstructionParserArguments
 from llvm_module import LlvmModule
 from llvm_source_file import LlvmSourceConstants, LlvmSourceFile, LlvmSourceFileParser, LlvmSourceFunction, LlvmSourceFunctions, LlvmSourceLine
@@ -129,7 +130,7 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return self.destination
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return self.instruction.get_output_port()
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return self.instruction.get_operands()
     def get_data_type(self) -> Optional[TypeDeclaration]:
         return self.instruction.get_data_type()
@@ -143,8 +144,6 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return self.instruction.is_memory()
     def map_function_arguments(self) -> bool:
         return self.instruction.map_function_arguments()
-    def generate_code(self, generator: LanguageGenerator, container: FunctionContainerInterface) -> None:
-        self.instruction.generate_code(generator=generator)
 
 class LlvmInstructionLabelParser:
 
@@ -167,7 +166,7 @@ class BitCastInstructionParser(LlvmInstructionParserInterface):
         argument = InstructionArgument(signal_name=signal_name, data_type=data_type)
         operands = [argument]
         return BitcastInstruction(
-            opcode=opcode, data_type=data_type, operands=operands
+            opcode=opcode, data_type=data_type, operands=InstructionArgumentContainer(operands)
         )
 
     def match(self, instruction: List[str]) -> bool:
@@ -196,7 +195,7 @@ class GetelementptrInstructionParser(LlvmInstructionParserInterface):
         signal_name = LlvmVariableName(data_type[1])
         argument = InstructionArgument(signal_name=signal_name, data_type=signal_data_type)
         operands = [argument]
-        return GetelementptrInstruction(opcode=opcode, data_type=signal_data_type, operands=operands, offset=pointer_offset)
+        return GetelementptrInstruction(opcode=opcode, data_type=signal_data_type, operands=InstructionArgumentContainer(operands), offset=pointer_offset)
 
     def match(self, instruction: List[str]) -> bool:
         return instruction[0] == "getelementptr"
@@ -220,7 +219,7 @@ class ReturnInstructionParser(LlvmInstructionParserInterface):
             operands = [argument]
         except IndexError:
             operands = []
-        return ReturnInstruction(opcode=opcode, data_type=data_type, operands=operands)
+        return ReturnInstruction(opcode=opcode, data_type=data_type, operands=InstructionArgumentContainer(operands))
 
     def match(self, instruction: List[str]) -> bool:
         return instruction[0] == "ret"
@@ -259,7 +258,7 @@ class CallInstructionParser(LlvmInstructionParserInterface):
     def _get_call_instruction(self, function_name: str, llvm_function: bool, return_type: str, arguments: str, source_line: LlvmSourceLine) -> CallInstruction:
         data_type = LlvmDeclarationFactory().get(return_type)
         operands = LlvmArgumentParser().parse(arguments=arguments, unnamed=True)
-        return CallInstruction(opcode=function_name, llvm_function=llvm_function, data_type=data_type, operands=operands, source_line=source_line)
+        return CallInstruction(opcode=function_name, llvm_function=llvm_function, data_type=data_type, operands=InstructionArgumentContainer(operands), source_line=source_line)
 
     def _split_function_call(self, function_call: str) -> Tuple[str, str]:
         head_split = function_call.split()
@@ -305,7 +304,7 @@ class LoadInstructionParser(LlvmInstructionParserInterface):
         data_type = LlvmDeclarationFactory().get(data_type=y[1], constants=arguments.constants)
         operands = LlvmArgumentParser().parse(arguments=x[1], unnamed=True)
         return LoadInstruction(
-            opcode=opcode, data_type=data_type, output_port_name=arguments.destination, operands=operands, source_line=source_line
+            opcode=opcode, data_type=data_type, output_port_name=arguments.destination, operands=InstructionArgumentContainer(operands), source_line=source_line
         )
 
     def match(self, instruction: List[str]) -> bool:
@@ -366,7 +365,7 @@ class DefaultInstructionParser(LlvmInstructionParserInterface):
             opcode=x.opcode,
             sub_type=x.sub_type,
             data_type=data_type,
-            operands=x.operands,
+            operands=InstructionArgumentContainer(x.operands),
             output_port_name="m_tdata",
             source_line=source_line
         )
@@ -495,7 +494,7 @@ class LlvmFunctionParser:
         function_name, arguments, return_type = self._parse_function_description(source_function.lines[0].line)
         comands_excluding_right_bracket = source_function.lines[1:-2]
         instructions = LlvmGeneralInstructionParser().parse(lines=comands_excluding_right_bracket, constants=constants)
-        return LlvmFunction(name=function_name, arguments=arguments, return_type=return_type, instructions=instructions)
+        return LlvmFunction(name=function_name, arguments=arguments, return_type=return_type, instructions=LlvmInstructionContainer(instructions))
 
 class LlvmParser:
 

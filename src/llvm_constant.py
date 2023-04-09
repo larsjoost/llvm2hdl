@@ -84,7 +84,6 @@ class GlobalVariableDeclaration(DeclarationBase):
 
 @dataclass
 class DeclarationContainer:
-    instruction: LlvmSourceLine
     declaration: DeclarationBase
     def match(self, name: Optional[LlvmType]) -> bool:
         return self.declaration.match(name=name)

@@ -3,19 +3,22 @@ from types import FrameType
 from typing import List, Optional
 from file_writer_interface import FileWriterInterface
 from llvm_constant import DeclarationBase
-from llvm_function import LlvmFunctionContainer
+from llvm_function import LlvmFunction, LlvmFunctionContainer
 from llvm_globals_container import GlobalsContainer
+from llvm_module import LlvmModule
 from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_entity import VhdlEntity
+from vhdl_function import VhdlFunction
 from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable, VhdlFunctionContainer
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_function_definition import VhdlFunctionDefinition
 from vhdl_generator import VhdlGenerator
 from vhdl_include_libraries import VhdlIncludeLibraries
-from vhdl_instance_container_data import VhdlInstanceContainerData
 from vhdl_instance_writer import VhdlInstanceWriter
-from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
+from vhdl_memory_generator import VhdlMemoryGenerator
+from vhdl_module import VhdlModule
+from vhdl_port import VhdlPortGenerator
 from ports import PortContainer
 
 class VhdlFunctionGenerator(FileWriterInterface):
@@ -107,64 +110,6 @@ end function tag_to_std_ulogic_vector;
     def _write_references_to_trailer(self) -> None:
         self._write_references(references=self.container.references)
         
-    def _get_memory_arbiter_port_map(self, memory_master_name: str, memory_slave_name: str) -> str:
-        vhdl_memory_port = VhdlMemoryPort()
-        slave_memory_port_map = vhdl_memory_port.get_port_map(name=memory_slave_name, master=False)
-        master_memory_port_map = vhdl_memory_port.get_port_map(name=memory_master_name, master=True)
-        memory_port_map = slave_memory_port_map + master_memory_port_map
-        return ", ".join(memory_port_map)
-
-    def _write_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str) -> None:
-        vhdl_memory_port = VhdlMemoryPort()
-        assignment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_master_name, assignment_names=[memory_slave_name])
-        assignments = "\n".join([f"{i};" for i in assignment_list])
-        self.function_contents.write_body(assignments)
-        
-    def _write_memory_arbiter(self, instances: VhdlInstanceContainerData, memory_name: str) -> None:
-        memory_instance_names = instances.get_memory_instance_names()
-        number_of_memory_instances = len(memory_instance_names)
-        if number_of_memory_instances > 1:
-            self._write_memory_instances(
-                memory_name, number_of_memory_instances, memory_instance_names
-            )
-        else:
-            memory_signal_name = memory_instance_names[0]
-            self._write_memory_interface_signal_assignment(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
-        
-    def _write_memory_instances(self, memory_name: str, number_of_memory_instances: int, memory_instance_names: List[str]):
-        memory_signal_name = "s"
-        vhdl_memory_port = VhdlMemoryPort()
-        block_name = f"arbiter_{memory_name}_b"
-        signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
-        signal_assigment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)
-        signal_assigments = "\n".join([f"{i};" for i in signal_assigment_list])
-        memory_interface_name = f"memory_arbiter_{memory_name}"
-        port_map = self._get_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
-        comment = VhdlCodeGenerator().get_comment() 
-        self.function_contents.write_body(f"""
-{comment}
-{block_name}: block
-constant c_size : positive := {number_of_memory_instances};
-{signals}
-begin
-
-{signal_assigments}
-        
-{memory_interface_name}: entity memory.arbiter(rtl)
-port map(
-clk => clk, 
-sreset => sreset,
-{port_map}
-);
-
-end block {block_name};
-
-        """)
-
-    def _write_all_memory_arbiters(self, instances: VhdlInstanceContainerData, memory_port_names: List[str]) -> None:
-        for memory_name in instances.get_memory_names() + memory_port_names:
-            self._write_memory_arbiter(instances=instances, memory_name=memory_name)
-        
     def write_constant(self, constant: DeclarationBase):
         self.container.constants.append(FileWriterConstant(constant=constant))
 
@@ -177,32 +122,17 @@ end block {block_name};
     def _write_include_libraries(self) -> None:
         self.function_contents.write_header(VhdlIncludeLibraries().get())
         
-    def _write_architecture(self, function: VhdlFunctionDefinition, globals: GlobalsContainer) -> None:
-        generator = VhdlGenerator(contents=self.function_contents)
-        VhdlInstanceWriter().write_instances(function=function, generator=generator, container=self.container)
-        generator.generate_code(function_contents=self.function_contents, container=self.container, globals=globals)
-        self._write_all_memory_arbiters(instances=function.instances, memory_port_names=function.get_memory_port_names())
+    def _write_architecture(self, function: VhdlFunction, module: VhdlModule) -> None:
+        VhdlInstanceWriter().write_instances(function=function, function_contents=self.function_contents, container=self.container, module=module)
         
-    def write_function(self, function: VhdlFunctionDefinition, globals: GlobalsContainer) -> VhdlFunctionContents:
-        self.function_contents = VhdlFunctionContents(name=function.entity_name)    
-        self.container.ports = function.ports
+    def write_function(self, function: VhdlFunction, module: VhdlModule) -> VhdlFunctionContents:
+        self.function_contents = VhdlFunctionContents(name=function.get_entity_name())    
+        self.container.ports = function.get_ports()
         self.function_contents.write_header(f"-- Autogenerated by {self._get_comment()}")
         self._write_include_libraries()
-        self.function_contents.write_header(VhdlEntity().get_entity(entity_name=function.entity_name, ports=function.ports))
-        self._write_architecture(function=function, globals=globals)
+        self.function_contents.write_header(VhdlEntity().get_entity(entity_name=function.get_entity_name(), ports=function.get_ports()))
+        self._write_architecture(function=function, module=module)
         self._write_declarations_to_header()
         self._write_references_to_trailer()
         return self.function_contents
-
-class FilePrinter:
-
-    def generate(self, file_name: str, contents: List[VhdlFunctionContents]) -> None:
-        with open(file_name, 'w', encoding="utf-8") as file_handle:
-            for i in contents:
-                print(i.get_contents(), file=file_handle, end="")
-        base_name = os.path.splitext(file_name)[0]
-        instance_file_name = f'{base_name}.inc'
-        with open(instance_file_name, 'w', encoding="utf-8") as file_handle:
-            for i in contents:
-                print(i.get_instances(), file=file_handle)
 

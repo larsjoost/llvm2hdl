@@ -19,15 +19,10 @@ class VhdlInstanceData:
     output_port: Optional[LlvmOutputPort]
     tag_name: str
     input_ports: List[VhdlInstructionArgument]
-    previous_instance_name: Optional[str]
     memory_interface: Optional[MemoryInterface]
     instruction: LlvmInstructionInterface
     def _get_signal_name(self, instance_name: str, signal_name: str) -> str:
         return f"{instance_name}_{signal_name}_i"
-    def get_previous_instance_signal_name(self, signal_name: str) -> Optional[str]:
-        if self.previous_instance_name is None:
-            return None
-        return self._get_signal_name(instance_name=self.previous_instance_name, signal_name=signal_name)
     def get_own_instance_signal_name(self, signal_name) -> str:
         return self._get_signal_name(instance_name=self.instance_name, signal_name=signal_name)
     def is_memory(self) -> bool:
@@ -88,9 +83,6 @@ class VhdlInstanceDataFactory:
         instance_name = VhdlInstanceName(name=instance_data.instance_name).get_entity_name()
         entity_name = VhdlInstanceName(name=instance_data.entity_name, library=instance_data.library).get_entity_name()
         tag_name = VhdlInstanceName(name=instance_data.tag_name).get_entity_name()
-        previous_instance_name = None
-        if instance_data.previous_instance_name is not None:
-            previous_instance_name = VhdlInstanceName(name=instance_data.previous_instance_name).get_entity_name()
         input_ports = [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals) for i in instance_data.input_ports]
         return VhdlInstanceData(instance_name=instance_name,
         entity_name=entity_name, 
@@ -98,7 +90,6 @@ class VhdlInstanceDataFactory:
         output_port=instance_data.output_port,
         tag_name=tag_name,
         input_ports=input_ports,
-        previous_instance_name=previous_instance_name,
         memory_interface=instance_data.memory_interface,
         instruction=instance_data.instruction
         )

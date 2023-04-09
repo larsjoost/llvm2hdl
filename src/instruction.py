@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import List, Optional
+from instruction_argument import InstructionArgumentContainer
 
 from instruction_interface import InstructionArgument, InstructionGeneral, InstructionInterface
 from memory_interface import MemoryInterface, MemoryInterfaceMaster, MemoryInterfaceSlave
-from language_generator import LanguageGenerator, LanguageGeneratorInstanceData
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_source_file import LlvmSourceLine
@@ -14,14 +14,14 @@ from llvm_type import LlvmInteger, LlvmVariableName
 class ReturnInstruction(InstructionInterface):
     opcode: str
     data_type: TypeDeclaration
-    operands: List[InstructionArgument]
+    operands: InstructionArgumentContainer
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)
     def get_library(self) -> str:
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return self.operands
     def is_valid(self) -> bool:
         return True
@@ -33,21 +33,21 @@ class ReturnInstruction(InstructionInterface):
         return None
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        generator.return_operation(data_type=self.data_type, operands=self.operands)
-    
+    def get_external_pointer_names(self) -> List[str]:
+        return []
+
 @dataclass
 class BitcastInstruction(InstructionInterface):
     opcode: str
     data_type: TypeDeclaration
-    operands: List[InstructionArgument]
+    operands: InstructionArgumentContainer
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)
     def get_library(self) -> str:
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return self.operands
     def is_valid(self) -> bool:
         return False
@@ -59,8 +59,8 @@ class BitcastInstruction(InstructionInterface):
         return None
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        pass
+    def get_external_pointer_names(self) -> List[str]:
+        return []
 
 @dataclass
 class AllocaInstruction(InstructionInterface):
@@ -82,7 +82,7 @@ class AllocaInstruction(InstructionInterface):
             initialization = ", ".join(self.initialization)
             generic_map.append(f"initialization => ({initialization})")
         return generic_map
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return None
     def is_valid(self) -> bool:
         return True
@@ -94,14 +94,14 @@ class AllocaInstruction(InstructionInterface):
         return False
     def get_memory_interface(self) -> MemoryInterface:
         return MemoryInterfaceSlave()
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        generator.write_signal_declaration(name=self.output_port_name, data_type=self.data_type)
-    
+    def get_external_pointer_names(self) -> List[str]:
+        return []
+
 @dataclass
 class GetelementptrInstruction(InstructionInterface):
     opcode: str
     data_type: TypeDeclaration
-    operands: List[InstructionArgument]
+    operands: InstructionArgumentContainer
     offset: int
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)
@@ -109,10 +109,11 @@ class GetelementptrInstruction(InstructionInterface):
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
-        return self.operands + [
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
+        arguments = self.operands.arguments + [
             InstructionArgument(signal_name=LlvmInteger(value=self.offset), 
                                 data_type=LlvmIntegerDeclaration(data_width=32))]
+        return InstructionArgumentContainer(arguments=arguments)
     def is_valid(self) -> bool:
         return True
     def is_memory(self) -> bool:
@@ -123,15 +124,15 @@ class GetelementptrInstruction(InstructionInterface):
         return LlvmMemoryOutputPort(data_type=self.data_type)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        pass
+    def get_external_pointer_names(self) -> List[str]:
+        return []
     
 @dataclass
 class CallInstruction(InstructionInterface):
     opcode: str
     llvm_function: bool
     data_type: TypeDeclaration
-    operands: List[InstructionArgument]
+    operands: InstructionArgumentContainer
     source_line: LlvmSourceLine
     def get_instance_name(self) -> str:
         return self.opcode
@@ -139,7 +140,7 @@ class CallInstruction(InstructionInterface):
         return "llvm" if self.llvm_function else "work"
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return self.operands
     def is_valid(self) -> bool:
         return True
@@ -151,18 +152,15 @@ class CallInstruction(InstructionInterface):
         return LlvmOutputPort(data_type=self.data_type, port_name="m_tdata")
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        data = LanguageGeneratorInstanceData(library=self.get_library(), opcode=self.opcode, data_type=self.data_type, 
-                                             operands=self.operands, output_port=self.get_output_port(), 
-                                             map_memory_interface=True, memory_interface=None, source_line=self.source_line)
-        generator.instance(data=data, opcode_name=self.get_instance_name())
-    
+    def get_external_pointer_names(self) -> List[str]:
+        return self.operands.get_pointer_names()
+
 @dataclass
 class LoadInstruction(InstructionInterface):
     opcode: str
     data_type: TypeDeclaration
     output_port_name: Optional[LlvmVariableName]
-    operands: List[InstructionArgument]
+    operands: InstructionArgumentContainer
     source_line: LlvmSourceLine
     def get_instance_name(self) -> str:
         return InstructionGeneral().get_instance_name(opcode=self.opcode)
@@ -170,7 +168,7 @@ class LoadInstruction(InstructionInterface):
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return self.operands
     def is_valid(self) -> bool:
         return True
@@ -182,18 +180,15 @@ class LoadInstruction(InstructionInterface):
         return LlvmOutputPort(data_type=self.data_type, port_name="m_tdata")
     def get_memory_interface(self) -> Optional[MemoryInterface]:    
         return MemoryInterfaceMaster()
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        data = LanguageGeneratorInstanceData(library=self.get_library(), opcode=self.opcode, data_type=self.data_type, 
-                                             operands=self.operands, output_port=self.get_output_port(), 
-                                             map_memory_interface=False, memory_interface=None, source_line=self.source_line)
-        generator.instance(data=data, opcode_name=self.get_instance_name())
+    def get_external_pointer_names(self) -> List[str]:
+        return []
 
 @dataclass
 class DefaultInstruction(InstructionInterface):
     opcode: str
     sub_type: Optional[str]
     data_type: TypeDeclaration
-    operands: List[InstructionArgument]
+    operands: InstructionArgumentContainer
     output_port_name: str
     source_line: LlvmSourceLine
     def get_instance_name(self) -> str:
@@ -203,7 +198,7 @@ class DefaultInstruction(InstructionInterface):
         return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return self.operands
     def is_valid(self) -> bool:
         return True
@@ -215,8 +210,5 @@ class DefaultInstruction(InstructionInterface):
         return LlvmOutputPort(data_type=self.data_type, port_name=self.output_port_name)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return None
-    def generate_code(self, generator: LanguageGenerator) -> None:
-        data = LanguageGeneratorInstanceData(library=self.get_library(), opcode=self.opcode, data_type=self.data_type, 
-                                             operands=self.operands, output_port=self.get_output_port(), 
-                                             map_memory_interface=False, memory_interface=None, source_line=self.source_line)
-        generator.instance(data=data, opcode_name=self.get_instance_name())
+    def get_external_pointer_names(self) -> List[str]:
+        return []

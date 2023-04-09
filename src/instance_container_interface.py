@@ -1,18 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 from instance_data import DeclarationData
 from instance_container_data import InstanceContainerData
-from llvm_type import LlvmType
-from source_info import SourceInfo
+from source_info import SourceInfoMap
 
 class InstanceContainerInterface(ABC):
     
     @abstractmethod
-    def get_source(self, search_source: LlvmType) -> Optional[SourceInfo]:
-        pass
-
-    @abstractmethod
-    def get_instances(self) -> InstanceContainerData:
+    def get_instances(self, source_info: SourceInfoMap) -> InstanceContainerData:
         pass
 
     @abstractmethod

@@ -50,7 +50,7 @@ class LlvmGlobalClassParser(LlvmGlobalParserBase):
         declaration = LlvmListDeclarationFactory(data_type=data_type).get()
         class_declaration = ClassDeclaration(instruction=instruction, instantiation_point=InstantiationPoint(), 
                                              name=LlvmVariableName(name), type=declaration)
-        return DeclarationContainer(instruction=instruction, declaration=class_declaration)
+        return DeclarationContainer(declaration=class_declaration)
 
     def match(self, source: List[str]) -> bool:
         return "type" in source
@@ -72,7 +72,7 @@ class LlvmGlobalConstantParser(LlvmGlobalParserBase):
                                                    name=LlvmConstantName(name), 
                                                    type=constant_type, 
                                                    values=definitions)
-        return DeclarationContainer(instruction=instruction, declaration=constant_declaration)
+        return DeclarationContainer(declaration=constant_declaration)
 
     def match(self, source: List[str]) -> bool:
         return "constant" in source
@@ -88,7 +88,7 @@ class LlvmGlobalReferenceParser(LlvmGlobalParserBase):
                                                      instantiation_point=InstantiationPoint(),
                                                      name=LlvmReferenceName(name), 
                                                      reference=LlvmReferenceName(reference))
-        return DeclarationContainer(instruction=instruction, declaration=reference_declaration)
+        return DeclarationContainer(declaration=reference_declaration)
 
     def match(self, source: List[str]) -> bool:
         return "alias" in source
@@ -105,7 +105,7 @@ class LlvmGlobalVariableParser(LlvmGlobalParserBase):
                                                           instantiation_point=InstantiationPoint(),
                                                           name=LlvmVariableName(name),
                                                           type=data_type)
-        return DeclarationContainer(instruction=instruction, declaration=declaration)
+        return DeclarationContainer(declaration=declaration)
 
     def match(self, source: List[str]) -> bool:
         return "global" in source

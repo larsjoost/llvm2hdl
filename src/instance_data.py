@@ -13,7 +13,6 @@ class InstanceData:
     output_port: Optional[LlvmOutputPort]
     tag_name: str
     input_ports: List[InstructionArgument]
-    previous_instance_name: Optional[str]
     memory_interface: Optional[MemoryInterface]
     instruction: LlvmInstructionInterface
 

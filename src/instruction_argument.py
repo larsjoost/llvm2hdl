@@ -1,6 +1,6 @@
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from llvm_type import LlvmType
 from llvm_type_declaration import TypeDeclaration
@@ -28,3 +28,9 @@ class InstructionArgument:
             return self.signal_name.is_integer()
         return False
 
+@dataclass
+class InstructionArgumentContainer:
+    arguments: List[InstructionArgument]
+
+    def get_pointer_names(self) -> List[str]:
+        return [arg.get_name() for arg in self.arguments if arg.is_pointer()]

@@ -20,9 +20,5 @@ class InstanceInterface(ABC):
         pass
 
     @abstractmethod
-    def get_instance_index(self) -> int:
-        pass
-
-    @abstractmethod
     def get_instance_name(self) -> str:
         pass

@@ -1,13 +1,9 @@
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional
 
-if TYPE_CHECKING:
-    from language_generator import LanguageGenerator
-
-from function_container_interface import FunctionContainerInterface
-from instruction_argument import InstructionArgument
+from instruction_argument import InstructionArgumentContainer
 from instruction_interface import LlvmOutputPort, MemoryInterface
 from llvm_source_file import LlvmSourceLine
 
@@ -23,7 +19,7 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
         return None
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return None
-    def get_operands(self) -> Optional[List[InstructionArgument]]:
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
         return None
     def get_data_type(self) -> Optional[TypeDeclaration]:
         return None
@@ -41,6 +37,15 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
         return False
     def get_source_line(self) -> str:
         return self.source_line.get_elaborated()        
-    @abstractmethod
-    def generate_code(self, generator: "LanguageGenerator", container: FunctionContainerInterface) -> None:
-        pass    
+    def get_external_pointer_names(self) -> List[str]:
+        return []
+
+@dataclass
+class LlvmInstructionContainer:
+    instructions: List[LlvmInstructionInterface]
+
+    def get_external_pointer_names(self) -> List[str]:
+        external_pointer_names: List[str] = []
+        for instruction in self.instructions:
+            external_pointer_names.extend(instruction.get_external_pointer_names())
+        return external_pointer_names

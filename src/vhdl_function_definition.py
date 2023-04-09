@@ -28,7 +28,7 @@ class VhdlFunctionDefinition:
 class VhdlFunctionDefinitionFactory:
 
     def get(self, function_definition: FunctionDefinition, globals: GlobalsContainer) -> VhdlFunctionDefinition:
-        entity_name = VhdlInstanceName(name=function_definition.entity_name).get_entity_name()
+        entity_name = VhdlInstanceName(name=function_definition.get_entity_name()).get_entity_name()
         instances = VhdlInstanceContainerDataFactory().get(instance_container=function_definition.instances, globals=globals)
         declarations = VhdlDeclarationDataContainer(declarations=[VhdlDeclarationDataFactory().get(i) for i in function_definition.declarations])
         return VhdlFunctionDefinition(entity_name=entity_name, instances=instances, 
