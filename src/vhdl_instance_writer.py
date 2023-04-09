@@ -4,7 +4,6 @@ from vhdl_function import VhdlFunction
 from vhdl_function_container import VhdlFunctionContainer
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_instance_generator import VhdlInstanceGenerator
-from vhdl_memory_generator import VhdlMemoryGenerator
 from vhdl_module import VhdlModule
 
 class VhdlInstanceWriter:

@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from instruction_argument import InstructionArgument, InstructionArgumentContainer
+from instruction_argument import InstructionArgumentContainer
 from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 from memory_interface import MemoryInterface

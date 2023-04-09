@@ -1,10 +1,13 @@
 
 from dataclasses import dataclass
 from typing import List, Optional
+from instruction_argument import InstructionArgument, InstructionArgumentContainer
 
 from llvm_instruction import LlvmInstructionInterface
+from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 from memory_interface import MemoryInterface
+from vhdl_code_generator import VhdlCodeGenerator
 
 
 @dataclass
@@ -34,6 +37,26 @@ class VhdlInstruction:
 
     def map_memory_interface(self) -> bool:
         return self.instruction.map_function_arguments()
+
+    def get_output_port(self) -> Optional[LlvmOutputPort]:
+        return self.instruction.get_output_port()
+
+    def get_operands(self) -> Optional[InstructionArgumentContainer]:
+        return self.instruction.get_operands()
+
+    def get_generic_map(self) -> Optional[List[str]]:
+        return self.instruction.get_generic_map()
+
+    def access_register(self, external_pointer_names: List[str]) -> bool:
+        return False
+
+    def _get_variable_declaration(self, operand: InstructionArgument) -> str:
+        return VhdlCodeGenerator().get_variable_declaration(name=operand.get_name(), data_width=operand.get_data_width())
+        
+    def get_variable_declarations(self) -> List[str]:
+        operands = self.get_operands()
+        assert operands is not None
+        return [self._get_variable_declaration(operand=i) for i in operands.arguments]
 
 @dataclass
 class VhdlInstructionContainer:

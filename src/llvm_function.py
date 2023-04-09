@@ -22,6 +22,10 @@ class LlvmFunction:
         return PortContainer(input_ports + output_port)
     def get_external_pointer_names(self) -> List[str]:
         return self.instructions.get_external_pointer_names() + self.arguments.get_pointer_names()
+    def get_memory_instance_names(self) -> List[str]:
+        return self.instructions.get_memory_instance_names()
+    def get_memory_names(self) -> List[str]:
+        return self.instructions.get_memory_names()
 
 @dataclass
 class LlvmFunctionContainer:

@@ -1,22 +1,16 @@
-import os
 from types import FrameType
 from typing import List, Optional
 from file_writer_interface import FileWriterInterface
 from llvm_constant import DeclarationBase
-from llvm_function import LlvmFunction, LlvmFunctionContainer
-from llvm_globals_container import GlobalsContainer
-from llvm_module import LlvmModule
+from llvm_function import LlvmFunctionContainer
 from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_entity import VhdlEntity
 from vhdl_function import VhdlFunction
 from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable, VhdlFunctionContainer
 from vhdl_function_contents import VhdlFunctionContents
-from vhdl_function_definition import VhdlFunctionDefinition
-from vhdl_generator import VhdlGenerator
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_writer import VhdlInstanceWriter
-from vhdl_memory_generator import VhdlMemoryGenerator
 from vhdl_module import VhdlModule
 from vhdl_port import VhdlPortGenerator
 from ports import PortContainer

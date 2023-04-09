@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Union
 from function_container_interface import FunctionContainerInterface
 from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, LoadInstruction, ReturnInstruction
-from instruction_argument import InstructionArgumentContainer
-from instruction_interface import InstructionArgument, InstructionInterface, LlvmOutputPort, MemoryInterface
+from instruction_argument import InstructionArgument, InstructionArgumentContainer
+from instruction_interface import InstructionInterface, LlvmOutputPort, MemoryInterface
 from language_generator import LanguageGenerator
 from llvm_globals_container import GlobalsContainer
 from llvm_function import LlvmFunction, LlvmFunctionContainer
@@ -494,7 +494,7 @@ class LlvmFunctionParser:
         function_name, arguments, return_type = self._parse_function_description(source_function.lines[0].line)
         comands_excluding_right_bracket = source_function.lines[1:-2]
         instructions = LlvmGeneralInstructionParser().parse(lines=comands_excluding_right_bracket, constants=constants)
-        return LlvmFunction(name=function_name, arguments=arguments, return_type=return_type, instructions=LlvmInstructionContainer(instructions))
+        return LlvmFunction(name=function_name, arguments=InstructionArgumentContainer(arguments), return_type=return_type, instructions=LlvmInstructionContainer(instructions))
 
 class LlvmParser:
 

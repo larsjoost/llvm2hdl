@@ -6,7 +6,6 @@ from typing import List, Optional
 from function_container_interface import FunctionContainerInterface
 from function_contents_interface import FunctionContentsInterface
 from instruction_argument import InstructionArgument
-from language_generator import LanguageGeneratorCallData
 from llvm_globals_container import GlobalsContainer
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
@@ -48,7 +47,7 @@ class VhdlGeneratorInterface(ABC):
     
 
 class VhdlProcessGenerator(VhdlGeneratorInterface):
-    calls: List[VhdlInstruction]
+    instructions: List[VhdlInstruction]
 
     def get_instance_name(self) -> str:
         raise NotImplementedError()
@@ -60,24 +59,26 @@ class VhdlProcessGenerator(VhdlGeneratorInterface):
         raise NotImplementedError()
 
     def add_process_call(self, instruction: VhdlInstruction) -> None: 
-        self.calls.append(instruction)
+        self.instructions.append(instruction)
 
     def is_process(self) -> bool:
         return True
 
-    def _get_input_arguments(self, call: LanguageGeneratorCallData, globals: GlobalsContainer) -> List[str]:
-        return [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals).signal_name for i in call.operands]
+    def _get_input_arguments(self, instruction: VhdlInstruction, globals: GlobalsContainer) -> List[str]:
+        operands = instruction.get_operands()
+        assert operands is not None
+        return [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals).signal_name for i in operands.arguments]
 
-    def _get_function_call(self, call: LanguageGeneratorCallData, globals: GlobalsContainer) -> str:
-        arguments = ", ".join(self._get_input_arguments(call=call, globals=globals))
-        return f"{call.opcode}({arguments})"
+    def _get_function_call(self, instruction: VhdlInstruction, globals: GlobalsContainer) -> str:
+        arguments = ", ".join(self._get_input_arguments(instruction=instruction, globals=globals))
+        return f"{instruction.get_name()}({arguments})"
 
     def _get_instance_calls(self, globals: GlobalsContainer) -> List[str]:
-        return [self._get_function_call(call=i, globals=globals) for i in self.calls]
+        return [self._get_function_call(instruction=i, globals=globals) for i in self.instructions]
 
     def _get_variables(self) -> List[str]:
-        variables = []
-        for i in self.calls:
+        variables: List[str] = []
+        for i in self.instructions:
             variables.extend(i.get_variable_declarations())
         return variables
 
@@ -199,7 +200,7 @@ port map (
     def _get_component_instantiation_port_map(self, container: FunctionContainerInterface, globals: GlobalsContainer) -> str:
         vhdl_port = VhdlPortGenerator()
         input_ports_map = ["-- Input ports"] + self._get_input_port_maps(container=container, globals=globals)
-        output_port_map = ["-- Output ports"] + vhdl_port.get_output_port_map(output_port=self.data.output_port)
+        output_port_map = ["-- Output ports"] + vhdl_port.get_output_port_map(output_port=self.instruction.get_output_port())
         memory_port_map = ["-- Memory ports"] + self._get_component_instantiation_memory_port_map(container=container)
         standard_port_map =  ["-- Standard port map"] + vhdl_port.get_standard_ports_map(instance_name=self.get_instance_name(), 
                                                                                          previous_instance_name=self._get_previous_instance_name())
@@ -257,12 +258,15 @@ end process;
         function_contents.write_body(f"end block {block_name};")
  
     def _input_ports(self, globals: GlobalsContainer) -> List[VhdlInstructionArgument]:
-        return [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals) for i in self.instruction.get_operands()]
+        operands = self.instruction.get_operands()
+        assert operands is not None
+        return [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals) for i in operands.arguments]
         
     def _get_output_port_type(self) -> str:
-        assert self.data.output_port is not None, \
+        output_port = self.instruction.get_output_port()
+        assert output_port is not None, \
             f"Instance {self.get_instance_name()} output port is not defined"
-        return self.data.output_port.get_type_declarations()
+        return output_port.get_type_declarations()
 
     def _write_instance_signals(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
         vhdl_port = VhdlPortGenerator()
@@ -291,7 +295,7 @@ class VhdlReturnGenerator(VhdlGeneratorInterface):
     data_type: TypeDeclaration
     operands: List[InstructionArgument]
 
-    def add_process_call(self, data: LanguageGeneratorCallData) -> None: 
+    def add_process_call(self, instruction: VhdlInstruction) -> None: 
         raise NotImplementedError()
 
     def get_instance_name(self) -> str:
@@ -328,7 +332,7 @@ class VhdlGenerator:
             return None
         return self._previous_instance.instance_name
 
-    def add_instruction(self, instruction: VhdlInstruction) -> None:
+    def _add_instruction(self, instruction: VhdlInstruction) -> None:
         entity_name = instruction.get_name()
         instance_name = f"{entity_name}_{self._instance_index}"
         instance = VhdlInstanceGenerator(instruction=instruction, instance_index=self._instance_index, entity_name=entity_name, 
@@ -342,9 +346,9 @@ class VhdlGenerator:
             return VhdlProcessGenerator()
         return self._generators[-1]
     
-    def process_call(self, data: LanguageGeneratorCallData) -> None:
+    def _add_process_call(self, instruction: VhdlInstruction) -> None:
         process = self._get_last_process()
-        process.add_process_call(data=data)
+        process.add_process_call(instruction=instruction)
 
     def return_operation(self, data_type: TypeDeclaration, operands: List[InstructionArgument]) -> None:
         pass
@@ -376,9 +380,9 @@ m_tag <= tag_out_i.tag;
         self._write_instance_signals(container=container)
         for instruction in instructions.instructions:
             if instruction.access_register(external_pointer_names=external_pointer_names):
-                self.add_process_call(instruction=instruction)
+                self._add_process_call(instruction=instruction)
             else:
-                self.add_instruction(instrucction=instruction)
+                self._add_instruction(instruction=instruction)
         for generator in self._generators:
             generator.generate_code(function_contents=function_contents, container=container, globals=module.module.globals)
         self._write_return(function_contents=function_contents)
