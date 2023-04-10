@@ -13,11 +13,11 @@ class VhdlInstanceWriter:
         for port in ports.ports:
             if port.is_input():
                 name = port.get_name()
-                function_contents.write_body(f"tag_in_i.{name} <= {name};")
+                function_contents.write_body(f"tag_in_i.var_{name} <= {name};")
 
     def write_instances(self, function: VhdlFunction, function_contents: VhdlFunctionContents, 
-                        container: VhdlFunctionContainer, module: VhdlModule) -> None:
+                        module: VhdlModule) -> None:
         self._write_input_tag_assignment(ports=function.get_ports(), function_contents=function_contents)
         instance_generator = VhdlInstanceGenerator()
-        instance_generator.generate_code(function=function, function_contents=function_contents, container=container, module=module)
+        instance_generator.generate_code(function=function, function_contents=function_contents, module=module)
  

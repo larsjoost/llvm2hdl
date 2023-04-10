@@ -41,6 +41,8 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
         return []
     def get_generic_map(self) -> Optional[List[str]]:
         return None
+    def is_return_instruction(self) -> bool:
+        return False
 
 @dataclass
 class LlvmInstructionContainer:

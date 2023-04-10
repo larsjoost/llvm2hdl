@@ -27,6 +27,8 @@ class InstructionArgument:
         if isinstance(self.signal_name, LlvmType):
             return self.signal_name.is_integer()
         return False
+    def is_variable(self) -> bool:
+        return self.signal_name.is_variable()
 
 @dataclass
 class InstructionArgumentContainer:

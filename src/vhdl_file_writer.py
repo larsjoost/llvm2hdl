@@ -7,7 +7,7 @@ from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_entity import VhdlEntity
 from vhdl_function import VhdlFunction
-from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable, VhdlFunctionContainer
+from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_writer import VhdlInstanceWriter
@@ -18,7 +18,6 @@ from ports import PortContainer
 class VhdlFunctionGenerator(FileWriterInterface):
 
     function_contents: VhdlFunctionContents
-    container: VhdlFunctionContainer = VhdlFunctionContainer()
 
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         return VhdlCodeGenerator().get_comment(current_frame=current_frame)
@@ -30,8 +29,8 @@ class VhdlFunctionGenerator(FileWriterInterface):
         tag_width = " + ".join(total_data_width)
         self.function_contents.write_declaration(f"constant c_tag_width : positive := {tag_width};")
         
-    def _write_tag_record(self) -> None:
-        tag_elements = VhdlPortGenerator().get_tag_elements(ports=self.container.ports, signals=self.container.signals)
+    def _write_tag_record(self, function_contents: VhdlFunctionContents) -> None:
+        tag_elements = VhdlPortGenerator().get_tag_elements(ports=function_contents.get_ports(), signals=function_contents.get_signals())
         record_elements = "\n".join(f"{name} {declaration}" for name, declaration in tag_elements)
         comment = VhdlCodeGenerator().get_comment() 
         self.function_contents.write_declaration(f"""
@@ -84,49 +83,47 @@ end function tag_to_std_ulogic_vector;
         for i in variables:
             self.function_contents.write_declaration(i.write_variable())
 
-    def _write_signals(self) -> None:
-        self.function_contents.write_declaration("signal tag_in_i, tag_out_i : tag_t;")
-        signal_declaration = "\n".join(signal.get_signal_declaration() for signal in self.container.signals)
-        self.function_contents.write_declaration(signal_declaration)
-        signals = self.container.instance_signals.get_signals()
-        self.function_contents.write_declaration(signals)
+    def _write_signals(self, function_contents: VhdlFunctionContents) -> None:
+        function_contents.write_declaration("signal tag_in_i, tag_out_i : tag_t;")
+        signals = function_contents.get_instance_signals()
+        function_contents.write_declaration(signals)
 
-    def _write_declarations_to_header(self) -> None:
-        self._write_variables(variables=self.container.variables)
-        self._write_constants(constants=self.container.constants)
-        self._write_total_data_width(signals=self.container.signals, ports=self.container.ports)
-        self._write_tag_record()
-        record_items = VhdlPortGenerator().get_tag_item_names(ports=self.container.ports, signals=self.container.signals)
+    def _write_declarations_to_header(self, function_contents: VhdlFunctionContents) -> None:
+        self._write_variables(variables=function_contents.get_variables())
+        self._write_constants(constants=function_contents.get_constants())
+        self._write_total_data_width(signals=function_contents.get_signals(), ports=function_contents.get_ports())
+        self._write_tag_record(function_contents=self.function_contents)
+        record_items = VhdlPortGenerator().get_tag_item_names(ports=function_contents.get_ports(), signals=function_contents.get_signals())
         self._write_function_conv_tag(record_items=record_items)
         self._write_function_tag_to_std_ulogic_vector(record_items=record_items)
-        self._write_signals()
+        self._write_signals(function_contents=function_contents)
         
     def _write_references_to_trailer(self) -> None:
-        self._write_references(references=self.container.references)
+        self._write_references(references=self.function_contents.get_references())
         
     def write_constant(self, constant: DeclarationBase):
-        self.container.constants.append(FileWriterConstant(constant=constant))
+        self.function_contents.add_constant(FileWriterConstant(constant=constant))
 
     def write_reference(self, reference: DeclarationBase, functions: LlvmFunctionContainer):
-        self.container.references.append(FileWriterReference(reference=reference, functions=functions))
+        self.function_contents.add_reference(FileWriterReference(reference=reference, functions=functions))
 
     def write_variable(self, variable: DeclarationBase):
-        self.container.variables.append(FileWriterVariable(variable=variable))
+        self.function_contents.add_variable(FileWriterVariable(variable=variable))
 
     def _write_include_libraries(self) -> None:
         self.function_contents.write_header(VhdlIncludeLibraries().get())
         
     def _write_architecture(self, function: VhdlFunction, module: VhdlModule) -> None:
-        VhdlInstanceWriter().write_instances(function=function, function_contents=self.function_contents, container=self.container, module=module)
+        VhdlInstanceWriter().write_instances(function=function, function_contents=self.function_contents, module=module)
         
     def write_function(self, function: VhdlFunction, module: VhdlModule) -> VhdlFunctionContents:
         self.function_contents = VhdlFunctionContents(name=function.get_entity_name())    
-        self.container.ports = function.get_ports()
+        self.function_contents.container.ports = function.get_ports()
         self.function_contents.write_header(f"-- Autogenerated by {self._get_comment()}")
         self._write_include_libraries()
         self.function_contents.write_header(VhdlEntity().get_entity(entity_name=function.get_entity_name(), ports=function.get_ports()))
         self._write_architecture(function=function, module=module)
-        self._write_declarations_to_header()
+        self._write_declarations_to_header(function_contents=self.function_contents)
         self._write_references_to_trailer()
         return self.function_contents
 

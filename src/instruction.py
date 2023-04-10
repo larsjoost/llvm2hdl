@@ -35,7 +35,9 @@ class ReturnInstruction(InstructionInterface):
         return None
     def get_external_pointer_names(self) -> List[str]:
         return []
-
+    def is_return_instruction(self) -> bool:
+        return True
+    
 @dataclass
 class BitcastInstruction(InstructionInterface):
     opcode: str

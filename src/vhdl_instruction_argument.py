@@ -11,6 +11,7 @@ from vhdl_type import VhdlType, VhdlTypeFactory
 
 @dataclass
 class VhdlInstructionArgument:
+    argument: InstructionArgument
     signal_name: str
     vhdl_type: VhdlType
     data_type : TypeDeclaration
@@ -43,7 +44,12 @@ class VhdlInstructionArgument:
         if self.global_declaration is None:
             return False
         return self.global_declaration.is_register()
-
+    def is_variable(self) -> bool:
+        return self.argument.is_variable()
+    def get_variable_name(self) -> str:
+        vhdl_type = VhdlTypeFactory(llvm_type=self.argument.signal_name).resolve()
+        return vhdl_type.get_name()
+    
 class VhdlInstructionArgumentFactory:
 
     def get(self, instruction_argument: InstructionArgument, globals: GlobalsContainer) -> VhdlInstructionArgument:
@@ -51,7 +57,7 @@ class VhdlInstructionArgumentFactory:
         name = instruction_argument.signal_name.translate_name()
         signal_name = VhdlInstanceName(name=name).get_entity_name()
         global_declaration = globals.get_declaration(name=instruction_argument.signal_name)
-        return VhdlInstructionArgument(signal_name=signal_name, vhdl_type=vhdl_type, 
+        return VhdlInstructionArgument(argument=instruction_argument, signal_name=signal_name, vhdl_type=vhdl_type, 
                                        data_type=instruction_argument.data_type, 
                                        unnamed=instruction_argument.unnamed, 
                                        port_name=instruction_argument.port_name,

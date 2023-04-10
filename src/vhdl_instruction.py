@@ -19,12 +19,19 @@ class VhdlInstruction:
 
     def get_name(self) -> str:
         instance_name = self.instruction.get_instance_name()
-        assert instance_name is not None
-        return instance_name
+        assert instance_name is not None, f"Instruction {self.instruction} has no instance name"
+        return VhdlCodeGenerator().get_vhdl_name(instance_name)
+
+    def get_destination_variable_name(self) -> Optional[str]:
+        destination = self.instruction.get_destination()
+        return None if destination is None else VhdlCodeGenerator().get_destination_variable_name(name=destination)
 
     def get_library(self) -> str:
         library = self.instruction.get_library()
         return "work" if library is None else library
+
+    def is_valid(self) -> bool:
+        return self.instruction.is_valid()
 
     def get_source_line(self) -> str:
         return self.instruction.get_source_line()
@@ -57,6 +64,9 @@ class VhdlInstruction:
         operands = self.get_operands()
         assert operands is not None
         return [self._get_variable_declaration(operand=i) for i in operands.arguments]
+
+    def is_return_instruction(self) -> bool:
+        return self.instruction.is_return_instruction()
 
 @dataclass
 class VhdlInstructionContainer:

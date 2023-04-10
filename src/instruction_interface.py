@@ -47,3 +47,5 @@ class InstructionInterface(ABC):
     @abstractmethod
     def get_external_pointer_names(self) -> List[str]:
         pass
+    def is_return_instruction(self) -> bool:
+        return False

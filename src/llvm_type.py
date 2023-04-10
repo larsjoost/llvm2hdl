@@ -18,6 +18,8 @@ class LlvmType(ABC):
         return None
     def equals(self, other) -> bool:
         return False
+    def is_variable(self) -> bool:
+        return False
 
 class LlvmTypeMatch(ABC):
     @abstractmethod
@@ -45,6 +47,8 @@ class LlvmVariableName(LlvmName, LlvmType):
         return self.get_name() == other.get_name()
     def get_name(self) -> str:
         return self.name
+    def is_variable(self) -> bool:
+        return True
 
 class LlvmVariableNameMatch(LlvmTypeMatch):
     def match(self, text: str) -> bool:

@@ -43,7 +43,7 @@ class VhdlVariableName(VhdlName, VhdlType):
 
 class VhdlVariableNameMatch(VhdlTypeMatch):
     def match(self, llvm_type: LlvmType) -> bool:
-        return isinstance(llvm_type, LlvmVariableName)
+        return llvm_type.is_variable()
     def get(self, llvm_type: LlvmType) -> VhdlType:
         return VhdlVariableName(name=llvm_type.translate_name())
 

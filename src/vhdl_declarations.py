@@ -30,7 +30,7 @@ class VhdlDeclarations:
         return self.data_type.is_void()
 
 @dataclass
-class VhdlSignal(SignalInterface):
+class VhdlTagSignal(SignalInterface):
     instance : str
     name : str
     type : VhdlDeclarations

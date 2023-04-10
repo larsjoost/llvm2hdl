@@ -17,6 +17,8 @@ from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 
+from function_logger import log_entry_and_exit
+
 
 @dataclass
 class InstructionPosition:
@@ -140,6 +142,8 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return self.instruction.is_memory()
     def map_function_arguments(self) -> bool:
         return self.instruction.map_function_arguments()
+    def is_return_instruction(self) -> bool:
+        return self.instruction.is_return_instruction()
 
 class LlvmInstructionLabelParser:
 
@@ -202,13 +206,14 @@ class ReturnInstructionParser(LlvmInstructionParserInterface):
         """
         instruction is expected to be one of:
             "ret i32 %add"
+            "ref float %add"
             "ret void"
         """
         utils = LlvmParserUtilities()
         a = utils.split_space(arguments.instruction)
         opcode = a[0]
-        data_width = int(a[1].strip())
-        data_type = LlvmIntegerDeclaration(data_width=data_width)
+        data_type_position = a[1]
+        data_type = LlvmDeclarationFactory().get(data_type=data_type_position, constants=arguments.constants)
         try:
             signal_name = LlvmVariableName(a[2].strip())
             argument = InstructionArgument(signal_name=signal_name, data_type=data_type)
@@ -445,6 +450,8 @@ class LlvmGeneralInstructionParser:
     def _parse_line(self, line: LlvmSourceLine, constants: GlobalsContainer) -> Optional[LlvmInstructionInterface]:
         if line.is_label():
             return LlvmInstructionLabelParser().parse(source_line=line)
+        if line.is_end_bracket():
+            return None
         return LlvmInstructionCommandParser().parse(source_line=line, constants=constants)
 
     def parse(self, lines: List[LlvmSourceLine], constants: GlobalsContainer) -> List[LlvmInstructionInterface]:
@@ -488,8 +495,8 @@ class LlvmFunctionParser:
         }
         """
         function_name, arguments, return_type = self._parse_function_description(source_function.lines[0].line)
-        comands_excluding_right_bracket = source_function.lines[1:-2]
-        instructions = LlvmGeneralInstructionParser().parse(lines=comands_excluding_right_bracket, constants=constants)
+        comands_excluding_description = source_function.lines[1:]
+        instructions = LlvmGeneralInstructionParser().parse(lines=comands_excluding_description, constants=constants)
         return LlvmFunction(name=function_name, arguments=InstructionArgumentContainer(arguments), return_type=return_type, instructions=LlvmInstructionContainer(instructions))
 
 class LlvmParser:

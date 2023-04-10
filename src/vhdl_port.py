@@ -196,7 +196,7 @@ class VhdlPortGenerator(PortGenerator):
         for port in ports.ports:
             if port.is_input():
                 yield (
-                    port.get_name(),
+                    f"var_{port.get_name()}",
                     f": std_ulogic_vector(0 to {port.get_name()}'length - 1);",
                 )
         for signal in signals:
@@ -242,20 +242,14 @@ class VhdlPortGenerator(PortGenerator):
         vector_range = f"(0 to {data_width} - 1)"
         return f"signal {signal_name} : std_ulogic_vector{vector_range};"
 
-    def _is_tag_element(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[SignalInterface]) -> bool:
-        name = input_port.signal_name
-        tag_item_names = self.get_tag_item_names(ports=ports, signals=signals)
-        return name in tag_item_names
-
-    def _get_input_port_name(self, input_port: VhdlInstructionArgument, ports: PortContainer, signals: List[SignalInterface]) -> str:
-        signal_name = input_port.get_value()
-        if self._is_tag_element(input_port=input_port, ports=ports, signals=signals):
-            signal_name = f"tag_i.{signal_name}"
-        return signal_name
+    def _get_input_port_name(self, input_port: VhdlInstructionArgument) -> str:
+        if not input_port.is_variable():
+            return input_port.get_value()
+        variable_name = input_port.get_variable_name()
+        return f"tag_i.{variable_name}"
     
-    def _get_port_map_arguments(self, input_port: VhdlInstructionArgument, 
-                                ports: PortContainer, signals: List[SignalInterface]) -> List[str]:
-        signal_name = self._get_input_port_name(input_port=input_port, ports=ports, signals=signals)
+    def _get_port_map_arguments(self, input_port: VhdlInstructionArgument) -> List[str]:
+        signal_name = self._get_input_port_name(input_port=input_port)
         data_width = input_port.get_data_width()
         arguments = [signal_name, data_width]
         array_index = input_port.get_array_index()
@@ -263,10 +257,9 @@ class VhdlPortGenerator(PortGenerator):
             arguments.append(array_index)
         return arguments
 
-    def get_port_signal_assignment(self, input_port: VhdlInstructionArgument, 
-                                   ports: PortContainer, signals: List[SignalInterface]) -> str:
+    def get_port_signal_assignment(self, input_port: VhdlInstructionArgument) -> str:
         signal_name = self._get_input_port_signal_name(input_port)
-        arguments = self._get_port_map_arguments(input_port=input_port, ports=ports, signals=signals)
+        arguments = self._get_port_map_arguments(input_port=input_port)
         argument_list = ", ".join(arguments)
         return f"{signal_name} <= get({argument_list});"
 
