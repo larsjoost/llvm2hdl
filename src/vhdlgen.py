@@ -10,10 +10,11 @@ from vhdl_module import VhdlModule
 class VhdlGen:
 
     def _generate_function(self, module: LlvmModule, function: LlvmFunction) -> VhdlFunctionContents:
-        file_generator = VhdlFunctionGenerator()
-        module.write_globals(file_writer=file_generator)
         vhdl_function = VhdlFunction(function=function)
         vhdl_module = VhdlModule(module=module)
+        function_contents = VhdlFunctionContents(name=vhdl_function.get_entity_name())    
+        file_generator = VhdlFunctionGenerator(function_contents=function_contents)
+        module.write_globals(file_writer=file_generator)
         return file_generator.write_function(function=vhdl_function, module=vhdl_module)    
 
     def parse(self, file_name: str, module: LlvmModule) -> None:

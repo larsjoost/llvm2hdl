@@ -245,17 +245,17 @@ generic map (
         instance_name = self.get_instance_name()
         data_type = self.get_data_type()
         destination = self.instruction.get_destination_variable_name()
-        assert destination is not None
-        function_contents.write_tag_declaration(signal_name=tag_name, instance_name=instance_name, destination=destination, data_type=data_type)
-        function_contents.write_body(f"""
-{comment}   
-process (all)
-begin
-  {tag_name} <= conv_tag({self._local_tag_out});
-  {tag_name}.{destination} <= m_tdata_i;
-end process;
+        if destination is not None:
+            function_contents.write_tag_declaration(signal_name=tag_name, instance_name=instance_name, destination=destination, data_type=data_type)
+            function_contents.write_body(f"""
+    {comment}   
+    process (all)
+    begin
+    {tag_name} <= conv_tag({self._local_tag_out});
+    {tag_name}.{destination} <= m_tdata_i;
+    end process;
 
-        """)
+            """)
 
     def _write_instance_contents(self, block_name: str, function_contents: FunctionContentsInterface, 
                                  globals: GlobalsContainer) -> None:
@@ -267,7 +267,8 @@ end process;
  
     def _input_ports(self, globals: GlobalsContainer) -> List[VhdlInstructionArgument]:
         operands = self.instruction.get_operands()
-        assert operands is not None
+        if operands is None:
+            return []
         return [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals) for i in operands.arguments]
         
     def _get_output_port_type(self) -> str:
@@ -359,14 +360,17 @@ class VhdlGenerator:
         process = self._get_last_process()
         process.add_process_call(instruction=instruction)
 
-    def _get_return_driver(self) -> str:
+    def _get_return_driver(self) -> Optional[str]:
         operands = self._return_instruction.get_operands()
         assert operands is not None
+        if len(operands.arguments) != 1:
+            return None
         argument = operands.arguments[0]
         return VhdlCodeGenerator().translate_variable_name(name=argument.get_name())
 
     def _write_return(self, function_contents: FunctionContentsInterface) -> None:
         return_driver = self._get_return_driver()
+        return_instruction = "" if return_driver is None else f"m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);"
         previous_instance_name = self._get_previous_instance_name()
         assert self._previous_instance is not None, "No instance was created"
         previous_instance_tag_name = self._previous_instance.get_tag_name()
@@ -374,7 +378,7 @@ class VhdlGenerator:
 tag_out_i <= {previous_instance_tag_name};
 m_tvalid <= {previous_instance_name}_m_tvalid_i;
 {previous_instance_name}_m_tready_i <= m_tready;
-m_tdata <= conv_std_ulogic_vector(tag_out_i.{return_driver}, m_tdata'length);
+{return_instruction}
 m_tag <= tag_out_i.tag;
         """)
 

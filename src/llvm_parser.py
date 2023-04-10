@@ -211,8 +211,8 @@ class ReturnInstructionParser(LlvmInstructionParserInterface):
         """
         utils = LlvmParserUtilities()
         a = utils.split_space(arguments.instruction)
-        opcode = a[0]
-        data_type_position = a[1]
+        opcode = a[0].strip()
+        data_type_position = a[1].strip()
         data_type = LlvmDeclarationFactory().get(data_type=data_type_position, constants=arguments.constants)
         try:
             signal_name = LlvmVariableName(a[2].strip())

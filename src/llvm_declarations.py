@@ -175,7 +175,7 @@ class LlvmTypeResolver:
         for i in declaration_types:
             if i.match():
                 return i.get()
-        assert False, f"Could not resolve data type: {data_type}"
+        assert False, f'Could not resolve data type: "{data_type}"'
 
 @dataclass
 class LlvmArrayDeclarationFactory(TypeDeclarationFactory):

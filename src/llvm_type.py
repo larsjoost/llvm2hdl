@@ -38,7 +38,8 @@ class LlvmVariableName(LlvmName, LlvmType):
     Example %0, %a, %x.coerce, @_Z3Addi_1
     """
     def _to_string(self) -> str:
-        return self.name.replace("%", "").replace(".", "_").replace("@_", "").replace("@", "")
+        name = self.name.replace("%", "").replace(".", "_").replace("@_", "").replace("@", "")
+        return "nil" if name == "_" else name
     def translate_name(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:

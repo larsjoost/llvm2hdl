@@ -23,8 +23,7 @@ class VhdlFunction:
         return VhdlInstructionContainer(instructions)
 
     def get_memory_names(self) -> List[str]:
-        return self.function.get_memory_names()
+        return [VhdlCodeGenerator().get_vhdl_name(i) for i in self.function.get_memory_names()]
     
     def get_memory_instance_names(self) -> List[str]:
-        return self.function.get_memory_instance_names()
-    
+        return [VhdlCodeGenerator().get_vhdl_name(i) for i in self.function.get_memory_instance_names()]
