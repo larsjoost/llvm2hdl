@@ -1,7 +1,7 @@
 
 from typing import List
 from ports import PortContainer
-from vhdl_port import VhdlPortGenerator
+from vhdl_port_generator import VhdlPortGenerator
 from vhdl_instance_name import VhdlInstanceName
 
 class VhdlEntity:

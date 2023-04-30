@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from file_writer_interface import FileWriterInterface
-from llvm_constant import DeclarationContainer
-from llvm_function import LlvmFunctionContainer
+from llvm_constant import DeclarationBase, DeclarationContainer
 from llvm_type import LlvmType, LlvmVariableName
 
 @dataclass
@@ -10,23 +8,15 @@ class GlobalsContainer:
     
     declarations: List[DeclarationContainer]
 
-    def write_constants(self, file_writer: FileWriterInterface) -> None:
-        for i in self.declarations:
-            if i.is_constant():
-                file_writer.write_constant(constant=i.declaration)
-    
-    def write_references(self, file_writer: FileWriterInterface, 
-                         functions: LlvmFunctionContainer) -> None:
-        for i in self.declarations:
-            if i.is_reference():
-                file_writer.write_reference(reference=i.declaration, 
-                                            functions=functions)
-    
-    def write_variables(self, file_writer: FileWriterInterface) -> None:
-        for i in self.declarations:
-            if i.is_variable():
-                file_writer.write_variable(variable=i.declaration)
-    
+    def get_constants(self) -> List[DeclarationBase]:
+        return [i.declaration for i in self.declarations if i.is_constant()]
+        
+    def get_variables(self) -> List[DeclarationBase]:
+        return [i.declaration for i in self.declarations if i.is_variable()]
+        
+    def get_references(self) -> List[DeclarationBase]:
+        return [i.declaration for i in self.declarations if i.is_reference()]
+
     def _get_match(self, name: Optional[LlvmType]) \
         -> Optional[DeclarationContainer]:
         return next(

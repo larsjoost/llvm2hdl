@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from llvm_type_declaration import TypeDeclaration
 from signal_interface import SignalInterface
@@ -31,12 +31,13 @@ class VhdlDeclarations:
 
 @dataclass
 class VhdlTagSignal(SignalInterface):
-    instance : str
+    instance : Optional[str]
     name : str
     type : VhdlDeclarations
     def get_signal_declaration(self) -> str:
         return f"signal {self.name} : tag_t;"
     def get_record_item(self) -> Tuple[str, str]:
+        assert self.instance is not None
         return self.instance, f": {self.type.get_type_declarations()};"
     def get_data_width(self) -> str:
         return self.type.get_data_width()

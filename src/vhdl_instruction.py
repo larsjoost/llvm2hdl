@@ -24,7 +24,7 @@ class VhdlInstruction:
 
     def get_destination_variable_name(self) -> Optional[str]:
         destination = self.instruction.get_destination()
-        return None if destination is None else VhdlCodeGenerator().get_destination_variable_name(name=destination)
+        return None if destination is None else VhdlCodeGenerator().get_destination_variable_name(llvm_name=destination.get_name())
 
     def get_library(self) -> str:
         library = self.instruction.get_library()

@@ -1,10 +1,10 @@
 
+from typing import List
+from llvm_globals_container import GlobalsContainer
 from ports import PortContainer
 from vhdl_function import VhdlFunction
-from vhdl_function_container import VhdlFunctionContainer
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_instance_generator import VhdlInstanceGenerator
-from vhdl_module import VhdlModule
 
 class VhdlInstanceWriter:
 
@@ -16,8 +16,8 @@ class VhdlInstanceWriter:
                 function_contents.write_body(f"tag_in_i.var_{name} <= {name};")
 
     def write_instances(self, function: VhdlFunction, function_contents: VhdlFunctionContents, 
-                        module: VhdlModule) -> None:
+                        external_pointer_names: List[str], globals: GlobalsContainer) -> None:
         self._write_input_tag_assignment(ports=function.get_ports(), function_contents=function_contents)
         instance_generator = VhdlInstanceGenerator()
-        instance_generator.generate_code(function=function, function_contents=function_contents, module=module)
+        instance_generator.generate_code(function=function, function_contents=function_contents, external_pointer_names=external_pointer_names, globals=globals)
  

@@ -2,7 +2,7 @@
 from typing import List
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_function_contents import VhdlFunctionContents
-from vhdl_port import VhdlMemoryPort
+from vhdl_memory_port import VhdlMemoryPort
 
 
 class VhdlMemoryGenerator:

@@ -5,12 +5,12 @@ from types import FrameType
 from typing import Optional
 
 from frame_info import FrameInfoFactory
-from llvm_type import LlvmVariableName
 
 class VhdlCodeGenerator:
     
     def get_vhdl_name(self, llvm_name: str) -> str:
-        return llvm_name.replace("@", "").strip("_").replace("__", "_")
+        name = llvm_name.replace("%", "").replace("@", "").strip("_").replace("__", "_").replace(".", "_")
+        return "nil" if name == "_" else name
 
     def get_variable_name(self, name: str) -> str:
         return f"{name}_v"
@@ -18,8 +18,8 @@ class VhdlCodeGenerator:
     def translate_variable_name(self, name: str) -> str:
         return f"var_{name}"
 
-    def get_destination_variable_name(self, name: LlvmVariableName) -> str:
-        return self.translate_variable_name(name = name.translate_name())
+    def get_destination_variable_name(self, llvm_name: str) -> str:
+        return self.translate_variable_name(name = self.get_vhdl_name(llvm_name))
     
     def get_signal_name(self, name: str) -> str:
         return f"{name}_i"

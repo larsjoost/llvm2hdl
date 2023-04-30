@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from messages import Messages
+from vhdl_code_generator import VhdlCodeGenerator
 
 class LlvmType(ABC):
     @abstractmethod
@@ -38,8 +39,7 @@ class LlvmVariableName(LlvmName, LlvmType):
     Example %0, %a, %x.coerce, @_Z3Addi_1
     """
     def _to_string(self) -> str:
-        name = self.name.replace("%", "").replace(".", "_").replace("@_", "").replace("@", "")
-        return "nil" if name == "_" else name
+        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.name)
     def translate_name(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:
@@ -62,7 +62,7 @@ class LlvmConstantName(LlvmName, LlvmType):
     Example @__const_main_n.n
     """
     def _to_string(self) -> str:
-        return self.name.split(".")[-1]
+        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.name)
     def translate_name(self) -> str:
         return self._to_string()
     def is_name(self) -> bool:

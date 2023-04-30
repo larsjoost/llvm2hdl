@@ -1,6 +1,6 @@
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from llvm_type_declaration import TypeDeclaration
 from ports import PortContainer
@@ -13,7 +13,7 @@ class FunctionContentsInterface(ABC):
         pass
 
     @abstractmethod
-    def write_tag_declaration(self, signal_name: str, instance_name: str, destination: str, data_type: TypeDeclaration) -> None:
+    def write_tag_declaration(self, signal_name: str, instance_name: str, destination: Optional[str], data_type: TypeDeclaration) -> None:
         pass
 
     @abstractmethod

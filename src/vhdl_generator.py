@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from types import FrameType
 from typing import List, Optional
-from function_container_interface import FunctionContainerInterface
 from function_contents_interface import FunctionContentsInterface
 from instruction_argument import InstructionArgument
 from llvm_globals_container import GlobalsContainer
@@ -13,8 +12,8 @@ from vhdl_declarations import VhdlDeclarations, VhdlTagSignal
 from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction import VhdlInstruction, VhdlInstructionContainer
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
-from vhdl_module import VhdlModule
-from vhdl_port import VhdlMemoryPort, VhdlPortGenerator
+from vhdl_port_generator import VhdlPortGenerator
+from vhdl_memory_port import VhdlMemoryPort
 from vhdl_signal_name import VhdlSignalName
 
 from function_logger import log_entry_and_exit
@@ -137,7 +136,7 @@ class VhdlInstanceGenerator(VhdlGeneratorInterface):
         vhdl_port = VhdlPortGenerator()
         input_ports_signal_assignment = [
             vhdl_port.get_port_signal_assignment(input_port=i) 
-            for i in self._input_ports(globals=globals)]
+            for i in self._input_ports(instruction=self.instruction, globals=globals)]
         for i in input_ports_signal_assignment:
             function_contents.write_body(i)
 
@@ -197,7 +196,7 @@ port map (
         return [x for xs in xss for x in xs]
 
     def _get_input_port_maps(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> List[str]:
-        input_ports_map = [self._get_input_port_map(input_port=i, function_contents=function_contents) for i in self._input_ports(globals=globals)]
+        input_ports_map = [self._get_input_port_map(input_port=i, function_contents=function_contents) for i in self._input_ports(instruction=self.instruction, globals=globals)]
         return self._flatten(input_ports_map)
  
     def _get_component_instantiation_port_map(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> str:
@@ -245,17 +244,17 @@ generic map (
         instance_name = self.get_instance_name()
         data_type = self.get_data_type()
         destination = self.instruction.get_destination_variable_name()
-        if destination is not None:
-            function_contents.write_tag_declaration(signal_name=tag_name, instance_name=instance_name, destination=destination, data_type=data_type)
-            function_contents.write_body(f"""
-    {comment}   
-    process (all)
-    begin
-    {tag_name} <= conv_tag({self._local_tag_out});
-    {tag_name}.{destination} <= m_tdata_i;
-    end process;
+        destination_assignment = f"{tag_name}.{destination} <= m_tdata_i;" if destination is not None else ""
+        function_contents.write_tag_declaration(signal_name=tag_name, instance_name=instance_name, destination=destination, data_type=data_type)
+        function_contents.write_body(f"""
+{comment}   
+process (all)
+begin
+{tag_name} <= conv_tag({self._local_tag_out});
+{destination_assignment}
+end process;
 
-            """)
+        """)
 
     def _write_instance_contents(self, block_name: str, function_contents: FunctionContentsInterface, 
                                  globals: GlobalsContainer) -> None:
@@ -265,8 +264,8 @@ generic map (
         self._write_component_output_signal_assignment(function_contents=function_contents)
         function_contents.write_body(f"end block {block_name};")
  
-    def _input_ports(self, globals: GlobalsContainer) -> List[VhdlInstructionArgument]:
-        operands = self.instruction.get_operands()
+    def _input_ports(self, instruction: VhdlInstruction, globals: GlobalsContainer) -> List[VhdlInstructionArgument]:
+        operands = instruction.get_operands()
         if operands is None:
             return []
         return [VhdlInstructionArgumentFactory().get(instruction_argument=i, globals=globals) for i in operands.arguments]
@@ -277,16 +276,19 @@ generic map (
             f"Instance {self.get_instance_name()} output port is not defined"
         return output_port.get_type_declarations()
 
-    def _write_instance_signals(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
+    def _write_instance_input_ports(self, function_contents: FunctionContentsInterface, instruction: VhdlInstruction, globals: GlobalsContainer) -> None:
         vhdl_port = VhdlPortGenerator()
-        input_ports_signals = [vhdl_port.get_port_signal(input_port=i) for i in self._input_ports(globals=globals)]
+        input_ports_signals = [vhdl_port.get_port_signal(input_port=i) for i in self._input_ports(instruction=instruction, globals=globals)]
+        for i in input_ports_signals:
+            function_contents.write_body(i)
+        
+    def _write_instance_signals(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
         function_contents.write_body(self._get_comment())
         function_contents.write_body("signal tag_i : tag_t;")
         tag_signals = f"{self._local_tag_in}, {self._local_tag_out}"
         tag_type = "std_ulogic_vector(0 to c_tag_width - 1)"
         function_contents.write_body(f"signal {tag_signals} : {tag_type};")
-        for i in input_ports_signals:
-            function_contents.write_body(i)
+        self._write_instance_input_ports(function_contents=function_contents, instruction=self.instruction, globals=globals)
         function_contents.write_body(f"signal m_tdata_i : {self._get_output_port_type()};")
 
     def generate_code(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
@@ -402,9 +404,9 @@ m_tag <= tag_out_i.tag;
                     self._add_instruction(instruction=instruction)
 
     def generate_code(self, instructions: VhdlInstructionContainer, external_pointer_names: List[str], 
-                      function_contents: FunctionContentsInterface, module: VhdlModule) -> None:
-        self._write_instance_signals(function_contents=function_contents)
+                      function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
         self._generate_instructions(instructions=instructions, external_pointer_names=external_pointer_names)
+        self._write_instance_signals(function_contents=function_contents)
         for generator in self._generators:
-            generator.generate_code(function_contents=function_contents, globals=module.module.globals)
+            generator.generate_code(function_contents=function_contents, globals=globals)
         self._write_return(function_contents=function_contents)
