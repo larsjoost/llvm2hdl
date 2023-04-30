@@ -41,72 +41,36 @@ entity llvm_alloca is
     );
 end entity llvm_alloca;
 
+library memory;
+
 architecture rtl of llvm_alloca is
-
-  constant c_data_width : positive := s_wdata'length;
-
-  constant c_size : positive := size_bytes * 8 / c_data_width;
-
-  type memory_t is array (0 to c_size - 1) of std_ulogic_vector(0 to c_data_width - 1);
-
-  function get_initialization
-    return memory_t is
-    alias init : integer_array_t(0 to initialization'length - 1) is initialization;
-    variable x : memory_t;
-  begin
-    for i in memory_t'range loop
-      if i < initialization'length then
-        x(i) := std_ulogic_vector(to_signed(init(i), c_data_width));
-      else
-        x(i) := (others => '0');
-      end if;
-    end loop;
-    return x;
-  end function get_initialization;
-
-  signal araddr_i : integer range 0 to c_size - 1;
 
 begin
 
-  araddr_i <= to_integer(unsigned(s_araddr)) mod c_size;
-
-  process (clk) is
-    variable memory_v : memory_t := get_initialization;
-    variable awaddr_v : integer range 0 to c_size - 1;
-  begin
-    if rising_edge(clk) then
-      awaddr_v := to_integer(unsigned(s_awaddr)) mod c_size;
-      if s_wvalid = '1' and s_wready = '1' then
-        memory_v(awaddr_v) := s_wdata;
-      end if;
-      s_rdata  <= memory_v(araddr_i);
-      s_rid    <= s_arid;
-      s_rvalid <= s_arvalid;
-    end if;
-  end process;
-
-  s_arready <= '1';
-
-  s_wready <= '1';
-
-  process (clk)
-    variable memory_v : memory_t := get_initialization;
-  begin
-    if rising_edge(clk) then
-      if sreset = '1' then
-        s_bvalid <= '0';
-      else
-        if s_bready = '1' then
-          s_bvalid <= '0';
-        end if;
-        if s_wvalid = '1' and (s_bvalid = '0' or s_bready = '1') then
-          s_bvalid <= '1';
-          s_bid    <= s_wid;
-        end if;
-      end if;
-    end if;
-  end process;
-
+  ram_1: entity memory.ram
+    generic map (
+      size_bytes     => size_bytes,
+      initialization => initialization)
+    port map (
+      clk       => clk,
+      sreset    => sreset,
+      s_araddr  => s_araddr,
+      s_arid    => s_arid,
+      s_arvalid => s_arvalid,
+      s_arready => s_arready,
+      s_rdata   => s_rdata,
+      s_rid     => s_rid,
+      s_rvalid  => s_rvalid,
+      s_rready  => s_rready,
+      s_awaddr  => s_awaddr,
+      s_wready  => s_wready,
+      s_wvalid  => s_wvalid,
+      s_wdata   => s_wdata,
+      s_wid     => s_wid,
+      s_bready  => s_bready,
+      s_bvalid  => s_bvalid,
+      s_bid     => s_bid);
+  
   s_tready <= m_tready;
 
   m_tvalid <= s_tvalid;
@@ -114,16 +78,6 @@ begin
   m_tag <= s_tag;
 
   a <= std_ulogic_vector(to_unsigned(0, a'length));
-
-  --pragma synthesis_off
-
-  process is
-  begin  
-    report "Initialization = " & to_string(Initialization);
-    wait;
-  end process;
-  
-  --pragma synthesis_on
   
 end architecture rtl;
 

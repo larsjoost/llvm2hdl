@@ -10,12 +10,11 @@ from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_entity import VhdlEntity
 from vhdl_function import VhdlFunction
-from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable
+from vhdl_function_container import VhdlFileWriterConstant, VhdlFileWriterReference, VhdlFileWriterVariable
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_writer import VhdlInstanceWriter
 from vhdl_port_generator import VhdlPortGenerator
-
 
 @dataclass
 class VhdlModule:
@@ -73,18 +72,21 @@ end function tag_to_std_ulogic_vector;
 
         """)
         
-    def _write_constants(self, function_contents: VhdlFunctionContents, constants: List[FileWriterConstant]) -> None:
+    def _write_constants(self, function_contents: VhdlFunctionContents, constants: List[VhdlFileWriterConstant]) -> None:
         default_constants = [("c_mem_addr_width", 32), ("c_mem_data_width", 32), ("c_mem_id_width", 8)]
         for name, width in default_constants:
             function_contents.write_declaration(f"constant {name} : positive := {width};")
         for i in constants:
-            function_contents.write_declaration(i.write_constant())
-        
-    def _write_references(self, function_contents: VhdlFunctionContents, references: List[FileWriterReference]) -> None:
+            function_contents.write_declaration(i.get_constant_declaration())
+            memory = i.get_memory_instance()
+            function_contents.write_declaration(memory.get_memory_signals())
+            function_contents.write_body(memory.get_memory_instance())
+
+    def _write_references(self, function_contents: VhdlFunctionContents, references: List[VhdlFileWriterReference]) -> None:
         for i in references:
             function_contents.write_trailer(i.write_reference())
 
-    def _write_variables(self, function_contents: VhdlFunctionContents, variables: List[FileWriterVariable]) -> None:
+    def _write_variables(self, function_contents: VhdlFunctionContents, variables: List[VhdlFileWriterVariable]) -> None:
         for i in variables:
             function_contents.write_declaration(i.write_variable())
 
@@ -126,11 +128,11 @@ end function tag_to_std_ulogic_vector;
 
     def _write_globals(self, function_contents: VhdlFunctionContents) -> None:
         for constant in self.module.get_constants():
-            function_contents.add_constant(FileWriterConstant(constant=constant))
+            function_contents.add_constant(VhdlFileWriterConstant(constant=constant))
         for reference in self.module.get_references():
-            function_contents.add_reference(FileWriterReference(reference=reference, functions=self.module.functions))
+            function_contents.add_reference(VhdlFileWriterReference(reference=reference, functions=self.module.functions))
         for variable in self.module.get_variables():
-            function_contents.add_variable(FileWriterVariable(variable=variable))
+            function_contents.add_variable(VhdlFileWriterVariable(variable=variable))
 
     def _generate_function(self, function: LlvmFunction) -> VhdlFunctionContents:
         vhdl_function = VhdlFunction(function=function)

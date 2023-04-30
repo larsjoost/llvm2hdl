@@ -8,10 +8,11 @@ from function_contents_interface import FunctionContentsInterface
 from llvm_type_declaration import TypeDeclaration
 from ports import PortContainer
 from signal_interface import SignalInterface
-
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlTagSignal
-from vhdl_function_container import FileWriterConstant, FileWriterReference, FileWriterVariable, VhdlFunctionContainer
+from vhdl_function_container import VhdlFileWriterVariable, VhdlFunctionContainer
+from vhdl_file_writer_constant import VhdlFileWriterConstant
+from vhdl_file_writer_reference import VhdlFileWriterReference
 
 @dataclass
 class VhdlFunctionContents(FunctionContentsInterface):
@@ -42,22 +43,22 @@ class VhdlFunctionContents(FunctionContentsInterface):
     def get_ports(self) -> PortContainer:
         return self.container.get_ports()
 
-    def get_variables(self) -> List[FileWriterVariable]:
+    def get_variables(self) -> List[VhdlFileWriterVariable]:
         return self.container.variables
 
-    def add_variable(self, variable: FileWriterVariable) -> None:
+    def add_variable(self, variable: VhdlFileWriterVariable) -> None:
         self.container.variables.append(variable)
 
-    def get_constants(self) -> List[FileWriterConstant]:
+    def get_constants(self) -> List[VhdlFileWriterConstant]:
         return self.container.constants
 
-    def add_constant(self, constant: FileWriterConstant) -> None:
+    def add_constant(self, constant: VhdlFileWriterConstant) -> None:
         self.container.constants.append(constant)
 
-    def get_references(self) -> List[FileWriterReference]:
+    def get_references(self) -> List[VhdlFileWriterReference]:
         return self.container.references
     
-    def add_reference(self, reference: FileWriterReference) -> None:
+    def add_reference(self, reference: VhdlFileWriterReference) -> None:
         self.container.references.append(reference)
 
     def _print_to_string(self, *args, **kwargs) -> str:

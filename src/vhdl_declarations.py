@@ -22,9 +22,13 @@ class VhdlDeclarations:
     def get_data_width(self) -> str:
         return self.data_type.get_data_width()
 
-    def get_initialization(self, values: List[str]) -> str:
+    def get_initialization_array(self, values: List[str]) -> str:
         arguments = ", ".join(values)
-        return f"get(integer_array_t'({arguments}), {self.get_data_width()})"
+        return f"integer_array_t'({arguments})"
+
+    def get_initialization(self, values: List[str]) -> str:
+        array = self.get_initialization_array(values=values)
+        return f"get({array}, {self.get_data_width()})"
 
     def is_void(self) -> bool:
         return self.data_type.is_void()

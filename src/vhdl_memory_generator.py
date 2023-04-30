@@ -4,7 +4,6 @@ from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_memory_port import VhdlMemoryPort
 
-
 class VhdlMemoryGenerator:
 
     def _get_memory_arbiter_port_map(self, memory_master_name: str, memory_slave_name: str) -> str:
@@ -51,11 +50,14 @@ end block {block_name};
 
         """)
 
-    def _write_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str, 
-                                                  function_contents: VhdlFunctionContents) -> None:
+    def _get_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str) -> str:
         vhdl_memory_port = VhdlMemoryPort()
         assignment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_master_name, assignment_names=[memory_slave_name])
-        assignments = "\n".join([f"{i};" for i in assignment_list])
+        return "\n".join([f"{i};" for i in assignment_list])
+
+    def _write_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str, 
+                                                  function_contents: VhdlFunctionContents) -> None:
+        assignments = self._get_memory_interface_signal_assignment(memory_master_name=memory_master_name, memory_slave_name=memory_slave_name)
         function_contents.write_body(assignments)
         
     def _write_memory_arbiter(self, memory_instance_names: List[str], memory_name: str, 
