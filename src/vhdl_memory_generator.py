@@ -2,6 +2,7 @@
 from typing import List
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_function_contents import VhdlFunctionContents
+from vhdl_memory import VhdlMemory
 from vhdl_memory_port import VhdlMemoryPort
 
 class VhdlMemoryGenerator:
@@ -71,7 +72,6 @@ end block {block_name};
             self._write_memory_interface_signal_assignment(memory_master_name=memory_name, memory_slave_name=memory_signal_name,
                                                            function_contents=function_contents)
 
-    def generator_code(self, memory_names: List[str], memory_instance_names: List[str], function_contents: VhdlFunctionContents) -> None:
-        for memory_name in memory_names:
-            self._write_memory_arbiter(memory_instance_names=memory_instance_names, memory_name=memory_name, function_contents=function_contents)
-        
+    def create_memory(self, function_contents: VhdlFunctionContents, memory_instance: VhdlMemory, memory_drivers: List[str]) -> None:
+        self._write_memory_arbiter(memory_instance_names=memory_drivers, memory_name=memory_instance.name, function_contents=function_contents)
+

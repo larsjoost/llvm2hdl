@@ -5,6 +5,8 @@ from llvm_source_file import LlvmSourceLine
 
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmReferenceName, LlvmType
+from vhdl_declarations import VhdlDeclarations
+from vhdl_memory import VhdlMemory
 
 @dataclass
 class Constant:
@@ -38,7 +40,9 @@ class DeclarationBase:
         return None
     def is_register(self) -> bool:
         return False
-    
+    def get_memory_instance(self) -> Optional[VhdlMemory]:
+        return None
+
 @dataclass
 class ConstantDeclaration(DeclarationBase):
     type: TypeDeclaration
@@ -53,7 +57,15 @@ class ConstantDeclaration(DeclarationBase):
         return self.type.get_data_width()
     def is_constant(self) -> bool:
         return True
-
+    def get_memory_instance(self) -> Optional[VhdlMemory]:
+        values = self.get_values()
+        assert values is not None
+        initialization = VhdlDeclarations(data_type=self.type).get_initialization_array(values=values)
+        data_width = self.get_data_width()
+        assert data_width is not None
+        size_bytes = f"{data_width}/8"
+        return VhdlMemory(size_bytes=size_bytes, initialization=initialization, name=self.get_name())
+    
 @dataclass
 class ReferenceDeclaration(DeclarationBase):
     reference: LlvmReferenceName
@@ -99,4 +111,5 @@ class DeclarationContainer:
         return self.declaration.is_variable()
     def is_register(self) -> bool:
         return self.declaration.is_register()
-
+    def get_memory_instance(self) -> Optional[VhdlMemory]:
+        return self.declaration.get_memory_instance()

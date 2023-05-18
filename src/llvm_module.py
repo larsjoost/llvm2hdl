@@ -5,6 +5,7 @@ from llvm_constant import DeclarationBase
 
 from llvm_function import LlvmFunctionContainer
 from llvm_globals_container import GlobalsContainer
+from vhdl_memory import VhdlMemory
 
 @dataclass
 class LlvmModule:
@@ -25,3 +26,9 @@ class LlvmModule:
     
     def get_globals(self) -> GlobalsContainer:
         return self.globals
+
+    def get_memory_instances(self) -> List[VhdlMemory]:
+        return self.globals.get_memory_instances()
+    
+    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+        return self.functions.get_memory_drivers(memory_instance=memory_instance)

@@ -7,6 +7,7 @@ from llvm_instruction import LlvmInstructionContainer
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
 from ports import InputPort, OutputPort, Port, PortContainer
+from vhdl_memory import VhdlMemory
 
 @dataclass
 class LlvmFunction:
@@ -26,6 +27,8 @@ class LlvmFunction:
         return self.instructions.get_memory_instance_names()
     def get_memory_names(self) -> List[str]:
         return self.instructions.get_memory_names()
+    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+        return self.instructions.get_memory_drivers(memory_instance=memory_instance)
 
 @dataclass
 class LlvmFunctionContainer:
@@ -42,3 +45,9 @@ class LlvmFunctionContainer:
         for i in self.functions:
             external_pointer_names.extend(i.get_external_pointer_names())
         return external_pointer_names
+    
+    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+        memory_drivers = []
+        for function in self.functions:
+            memory_drivers.extend(function.get_memory_drivers(memory_instance=memory_instance))
+        return memory_drivers

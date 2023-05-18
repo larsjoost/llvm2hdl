@@ -14,6 +14,8 @@ from vhdl_function_container import VhdlFileWriterConstant, VhdlFileWriterRefere
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_writer import VhdlInstanceWriter
+from vhdl_memory import VhdlMemory
+from vhdl_memory_generator import VhdlMemoryGenerator
 from vhdl_port_generator import VhdlPortGenerator
 
 @dataclass
@@ -72,15 +74,18 @@ end function tag_to_std_ulogic_vector;
 
         """)
         
+    def _write_constant_memory(self, function_contents: VhdlFunctionContents, constant: VhdlFileWriterConstant) -> None:
+        function_contents.write_declaration(constant.get_constant_declaration())
+        memory = constant.get_memory_instance()
+        function_contents.write_declaration(memory.get_memory_signals())
+        function_contents.write_body(memory.get_memory_instance())
+
     def _write_constants(self, function_contents: VhdlFunctionContents, constants: List[VhdlFileWriterConstant]) -> None:
         default_constants = [("c_mem_addr_width", 32), ("c_mem_data_width", 32), ("c_mem_id_width", 8)]
         for name, width in default_constants:
             function_contents.write_declaration(f"constant {name} : positive := {width};")
         for i in constants:
-            function_contents.write_declaration(i.get_constant_declaration())
-            memory = i.get_memory_instance()
-            function_contents.write_declaration(memory.get_memory_signals())
-            function_contents.write_body(memory.get_memory_instance())
+            self._write_constant_memory(function_contents=function_contents, constant=i)
 
     def _write_references(self, function_contents: VhdlFunctionContents, references: List[VhdlFileWriterReference]) -> None:
         for i in references:
@@ -133,6 +138,13 @@ end function tag_to_std_ulogic_vector;
             function_contents.add_reference(VhdlFileWriterReference(reference=reference, functions=self.module.functions))
         for variable in self.module.get_variables():
             function_contents.add_variable(VhdlFileWriterVariable(variable=variable))
+
+    def _write_memory(self, function_contents: VhdlFunctionContents) -> None:
+        memory_instances: List[VhdlMemory] = self.module.get_memory_instances()
+        vhdl_memory_generator = VhdlMemoryGenerator()
+        for memory_instance in memory_instances:
+            memory_drivers = self.module.get_memory_drivers(memory_instance=memory_instance)
+            vhdl_memory_generator.create_memory(function_contents=function_contents, memory_instance=memory_instance, memory_drivers=memory_drivers)
 
     def _generate_function(self, function: LlvmFunction) -> VhdlFunctionContents:
         vhdl_function = VhdlFunction(function=function)

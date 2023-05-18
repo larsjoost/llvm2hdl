@@ -10,7 +10,4 @@ class VhdlInstanceGenerator:
     def generate_code(self, function: VhdlFunction, function_contents: VhdlFunctionContents, external_pointer_names: List[str], globals: GlobalsContainer) -> None: 
         instructions = function.get_instructions()
         VhdlGenerator().generate_code(instructions=instructions, external_pointer_names=external_pointer_names, function_contents=function_contents, globals=globals)
-        memory_names = function.get_memory_names()
-        memory_instance_names = function.get_memory_instance_names()
-        VhdlMemoryGenerator().generator_code(memory_names=memory_names, memory_instance_names=memory_instance_names, function_contents=function_contents)
 

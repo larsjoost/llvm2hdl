@@ -18,6 +18,7 @@ from llvm_type import LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 
 from function_logger import log_entry_and_exit
+from vhdl_memory import VhdlMemory
 
 
 @dataclass
@@ -144,6 +145,14 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return self.instruction.map_function_arguments()
     def is_return_instruction(self) -> bool:
         return self.instruction.is_return_instruction()
+    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+        operands = self.get_operands()
+        if operands is None:
+            return []
+        pointer_names = operands.get_pointer_names()
+        if memory_instance.name in pointer_names:
+            return [self.get_instance_name()]
+        return []
 
 class LlvmInstructionLabelParser:
 

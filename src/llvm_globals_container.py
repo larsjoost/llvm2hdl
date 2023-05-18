@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from llvm_constant import DeclarationBase, DeclarationContainer
 from llvm_type import LlvmType, LlvmVariableName
+from vhdl_memory import VhdlMemory
 
 @dataclass
 class GlobalsContainer:
@@ -38,3 +39,10 @@ class GlobalsContainer:
         declaration = self.get_declaration(name=name)
         return None if declaration is None else declaration.get_data_width()
 
+    def get_memory_instances(self) -> List[VhdlMemory]:
+        memory_instances = []
+        for declaration in self.declarations:
+            memory_instance = declaration.get_memory_instance()
+            if memory_instance is not None:
+                memory_instances.append(memory_instance)
+        return memory_instances
