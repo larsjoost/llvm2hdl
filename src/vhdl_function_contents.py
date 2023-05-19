@@ -11,7 +11,6 @@ from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_declarations import VhdlDeclarations, VhdlTagSignal
 from vhdl_function_container import VhdlFileWriterVariable, VhdlFunctionContainer
-from vhdl_file_writer_constant import VhdlFileWriterConstant
 from vhdl_file_writer_reference import VhdlFileWriterReference
 
 @dataclass
@@ -48,12 +47,6 @@ class VhdlFunctionContents(FunctionContentsInterface):
 
     def add_variable(self, variable: VhdlFileWriterVariable) -> None:
         self.container.variables.append(variable)
-
-    def get_constants(self) -> List[VhdlFileWriterConstant]:
-        return self.container.constants
-
-    def add_constant(self, constant: VhdlFileWriterConstant) -> None:
-        self.container.constants.append(constant)
 
     def get_references(self) -> List[VhdlFileWriterReference]:
         return self.container.references

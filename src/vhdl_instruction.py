@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from instruction_argument import InstructionArgument, InstructionArgumentContainer
 
-from llvm_instruction import LlvmInstructionInterface
+from llvm_instruction import LlvmInstructionInstance
 from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 from memory_interface import MemoryInterface
@@ -12,7 +12,7 @@ from vhdl_code_generator import VhdlCodeGenerator
 
 @dataclass
 class VhdlInstruction:
-    instruction: LlvmInstructionInterface
+    instruction: LlvmInstructionInstance
 
     def is_work_library(self) -> bool:
         return self.get_library() == "work"
@@ -21,6 +21,12 @@ class VhdlInstruction:
         instance_name = self.instruction.get_instance_name()
         assert instance_name is not None, f"Instruction {self.instruction} has no instance name"
         return VhdlCodeGenerator().get_vhdl_name(instance_name)
+
+    def get_instance_name(self) -> str:
+        return f"{self.get_name()}_{self.instruction.instance_index}"
+
+    def get_instance_index(self) -> int:
+        return self.instruction.instance_index
 
     def get_destination_variable_name(self) -> Optional[str]:
         destination = self.instruction.get_destination()

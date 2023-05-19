@@ -7,7 +7,7 @@ from instruction_interface import InstructionInterface, LlvmOutputPort, MemoryIn
 from llvm_globals_container import GlobalsContainer
 from llvm_function import LlvmFunction, LlvmFunctionContainer
 from llvm_global_parser import LlvmGlobalParser
-from llvm_instruction import LlvmInstructionContainer, LlvmInstructionInterface
+from llvm_instruction import LlvmInstructionContainer, LlvmInstructionInstance, LlvmInstructionInterface
 from llvm_intruction_parser import LlvmInstructionParserInterface, LlvmInstructionParserArguments
 from llvm_module import LlvmModule
 from llvm_source_file import LlvmSourceConstants, LlvmSourceFile, LlvmSourceFileParser, LlvmSourceFunction, LlvmSourceFunctions, LlvmSourceLine
@@ -463,14 +463,14 @@ class LlvmGeneralInstructionParser:
             return None
         return LlvmInstructionCommandParser().parse(source_line=line, constants=constants)
 
-    def parse(self, lines: List[LlvmSourceLine], constants: GlobalsContainer) -> List[LlvmInstructionInterface]:
+    def parse(self, lines: List[LlvmSourceLine], constants: GlobalsContainer) -> List[LlvmInstructionInstance]:
         """
         entry:
             %add = add nsw i32 %b, %a
             ret i32 %add
         """
         x = [self._parse_line(line=i, constants=constants) for i in lines]
-        return [i for i in x if i is not None]
+        return [LlvmInstructionInstance(instruction=i, instance_index=index) for index, i in enumerate(x) if i is not None]
 
 class LlvmFunctionParser:
     

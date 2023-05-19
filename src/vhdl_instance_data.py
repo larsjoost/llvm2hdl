@@ -4,7 +4,7 @@ from typing import Any, List, Optional
 from instance_data import DeclarationData, InstanceData
 from instruction_interface import MemoryInterface
 from llvm_globals_container import GlobalsContainer
-from llvm_instruction import LlvmInstructionInterface
+from llvm_instruction import LlvmInstructionInstance
 from llvm_port import LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
 from vhdl_instance_name import VhdlInstanceName
@@ -20,7 +20,7 @@ class VhdlInstanceData:
     tag_name: str
     input_ports: List[VhdlInstructionArgument]
     memory_interface: Optional[MemoryInterface]
-    instruction: LlvmInstructionInterface
+    instruction: LlvmInstructionInstance
     def _get_signal_name(self, instance_name: str, signal_name: str) -> str:
         return f"{instance_name}_{signal_name}_i"
     def get_own_instance_signal_name(self, signal_name) -> str:

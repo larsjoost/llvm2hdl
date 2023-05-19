@@ -7,13 +7,13 @@ from instance_data import DeclarationData, InstanceData
 from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName
 from llvm_parser import InstructionArgument
-from llvm_instruction import LlvmInstructionInterface
+from llvm_instruction import LlvmInstructionInstance
 from instance_interface import InstanceInterface
 
 @dataclass
 class Instance(InstanceInterface):
 
-    instruction: LlvmInstructionInterface
+    instruction: LlvmInstructionInstance
 
     def get_instance_name(self) -> str:
         instance_name = self.instruction.get_instance_name()

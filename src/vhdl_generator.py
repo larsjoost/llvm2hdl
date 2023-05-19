@@ -324,13 +324,11 @@ class VhdlReturnGenerator(VhdlGeneratorInterface):
 class VhdlGenerator:
     
     _generators: List[VhdlGeneratorInterface]
-    _instance_index: int
     _previous_instance: Optional[VhdlInstanceGenerator]
     _return_instruction: VhdlInstruction
 
     def __init__(self):
         self._generators = []
-        self._instance_index = 1
         self._previous_instance = None
 
     def write_instance(self, instance):
@@ -346,11 +344,11 @@ class VhdlGenerator:
 
     def _add_instruction(self, instruction: VhdlInstruction) -> None:
         entity_name = instruction.get_name()
-        instance_name = f"{entity_name}_{self._instance_index}"
-        instance = VhdlInstanceGenerator(instruction=instruction, instance_index=self._instance_index, entity_name=entity_name, 
+        instance_name = instruction.get_instance_name()
+        instance_index = instruction.get_instance_index()
+        instance = VhdlInstanceGenerator(instruction=instruction, instance_index=instance_index, entity_name=entity_name, 
                                         instance_name=instance_name, previous_instance_name=self._get_previous_instance_name())
         self._generators.append(instance)
-        self._instance_index += 1
         self._previous_instance = instance
 
     def _get_last_process(self) -> VhdlGeneratorInterface:

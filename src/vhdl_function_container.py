@@ -9,7 +9,6 @@ from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from ports import PortContainer
 
-from vhdl_file_writer_constant import VhdlFileWriterConstant
 from vhdl_file_writer_reference import VhdlFileWriterReference
 from vhdl_file_writer_variable import VhdlFileWriterVariable
 
@@ -35,7 +34,6 @@ class InstanceSignals:
 class VhdlFunctionContainer(FunctionContainerInterface):
     signals : List[SignalInterface] = field(default_factory=list)
     instance_signals: InstanceSignals = field(default_factory=lambda : InstanceSignals())
-    constants : List[VhdlFileWriterConstant] = field(default_factory=list)
     references: List[VhdlFileWriterReference] = field(default_factory=list)
     variables: List[VhdlFileWriterVariable] = field(default_factory=list)
     ports: PortContainer = field(default_factory=lambda : PortContainer())

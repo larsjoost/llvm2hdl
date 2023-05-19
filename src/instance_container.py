@@ -4,7 +4,7 @@ from instance import DeclarationData, Instance
 from instance_container_data import InstanceContainerData
 from instance_container_interface import InstanceContainerInterface
 from source_info import SourceInfo, SourceInfoMap
-from llvm_instruction import LlvmInstructionContainer, LlvmInstructionInterface
+from llvm_instruction import LlvmInstructionContainer, LlvmInstructionInstance
 from ports import Port
 
 class InstanceContainer(InstanceContainerInterface):
@@ -22,7 +22,7 @@ class InstanceContainer(InstanceContainerInterface):
             if source_info.destination is not None:
                 self._source_info_map.add(type=source_info.destination, source_info=source_info)
 
-    def _add_instruction(self, instruction : LlvmInstructionInterface) -> None:
+    def _add_instruction(self, instruction : LlvmInstructionInstance) -> None:
         if not instruction.is_valid():
             return
         instance = Instance(instruction)

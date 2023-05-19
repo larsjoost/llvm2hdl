@@ -10,7 +10,8 @@ from signal_interface import SignalInterface
 from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_entity import VhdlEntity
 from vhdl_function import VhdlFunction
-from vhdl_function_container import VhdlFileWriterConstant, VhdlFileWriterReference, VhdlFileWriterVariable
+from vhdl_function_container import VhdlFileWriterReference, VhdlFileWriterVariable
+from vhdl_file_writer_constant import VhdlFileWriterConstant
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_include_libraries import VhdlIncludeLibraries
 from vhdl_instance_writer import VhdlInstanceWriter
@@ -102,7 +103,8 @@ end function tag_to_std_ulogic_vector;
 
     def _write_declarations_to_header(self, function_contents: VhdlFunctionContents) -> None:
         self._write_variables(function_contents=function_contents, variables=function_contents.get_variables())
-        self._write_constants(function_contents=function_contents, constants=function_contents.get_constants())
+        constants = [VhdlFileWriterConstant(i) for i in self.module.get_constants()]
+        self._write_constants(function_contents=function_contents, constants=constants)
         self._write_total_data_width(function_contents=function_contents, signals=function_contents.get_signals(), ports=function_contents.get_ports())
         self._write_tag_record(function_contents=function_contents)
         record_items = VhdlPortGenerator().get_tag_item_names(ports=function_contents.get_ports(), signals=function_contents.get_signals())
@@ -132,25 +134,32 @@ end function tag_to_std_ulogic_vector;
         self._write_references_to_trailer(function_contents=function_contents)
 
     def _write_globals(self, function_contents: VhdlFunctionContents) -> None:
-        for constant in self.module.get_constants():
-            function_contents.add_constant(VhdlFileWriterConstant(constant=constant))
         for reference in self.module.get_references():
             function_contents.add_reference(VhdlFileWriterReference(reference=reference, functions=self.module.functions))
         for variable in self.module.get_variables():
             function_contents.add_variable(VhdlFileWriterVariable(variable=variable))
 
+    def _get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+        memory_drivers = self.module.get_memory_drivers(memory_instance=memory_instance)
+        vhdl_code_generator = VhdlCodeGenerator()
+        return [vhdl_code_generator.get_vhdl_name(f"{i}_{memory_instance.name}") for i in memory_drivers]
+
+    def _write_memory_instance(self, function_contents: VhdlFunctionContents, memory_instance: VhdlMemory) -> None:
+        vhdl_memory_generator = VhdlMemoryGenerator()
+        memory_drivers = self._get_memory_drivers(memory_instance=memory_instance)
+        vhdl_memory_generator.create_memory(function_contents=function_contents, memory_instance=memory_instance, memory_drivers=memory_drivers)
+
     def _write_memory(self, function_contents: VhdlFunctionContents) -> None:
         memory_instances: List[VhdlMemory] = self.module.get_memory_instances()
-        vhdl_memory_generator = VhdlMemoryGenerator()
         for memory_instance in memory_instances:
-            memory_drivers = self.module.get_memory_drivers(memory_instance=memory_instance)
-            vhdl_memory_generator.create_memory(function_contents=function_contents, memory_instance=memory_instance, memory_drivers=memory_drivers)
+            self._write_memory_instance(function_contents=function_contents, memory_instance=memory_instance)
 
     def _generate_function(self, function: LlvmFunction) -> VhdlFunctionContents:
         vhdl_function = VhdlFunction(function=function)
         function_contents = VhdlFunctionContents(name=vhdl_function.get_entity_name())    
         self._write_globals(function_contents=function_contents)
         self._write_function(function_contents=function_contents, function=vhdl_function)    
+        self._write_memory(function_contents=function_contents)
         return function_contents
 
     def generate(self) -> List[VhdlFunctionContents]:
