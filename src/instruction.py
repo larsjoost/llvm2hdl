@@ -25,7 +25,7 @@ class ReturnInstruction(InstructionInterface):
         return self.operands
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         return False
     def map_function_arguments(self) -> bool:
         return False
@@ -53,7 +53,7 @@ class BitcastInstruction(InstructionInterface):
         return self.operands
     def is_valid(self) -> bool:
         return False
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         return False
     def map_function_arguments(self) -> bool:
         return False
@@ -88,7 +88,7 @@ class AllocaInstruction(InstructionInterface):
         return None
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         return True
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return LlvmMemoryOutputPort(data_type=self.data_type)
@@ -118,7 +118,7 @@ class GetelementptrInstruction(InstructionInterface):
         return InstructionArgumentContainer(arguments=arguments)
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         return False
     def map_function_arguments(self) -> bool:
         return False
@@ -146,8 +146,8 @@ class CallInstruction(InstructionInterface):
         return self.operands
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
-        return False
+    def access_memory_contents(self) -> bool:
+        return True
     def map_function_arguments(self) -> bool:
         return True
     def get_output_port(self) -> Optional[LlvmOutputPort]:
@@ -174,8 +174,8 @@ class LoadInstruction(InstructionInterface):
         return self.operands
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
-        return False
+    def access_memory_contents(self) -> bool:
+        return True
     def map_function_arguments(self) -> bool:
         return False
     def get_output_port(self) -> Optional[LlvmOutputPort]:
@@ -204,7 +204,7 @@ class DefaultInstruction(InstructionInterface):
         return self.operands
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         return False
     def map_function_arguments(self) -> bool:
         return True

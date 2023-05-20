@@ -7,7 +7,6 @@ from llvm_instruction import LlvmInstructionContainer
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
 from ports import InputPort, OutputPort, Port, PortContainer
-from vhdl_memory import VhdlMemory
 
 @dataclass
 class LlvmFunction:

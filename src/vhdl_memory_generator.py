@@ -5,6 +5,8 @@ from vhdl_function_contents import VhdlFunctionContents
 from vhdl_memory import VhdlMemory
 from vhdl_memory_port import VhdlMemoryPort
 
+from function_logger import log_entry_and_exit
+
 class VhdlMemoryGenerator:
 
     def _get_memory_arbiter_port_map(self, memory_master_name: str, memory_slave_name: str) -> str:
@@ -64,6 +66,7 @@ end block {block_name};
     def _write_memory_arbiter(self, memory_instance_names: List[str], memory_name: str, 
                               function_contents: VhdlFunctionContents) -> None:
         number_of_memory_instances = len(memory_instance_names)
+        assert number_of_memory_instances > 0, f"Did not find any attachments to pointer {memory_name}"
         if number_of_memory_instances > 1:
             self._write_memory_instances(
                 memory_name, number_of_memory_instances, memory_instance_names, function_contents=function_contents)

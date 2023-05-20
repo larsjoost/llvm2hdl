@@ -33,7 +33,7 @@ class InstructionInterface(ABC):
     def is_valid(self) -> bool:
         pass
     @abstractmethod
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         pass
     @abstractmethod
     def map_function_arguments(self) -> bool:

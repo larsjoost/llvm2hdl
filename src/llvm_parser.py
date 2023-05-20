@@ -17,10 +17,6 @@ from llvm_type_declaration import TypeDeclaration
 from llvm_type import LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 
-from function_logger import log_entry_and_exit
-from vhdl_memory import VhdlMemory
-
-
 @dataclass
 class InstructionPosition:
     opcode: int
@@ -139,13 +135,15 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return self.instruction.get_instance_name()
     def get_memory_interface(self) -> Optional[MemoryInterface]:
         return self.instruction.get_memory_interface()
-    def is_memory(self) -> bool:
-        return self.instruction.is_memory()
+    def access_memory_contents(self) -> bool:
+        return self.instruction.access_memory_contents()
     def map_function_arguments(self) -> bool:
         return self.instruction.map_function_arguments()
     def is_return_instruction(self) -> bool:
         return self.instruction.is_return_instruction()
     def get_memory_drivers(self, pointer_name: str) -> List[str]:
+        if not self.access_memory_contents():
+            return []
         operands = self.get_operands()
         if operands is None:
             return []

@@ -16,8 +16,6 @@ from vhdl_port_generator import VhdlPortGenerator
 from vhdl_memory_port import VhdlMemoryPort
 from vhdl_signal_name import VhdlSignalName
 
-from function_logger import log_entry_and_exit
-
 class VhdlGeneratorInterface(ABC):
     @abstractmethod
     def generate_code(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:

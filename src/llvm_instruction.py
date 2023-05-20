@@ -9,7 +9,6 @@ from llvm_source_file import LlvmSourceLine
 
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
-from vhdl_memory import VhdlMemory
 
 @dataclass
 class LlvmInstructionData:
@@ -32,7 +31,7 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
         return None
     def is_valid(self) -> bool:
         return True
-    def is_memory(self) -> bool:
+    def access_memory_contents(self) -> bool:
         return False
     def map_function_arguments(self) -> bool:
         return False
@@ -64,7 +63,7 @@ class LlvmInstructionInstance:
     def map_function_arguments(self) -> bool:
         return self.instruction.map_function_arguments()
     def is_memory(self) -> bool:
-        return self.instruction.is_memory()
+        return self.instruction.access_memory_contents()
     def get_memory_drivers(self, pointer_name: str) -> List[str]:
         memory_drivers = self.instruction.get_memory_drivers(pointer_name=pointer_name)
         return [f"{i}_{self.instance_index}" for i in memory_drivers]

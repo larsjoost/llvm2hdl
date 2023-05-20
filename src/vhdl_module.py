@@ -169,7 +169,7 @@ end function tag_to_std_ulogic_vector;
         self._write_memory(function_contents=function_contents)
         return function_contents
 
-    def generate(self) -> List[VhdlFunctionContents]:
+    def generate_code(self) -> List[VhdlFunctionContents]:
         file_contents: List[VhdlFunctionContents] = [
             self._generate_function(function=function)
             for function in self.module.functions.functions
