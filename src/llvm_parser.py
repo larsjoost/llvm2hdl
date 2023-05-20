@@ -145,12 +145,12 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return self.instruction.map_function_arguments()
     def is_return_instruction(self) -> bool:
         return self.instruction.is_return_instruction()
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
         operands = self.get_operands()
         if operands is None:
             return []
-        pointer_names = operands.get_pointer_names()
-        if memory_instance.name in pointer_names:
+        operand_pointer_names = operands.get_pointer_names()
+        if pointer_name in operand_pointer_names:
             return [self.get_instance_name()]
         return []
 

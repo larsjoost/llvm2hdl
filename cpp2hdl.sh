@@ -1,9 +1,32 @@
 #!/bin/bash
 
-file_name=$1
-
 SCRIPT=$(realpath $0)
 SCRIPTPATH=$(dirname $SCRIPT)
+
+function error {
+    local message=$1
+    echo "#ERROR ($(basename $SCRIPT)): $message" 1!>2
+}
+
+while getopts 'hv' opt; do
+  case "$opt" in
+    v)
+	set -x
+	;;
+    ?|h)
+      echo "Usage: $(basename $0) [-v] file_name"
+      exit 1
+      ;;
+  esac
+done
+shift "$(($OPTIND -1))"
+
+file_name=$(realpath $1)
+
+if [ -z "$file_name" ]; then
+    error "File name must be specified"
+    exit 1
+fi
 
 llvm_file_name=${file_name%.cpp}.ll
 

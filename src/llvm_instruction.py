@@ -44,7 +44,7 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
         return None
     def is_return_instruction(self) -> bool:
         return False
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
         return []
 
 @dataclass
@@ -65,8 +65,8 @@ class LlvmInstructionInstance:
         return self.instruction.map_function_arguments()
     def is_memory(self) -> bool:
         return self.instruction.is_memory()
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
-        memory_drivers = self.instruction.get_memory_drivers(memory_instance=memory_instance)
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
+        memory_drivers = self.instruction.get_memory_drivers(pointer_name=pointer_name)
         return [f"{i}_{self.instance_index}" for i in memory_drivers]
     def get_destination(self) -> Optional[LlvmVariableName]:
         return self.instruction.get_destination()
@@ -125,8 +125,8 @@ class LlvmInstructionContainer:
     def get_memory_names(self) -> List[str]:        
         return [instruction.get_instance_name() for instruction in self.instructions if instruction.is_memory()]
 
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
         memory_drivers = []
         for instruction in self.instructions:
-            memory_drivers.extend(instruction.get_memory_drivers(memory_instance=memory_instance))
+            memory_drivers.extend(instruction.get_memory_drivers(pointer_name=pointer_name))
         return memory_drivers

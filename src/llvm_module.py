@@ -30,5 +30,5 @@ class LlvmModule:
     def get_memory_instances(self) -> List[VhdlMemory]:
         return self.globals.get_memory_instances()
     
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
-        return self.functions.get_memory_drivers(memory_instance=memory_instance)
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
+        return self.functions.get_memory_drivers(pointer_name=pointer_name)

@@ -72,6 +72,9 @@ end block {block_name};
             self._write_memory_interface_signal_assignment(memory_master_name=memory_name, memory_slave_name=memory_signal_name,
                                                            function_contents=function_contents)
 
+    def create_external_port_arbitration(self, function_contents: VhdlFunctionContents, external_port_name: str, memory_drivers: List[str]) -> None:
+        self._write_memory_arbiter(memory_instance_names=memory_drivers, memory_name=external_port_name, function_contents=function_contents)
+    
     def create_memory(self, function_contents: VhdlFunctionContents, memory_instance: VhdlMemory, memory_drivers: List[str]) -> None:
         self._write_memory_arbiter(memory_instance_names=memory_drivers, memory_name=memory_instance.name, function_contents=function_contents)
 

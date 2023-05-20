@@ -27,8 +27,8 @@ class LlvmFunction:
         return self.instructions.get_memory_instance_names()
     def get_memory_names(self) -> List[str]:
         return self.instructions.get_memory_names()
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
-        return self.instructions.get_memory_drivers(memory_instance=memory_instance)
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
+        return self.instructions.get_memory_drivers(pointer_name=pointer_name)
 
 @dataclass
 class LlvmFunctionContainer:
@@ -46,8 +46,8 @@ class LlvmFunctionContainer:
             external_pointer_names.extend(i.get_external_pointer_names())
         return external_pointer_names
     
-    def get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
+    def get_memory_drivers(self, pointer_name: str) -> List[str]:
         memory_drivers = []
         for function in self.functions:
-            memory_drivers.extend(function.get_memory_drivers(memory_instance=memory_instance))
+            memory_drivers.extend(function.get_memory_drivers(pointer_name=pointer_name))
         return memory_drivers
