@@ -4,17 +4,17 @@ use ieee.numeric_std.all;
 
 entity llvm_ne is
   port (
-    clk      : in  std_ulogic;
-    sreset   : in  std_ulogic;
     a        : in  std_ulogic_vector;
     b        : in  std_ulogic_vector;
+    m_tdata  : out std_ulogic_vector;
+    clk      : in  std_ulogic;
+    sreset   : in  std_ulogic;
     s_tag    : in  std_ulogic_vector;
     s_tvalid : in  std_ulogic;
     s_tready : out std_ulogic;
     m_tvalid : out std_ulogic;
     m_tready : in  std_ulogic;
-    m_tag    : out std_ulogic_vector;
-    m_tdata  : out std_ulogic_vector);
+    m_tag    : out std_ulogic_vector);
 end entity llvm_ne;
 
 architecture rtl of llvm_ne is

@@ -49,3 +49,5 @@ class InstructionInterface(ABC):
         pass
     def is_return_instruction(self) -> bool:
         return False
+    def returns_pointer(self) -> bool:
+        return False

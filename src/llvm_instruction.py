@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from instruction_argument import InstructionArgument, InstructionArgumentContainer
 from instruction_interface import LlvmOutputPort, MemoryInterface
+from llvm_destination import LlvmDestination
 from llvm_source_file import LlvmSourceLine
 
 from llvm_type import LlvmVariableName
@@ -45,6 +46,8 @@ class LlvmInstructionInterface(ABC, LlvmInstructionData):
         return False
     def get_memory_drivers(self, pointer_name: str) -> List[str]:
         return []
+    def get_pointer_destinations(self) -> List[LlvmDestination]:
+        return []
 
 @dataclass
 class LlvmInstructionInstance:
@@ -64,7 +67,7 @@ class LlvmInstructionInstance:
         return self.instruction.map_function_arguments()
     def is_memory(self) -> bool:
         return self.instruction.access_memory_contents()
-    def get_memory_drivers(self, pointer_name: str) -> List[str]:
+    def get_pointer_drivers(self, pointer_name: str) -> List[str]:
         memory_drivers = self.instruction.get_memory_drivers(pointer_name=pointer_name)
         return [f"{i}_{self.instance_index}" for i in memory_drivers]
     def get_destination(self) -> Optional[LlvmVariableName]:
@@ -83,7 +86,9 @@ class LlvmInstructionInstance:
         return self.instruction.get_generic_map()
     def is_return_instruction(self) -> bool:
         return self.instruction.is_return_instruction()
-    
+    def get_pointer_destinations(self) -> List[LlvmDestination]:
+        return self.instruction.get_pointer_destinations()
+
 @dataclass
 class LlvmInstructionContainer:
     instructions: List[LlvmInstructionInstance]
@@ -124,8 +129,14 @@ class LlvmInstructionContainer:
     def get_memory_names(self) -> List[str]:        
         return [instruction.get_instance_name() for instruction in self.instructions if instruction.is_memory()]
 
-    def get_memory_drivers(self, pointer_name: str) -> List[str]:
+    def get_pointer_drivers(self, pointer_name: str) -> List[str]:
         memory_drivers = []
         for instruction in self.instructions:
-            memory_drivers.extend(instruction.get_memory_drivers(pointer_name=pointer_name))
+            memory_drivers.extend(instruction.get_pointer_drivers(pointer_name=pointer_name))
         return memory_drivers
+    
+    def get_pointer_destinations(self) -> List[LlvmDestination]:
+        pointer_destinations = []
+        for instruction in self.instructions:
+            pointer_destinations.extend(instruction.get_pointer_destinations())
+        return pointer_destinations

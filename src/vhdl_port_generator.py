@@ -64,10 +64,12 @@ class VhdlPortGenerator(PortGenerator):
     def get_output_port_map(self, output_port: Optional[LlvmOutputPort]) -> List[str]:
         if output_port is None:
             return []
-        port_map = "m_tdata_i"
-        if output_port.port_name is not None:
-            port_map = f"{output_port.get_name()} => {port_map}"
-        return [port_map]
+        port_map = ["m_tdata => m_tdata_i"]
+        if output_port.is_pointer():
+            name = output_port.get_name()
+            assert name is not None
+            port_map.extend(VhdlMemoryPort().get_port_map(name=name, master=False))
+        return port_map
 
     def get_port_signal(self, input_port: VhdlInstructionArgument) -> str:
         signal_name = self._get_input_port_signal_name(input_port=input_port)

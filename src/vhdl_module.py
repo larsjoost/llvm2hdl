@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from types import FrameType
 from typing import List, Optional
+from llvm_destination import LlvmDestination
 from llvm_function import LlvmFunction
 
 from llvm_module import LlvmModule
@@ -119,7 +120,7 @@ end function tag_to_std_ulogic_vector;
         function_contents.write_header(VhdlIncludeLibraries().get())
         
     def _write_external_memory_arbitration(self, function_contents: VhdlFunctionContents, external_port_name: str) -> None:
-        memory_drivers = self.module.get_memory_drivers(pointer_name=external_port_name)
+        memory_drivers = self.module.get_pointer_drivers(pointer_name=external_port_name)
         vhdl_memory_generator = VhdlMemoryGenerator()
         vhdl_memory_generator.create_external_port_arbitration(function_contents=function_contents, external_port_name=external_port_name, memory_drivers=memory_drivers)
         
@@ -147,13 +148,13 @@ end function tag_to_std_ulogic_vector;
             function_contents.add_variable(VhdlFileWriterVariable(variable=variable))
 
     def _get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
-        memory_drivers = self.module.get_memory_drivers(pointer_name=memory_instance.name)
+        memory_drivers = self.module.get_pointer_drivers(pointer_name=memory_instance.name)
         vhdl_code_generator = VhdlCodeGenerator()
         return [vhdl_code_generator.get_vhdl_name(f"{i}_{memory_instance.name}") for i in memory_drivers]
 
     def _write_memory_instance(self, function_contents: VhdlFunctionContents, memory_instance: VhdlMemory) -> None:
-        vhdl_memory_generator = VhdlMemoryGenerator()
         memory_drivers = self._get_memory_drivers(memory_instance=memory_instance)
+        vhdl_memory_generator = VhdlMemoryGenerator()
         vhdl_memory_generator.create_memory(function_contents=function_contents, memory_instance=memory_instance, memory_drivers=memory_drivers)
 
     def _write_memory(self, function_contents: VhdlFunctionContents) -> None:
@@ -161,12 +162,24 @@ end function tag_to_std_ulogic_vector;
         for memory_instance in memory_instances:
             self._write_memory_instance(function_contents=function_contents, memory_instance=memory_instance)
 
+    def _write_pointer_arbiter(self, function_contents: VhdlFunctionContents, pointer_destination: LlvmDestination) -> None:
+        pointer_name = pointer_destination.get_translated_name()
+        pointer_drivers = self.module.get_pointer_drivers(pointer_name=pointer_name)
+        vhdl_memory_generator = VhdlMemoryGenerator()
+        vhdl_memory_generator.write_memory_arbiter(function_contents=function_contents, memory_drivers=pointer_drivers, pointer_name=pointer_name)
+
+    def _write_pointer_arbiters(self, function_contents: VhdlFunctionContents) -> None:
+        pointer_destinations: List[LlvmDestination] = self.module.get_pointer_destinations()
+        for pointer_destination in pointer_destinations:
+            self._write_pointer_arbiter(function_contents=function_contents, pointer_destination=pointer_destination)        
+
     def _generate_function(self, function: LlvmFunction) -> VhdlFunctionContents:
         vhdl_function = VhdlFunction(function=function)
         function_contents = VhdlFunctionContents(name=vhdl_function.get_entity_name())    
         self._write_globals(function_contents=function_contents)
         self._write_function(function_contents=function_contents, function=vhdl_function)    
         self._write_memory(function_contents=function_contents)
+        self._write_pointer_arbiters(function_contents=function_contents)
         return function_contents
 
     def generate_code(self) -> List[VhdlFunctionContents]:

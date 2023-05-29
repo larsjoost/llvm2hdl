@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from instruction_argument import InstructionArgumentContainer
+from llvm_destination import LlvmDestination
 from llvm_instruction import LlvmInstructionContainer
 from llvm_type import LlvmVariableName
 from llvm_type_declaration import TypeDeclaration
@@ -26,8 +27,10 @@ class LlvmFunction:
         return self.instructions.get_memory_instance_names()
     def get_memory_names(self) -> List[str]:
         return self.instructions.get_memory_names()
-    def get_memory_drivers(self, pointer_name: str) -> List[str]:
-        return self.instructions.get_memory_drivers(pointer_name=pointer_name)
+    def get_pointer_drivers(self, pointer_name: str) -> List[str]:
+        return self.instructions.get_pointer_drivers(pointer_name=pointer_name)
+    def get_pointer_destinations(self) -> List[LlvmDestination]:
+        return self.instructions.get_pointer_destinations()
 
 @dataclass
 class LlvmFunctionContainer:
@@ -45,8 +48,14 @@ class LlvmFunctionContainer:
             external_pointer_names.extend(i.get_external_pointer_names())
         return external_pointer_names
     
-    def get_memory_drivers(self, pointer_name: str) -> List[str]:
+    def get_pointer_drivers(self, pointer_name: str) -> List[str]:
         memory_drivers = []
         for function in self.functions:
-            memory_drivers.extend(function.get_memory_drivers(pointer_name=pointer_name))
+            memory_drivers.extend(function.get_pointer_drivers(pointer_name=pointer_name))
         return memory_drivers
+    
+    def get_pointer_destinations(self) -> List[LlvmDestination]:
+        pointer_destinations = []
+        for function in self.functions:
+            pointer_destinations.extend(function.get_pointer_destinations())
+        return pointer_destinations

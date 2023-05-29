@@ -5,8 +5,6 @@ from vhdl_function_contents import VhdlFunctionContents
 from vhdl_memory import VhdlMemory
 from vhdl_memory_port import VhdlMemoryPort
 
-from function_logger import log_entry_and_exit
-
 class VhdlMemoryGenerator:
 
     def _get_memory_arbiter_port_map(self, memory_master_name: str, memory_slave_name: str) -> str:
@@ -63,21 +61,21 @@ end block {block_name};
         assignments = self._get_memory_interface_signal_assignment(memory_master_name=memory_master_name, memory_slave_name=memory_slave_name)
         function_contents.write_body(assignments)
         
-    def _write_memory_arbiter(self, memory_instance_names: List[str], memory_name: str, 
+    def write_memory_arbiter(self, memory_drivers: List[str], pointer_name: str, 
                               function_contents: VhdlFunctionContents) -> None:
-        number_of_memory_instances = len(memory_instance_names)
-        assert number_of_memory_instances > 0, f"Did not find any attachments to pointer {memory_name}"
+        number_of_memory_instances = len(memory_drivers)
+        assert number_of_memory_instances > 0, f"Did not find any attachments to pointer {pointer_name}"
         if number_of_memory_instances > 1:
             self._write_memory_instances(
-                memory_name, number_of_memory_instances, memory_instance_names, function_contents=function_contents)
+                pointer_name, number_of_memory_instances, memory_drivers, function_contents=function_contents)
         else:
-            memory_signal_name = memory_instance_names[0]
-            self._write_memory_interface_signal_assignment(memory_master_name=memory_name, memory_slave_name=memory_signal_name,
+            memory_signal_name = memory_drivers[0]
+            self._write_memory_interface_signal_assignment(memory_master_name=pointer_name, memory_slave_name=memory_signal_name,
                                                            function_contents=function_contents)
 
     def create_external_port_arbitration(self, function_contents: VhdlFunctionContents, external_port_name: str, memory_drivers: List[str]) -> None:
-        self._write_memory_arbiter(memory_instance_names=memory_drivers, memory_name=external_port_name, function_contents=function_contents)
+        self.write_memory_arbiter(memory_drivers=memory_drivers, pointer_name=external_port_name, function_contents=function_contents)
     
     def create_memory(self, function_contents: VhdlFunctionContents, memory_instance: VhdlMemory, memory_drivers: List[str]) -> None:
-        self._write_memory_arbiter(memory_instance_names=memory_drivers, memory_name=memory_instance.name, function_contents=function_contents)
+        self.write_memory_arbiter(memory_drivers=memory_drivers, pointer_name=memory_instance.name, function_contents=function_contents)
 

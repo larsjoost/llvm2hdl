@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from types import FrameType
 from typing import List, Optional
 from function_contents_interface import FunctionContentsInterface
+from instantiation_point import InstantiationPoint
 from instruction_argument import InstructionArgument
 from llvm_globals_container import GlobalsContainer
 from llvm_type import LlvmVariableName
@@ -12,6 +13,7 @@ from vhdl_declarations import VhdlDeclarations, VhdlTagSignal
 from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction import VhdlInstruction, VhdlInstructionContainer
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
+from vhdl_memory_generator import VhdlMemoryGenerator
 from vhdl_port_generator import VhdlPortGenerator
 from vhdl_memory_port import VhdlMemoryPort
 from vhdl_signal_name import VhdlSignalName
@@ -190,6 +192,16 @@ port map (
             input_port=input_port, memory_interface_name=memory_interface_name
         )
 
+    def _get_output_port_maps(self, function_contents: FunctionContentsInterface) -> List[str]:
+        vhdl_port = VhdlPortGenerator()
+        output_port = self.instruction.get_output_port()
+        if output_port is not None and output_port.is_pointer():
+            vhdl_memory_port = VhdlMemoryPort()
+            name = output_port.get_name()
+            assert name is not None
+            function_contents.add_instance_signals(vhdl_memory_port.get_port_signals(name=name))
+        return vhdl_port.get_output_port_map(output_port=output_port)
+
     def _flatten(self, xss: List[List[str]]) -> List[str]:
         return [x for xs in xss for x in xs]
 
@@ -199,12 +211,12 @@ port map (
  
     def _get_component_instantiation_port_map(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> str:
         vhdl_port = VhdlPortGenerator()
-        input_ports_map = ["-- Input ports"] + self._get_input_port_maps(function_contents=function_contents, globals=globals)
-        output_port_map = ["-- Output ports"] + vhdl_port.get_output_port_map(output_port=self.instruction.get_output_port())
-        memory_port_map = ["-- Memory ports"] + self._get_component_instantiation_memory_port_map(function_contents=function_contents)
-        standard_port_map =  ["-- Standard port map"] + vhdl_port.get_standard_ports_map(instance_name=self.get_instance_name(), 
+        input_ports_map = [f"-- Input ports ({InstantiationPoint().show()})"] + self._get_input_port_maps(function_contents=function_contents, globals=globals)
+        output_port_map = [f"-- Output ports ({InstantiationPoint().show()})"] + self._get_output_port_maps(function_contents=function_contents)
+        memory_port_map = [f"-- Memory ports  ({InstantiationPoint().show()})"] + self._get_component_instantiation_memory_port_map(function_contents=function_contents)
+        standard_port_map =  [f"-- Standard port map ({InstantiationPoint().show()})"] + vhdl_port.get_standard_ports_map(instance_name=self.get_instance_name(), 
                                                                                          previous_instance_name=self._get_previous_instance_name())
-        tag_port_map = ["-- Tag port map"] + [f"s_tag => {self._local_tag_in}", f"m_tag => {self._local_tag_out}"]
+        tag_port_map = [f"-- Tag port map ({InstantiationPoint().show()})"] + [f"s_tag => {self._local_tag_in}", f"m_tag => {self._local_tag_out}"]
         ports = input_ports_map + output_port_map + memory_port_map + standard_port_map + tag_port_map
         return ",\n".join(ports)
 
@@ -288,7 +300,7 @@ end process;
         function_contents.write_body(f"signal {tag_signals} : {tag_type};")
         self._write_instance_input_ports(function_contents=function_contents, instruction=self.instruction, globals=globals)
         function_contents.write_body(f"signal m_tdata_i : {self._get_output_port_type()};")
-
+ 
     def generate_code(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> None:
         if not self._is_work_library():
             function_contents.append_instance(self._entity_name())

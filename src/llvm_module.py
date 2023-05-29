@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import List
 from llvm_constant import DeclarationBase
+from llvm_destination import LlvmDestination
 
 from llvm_function import LlvmFunctionContainer
 from llvm_globals_container import GlobalsContainer
@@ -30,5 +31,8 @@ class LlvmModule:
     def get_memory_instances(self) -> List[VhdlMemory]:
         return self.globals.get_memory_instances()
     
-    def get_memory_drivers(self, pointer_name: str) -> List[str]:
-        return self.functions.get_memory_drivers(pointer_name=pointer_name)
+    def get_pointer_drivers(self, pointer_name: str) -> List[str]:
+        return self.functions.get_pointer_drivers(pointer_name=pointer_name)
+    
+    def get_pointer_destinations(self) -> List[LlvmDestination]:
+        return self.functions.get_pointer_destinations()

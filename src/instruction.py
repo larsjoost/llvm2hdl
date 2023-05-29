@@ -3,6 +3,7 @@ from typing import List, Optional
 from instruction_argument import InstructionArgumentContainer, InstructionArgument
 
 from instruction_interface import InstructionGeneral, InstructionInterface
+from llvm_destination import LlvmDestination
 from memory_interface import MemoryInterface, MemoryInterfaceMaster, MemoryInterfaceSlave
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
@@ -101,6 +102,7 @@ class AllocaInstruction(InstructionInterface):
 
 @dataclass
 class GetelementptrInstruction(InstructionInterface):
+    destination: LlvmDestination
     opcode: str
     data_type: TypeDeclaration
     operands: InstructionArgumentContainer
@@ -119,16 +121,18 @@ class GetelementptrInstruction(InstructionInterface):
     def is_valid(self) -> bool:
         return True
     def access_memory_contents(self) -> bool:
-        return False
+        return True
     def map_function_arguments(self) -> bool:
         return False
     def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return LlvmMemoryOutputPort(data_type=self.data_type)
+        return LlvmMemoryOutputPort(data_type=self.data_type, port_name=self.destination.name)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
-        return None
+        return MemoryInterfaceMaster()
     def get_external_pointer_names(self) -> List[str]:
         return []
-    
+    def returns_pointer(self) -> bool:
+        return True
+
 @dataclass
 class CallInstruction(InstructionInterface):
     opcode: str

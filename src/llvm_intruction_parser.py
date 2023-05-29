@@ -3,17 +3,17 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional
 from instruction_interface import InstructionInterface
+from llvm_destination import LlvmDestination
 from llvm_globals_container import GlobalsContainer
 from llvm_source_file import LlvmSourceLine
 
-from llvm_type import LlvmVariableName
 from messages import Messages
 
 
 @dataclass
 class LlvmInstructionParserArguments:
     instruction: str
-    destination: Optional[LlvmVariableName]
+    destination: LlvmDestination
     constants: GlobalsContainer
 
 class LlvmInstructionParserInterface(ABC):
@@ -22,7 +22,7 @@ class LlvmInstructionParserInterface(ABC):
         self._msg = Messages()
 
     @abstractmethod
-    def parse(self, arguments: LlvmInstructionParserArguments, source_line: LlvmSourceLine) -> Optional[InstructionInterface]:
+    def parse(self, arguments: LlvmInstructionParserArguments, destination: LlvmDestination, source_line: LlvmSourceLine) -> Optional[InstructionInterface]:
         pass
 
     @abstractmethod
