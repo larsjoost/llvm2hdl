@@ -143,8 +143,6 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
     def is_return_instruction(self) -> bool:
         return self.instruction.is_return_instruction()
     def get_memory_drivers(self, pointer_name: str) -> List[str]:
-        if not self.access_memory_contents():
-            return []
         operands = self.get_operands()
         if operands is None:
             return []
@@ -483,7 +481,7 @@ class LlvmFunctionParser:
     def __init__(self) -> None:
         self._msg = Messages()
 
-    def _parse_parentesis(self, left_parenthis_split: List[str]) -> Tuple[str, TypeDeclaration]:
+    def _parse_parenthesis(self, left_parenthis_split: List[str]) -> Tuple[str, TypeDeclaration]:
         function_definition = left_parenthis_split[0].split()
         function_name = function_definition[-1]
         return_type = LlvmDeclarationFactory().get(function_definition[-2])
@@ -498,7 +496,7 @@ class LlvmFunctionParser:
         left_parenthis_split = line.split("(", maxsplit=1)
         argument_text = left_parenthis_split[1].rsplit(")", maxsplit=1)[0]
         arguments = LlvmArgumentParser().parse(arguments=argument_text)
-        function_name, return_type = self._parse_parentesis(left_parenthis_split=left_parenthis_split)
+        function_name, return_type = self._parse_parenthesis(left_parenthis_split=left_parenthis_split)
         return function_name, arguments, return_type
 
     def parse(self, source_function: LlvmSourceFunction, constants: GlobalsContainer) -> LlvmFunction:

@@ -34,6 +34,9 @@ entity llvm_store is
     );
 end entity llvm_store;
 
+library work;
+use work.llvm_pkg.std_ulogic_vector_to_hex;
+
 architecture rtl of llvm_store is
 
   constant c_id_width : positive := m_wid'length;
@@ -70,6 +73,9 @@ begin
           m_wdata             <= std_ulogic_vector(resize(unsigned(a), m_wdata'length));
           tag_storage_i(id_i) <= s_tag;
           id_i                <= (id_i + 1) mod c_id_size;
+        --pragma synthesis_off
+        report "Store 0x" & std_ulogic_vector_to_hex(a) & " to address 0x" & std_ulogic_vector_to_hex(b);
+        --pragma synthesis_on
         end if;
       end if;
     end if;

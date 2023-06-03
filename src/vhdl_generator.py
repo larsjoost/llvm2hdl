@@ -13,7 +13,6 @@ from vhdl_declarations import VhdlDeclarations, VhdlTagSignal
 from vhdl_instance_name import VhdlInstanceName
 from vhdl_instruction import VhdlInstruction, VhdlInstructionContainer
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
-from vhdl_memory_generator import VhdlMemoryGenerator
 from vhdl_port_generator import VhdlPortGenerator
 from vhdl_memory_port import VhdlMemoryPort
 from vhdl_signal_name import VhdlSignalName
@@ -179,8 +178,7 @@ port map (
             return None
         if not self.instruction.map_memory_interface():
             return None
-        memory_interface_name = self.get_instance_name()
-        return f"{memory_interface_name}_{port.get_name()}"
+        return VhdlMemoryPort().get_memory_signal_name(instance_name=self.get_instance_name(), signal_name=port.get_name())
 
     def _get_input_port_map(self, input_port: VhdlInstructionArgument, function_contents: FunctionContentsInterface) -> List[str]:
         vhdl_port = VhdlPortGenerator()
@@ -198,16 +196,15 @@ port map (
         if output_port is not None and output_port.is_pointer():
             vhdl_memory_port = VhdlMemoryPort()
             name = output_port.get_name()
-            assert name is not None
+            assert name is not None, f"Output port name is not defined of {self.instruction.get_source_line()}"
             function_contents.add_instance_signals(vhdl_memory_port.get_port_signals(name=name))
         return vhdl_port.get_output_port_map(output_port=output_port)
 
-    def _flatten(self, xss: List[List[str]]) -> List[str]:
-        return [x for xs in xss for x in xs]
-
     def _get_input_port_maps(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> List[str]:
-        input_ports_map = [self._get_input_port_map(input_port=i, function_contents=function_contents) for i in self._input_ports(instruction=self.instruction, globals=globals)]
-        return self._flatten(input_ports_map)
+        input_ports_map = []
+        for i in self._input_ports(instruction=self.instruction, globals=globals):
+            input_ports_map.extend(self._get_input_port_map(input_port=i, function_contents=function_contents))
+        return input_ports_map
  
     def _get_component_instantiation_port_map(self, function_contents: FunctionContentsInterface, globals: GlobalsContainer) -> str:
         vhdl_port = VhdlPortGenerator()

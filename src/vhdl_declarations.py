@@ -40,8 +40,9 @@ class VhdlTagSignal(SignalInterface):
     type : VhdlDeclarations
     def get_signal_declaration(self) -> str:
         return f"signal {self.name} : tag_t;"
-    def get_record_item(self) -> Tuple[str, str]:
-        assert self.instance is not None
+    def get_record_item(self) -> Optional[Tuple[str, str]]:
+        if self.instance is None:
+            return None
         return self.instance, f": {self.type.get_type_declarations()};"
     def get_data_width(self) -> str:
         return self.type.get_data_width()

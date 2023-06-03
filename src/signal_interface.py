@@ -1,12 +1,12 @@
 
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 class SignalInterface(ABC):
     
     @abstractmethod
-    def get_record_item(self) -> Tuple[str, str]:
+    def get_record_item(self) -> Optional[Tuple[str, str]]:
         pass
 
     @abstractmethod

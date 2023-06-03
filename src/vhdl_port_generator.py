@@ -33,7 +33,9 @@ class VhdlPortGenerator(PortGenerator):
                     f": std_ulogic_vector(0 to {port.get_name()}'length - 1);",
                 )
         for signal in signals:
-            yield signal.get_record_item()
+            record_item = signal.get_record_item()
+            if record_item is not None:
+                yield record_item
 
     def get_tag_item_names(self, ports: PortContainer, signals : List[SignalInterface]) -> List[str]:
         return [

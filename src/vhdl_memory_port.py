@@ -49,9 +49,12 @@ class VhdlMemoryPort:
             for i in self._memory_ports
         ]
 
+    def get_memory_signal_name(self, instance_name: str, signal_name: str) -> str:
+        return f"{instance_name}_{signal_name}"
+
     def _get_signal_assignment(self, port: VhdlPort, signal_name: str, assignment_names: List[str]) -> str:
         assignment_separator = " & " if port.is_master() else ", "
-        assignment = assignment_separator.join([f"{i}_{port.name}" for i in assignment_names])
+        assignment = assignment_separator.join([self.get_memory_signal_name(instance_name=i, signal_name=port.name) for i in assignment_names])
         destination_assignment = f"({assignment})" if len(assignment_names) > 1 else assignment
         port_name = f"{signal_name}_{port.name}"
         return (

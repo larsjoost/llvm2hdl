@@ -71,7 +71,8 @@ class VhdlFunctionContents(FunctionContentsInterface):
     def write_tag_declaration(self, signal_name: str, instance_name: str, destination: Optional[str], data_type: TypeDeclaration) -> None:
         signal = VhdlTagSignal(instance=destination, name=signal_name, type=VhdlDeclarations(data_type))
         self._append(contents=self.signal_declaration, current_frame=inspect.currentframe(), content=signal.get_signal_declaration())
-        self.add_signal(signal=signal) 
+        if destination is not None:
+            self.add_signal(signal=signal) 
 
     def write_body(self, *args, **kwargs) -> None:
         content = self._print_to_string(*args, **kwargs)
