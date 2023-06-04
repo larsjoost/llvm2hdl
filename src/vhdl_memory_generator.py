@@ -6,6 +6,8 @@ from vhdl_memory import VhdlMemory
 from vhdl_memory_port import VhdlMemoryPort
 from vhdl_signal_assignment import VhdlSignalAssignment
 
+from function_logger import log_entry_and_exit
+
 class VhdlMemoryGenerator:
 
     def _get_memory_arbiter_port_map(self, memory_master_name: str, memory_slave_name: str) -> str:
@@ -32,7 +34,8 @@ sreset => sreset,
         block_name = f"arbiter_{memory_name}_b"
         signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
         assignment_names = [VhdlSignalAssignment(instance_name=i, signal_name=memory_name) for i in memory_instance_names]
-        signal_assigment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=assignment_names)
+        signal_assigment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, 
+                                                                        assignment_names=assignment_names)
         signal_assigments = "\n".join([f"{i};" for i in signal_assigment_list])
         memory_interface_name = f"memory_arbiter_{memory_name}"
         port_map = self._get_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
@@ -70,7 +73,8 @@ end block {block_name};
         assert number_of_memory_instances > 0, f"Did not find any attachments to pointer {pointer_name}"
         if number_of_memory_instances > 1:
             self._write_memory_instances(
-                pointer_name, number_of_memory_instances, memory_drivers, function_contents=function_contents)
+                memory_name=pointer_name, number_of_memory_instances=number_of_memory_instances, 
+                memory_instance_names=memory_drivers, function_contents=function_contents)
         else:
             memory_signal_name = memory_drivers[0]
             self._write_memory_interface_signal_assignment(memory_master_name=pointer_name, memory_slave_name=memory_signal_name,

@@ -1,28 +1,21 @@
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import List, Optional
 
 from instruction_argument import InstructionArgumentContainer
 from llvm_port import LlvmOutputPort
+from llvm_type import LlvmInstanceName
 from llvm_type_declaration import TypeDeclaration
 from memory_interface import MemoryInterface
 
-class InstructionGeneral:
-    def get_instance_name(self, opcode: str, sub_type: Optional[str] = None) -> str:
-        name = f"llvm_{opcode}"
-        if sub_type is not None:
-            name = f"{name}_{sub_type}"
-        return name
-    def get_library(self) -> str:
-        return "llvm"
-
+@dataclass
 class InstructionInterface(ABC):
-    @abstractmethod
+    opcode: LlvmInstanceName
     def get_instance_name(self) -> str:
-        pass
-    @abstractmethod
+        return self.opcode.get_instance_name()
     def get_library(self) -> str:
-        pass
+        return self.opcode.get_library()
     @abstractmethod
     def get_data_type(self) -> TypeDeclaration:
         pass

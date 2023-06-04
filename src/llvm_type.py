@@ -51,6 +51,32 @@ class LlvmVariableName(LlvmName, LlvmType):
     def is_variable(self) -> bool:
         return True
 
+@dataclass(frozen=True)
+class LlvmInstanceName(LlvmName, LlvmType):
+    """
+    Example %0, %a, %x.coerce, @_Z3Addi_1
+    """
+    llvm_library: bool = True
+    def _to_string(self) -> str:
+        return VhdlCodeGenerator().get_vhdl_name(llvm_name=self.name)
+    def translate_name(self) -> str:
+        return self._to_string()
+    def is_name(self) -> bool:
+        return True
+    def equals(self, other: LlvmType) -> bool:
+        return self.get_name() == other.get_name()
+    def get_name(self) -> str:
+        return self.name
+    def get_instance_name(self, sub_type: Optional[str] = None) -> str:
+        name = self.translate_name()
+        if self.llvm_library and not name.startswith('llvm_'):
+            name = f"llvm_{name}"
+        if sub_type is not None:
+            name = f"{name}_{sub_type}"
+        return name
+    def get_library(self) -> str:
+        return "llvm" if self.llvm_library else "work"
+
 class LlvmVariableNameMatch(LlvmTypeMatch):
     def match(self, text: str) -> bool:
         return text.startswith("%")

@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import List, Optional
 from instruction_argument import InstructionArgumentContainer, InstructionArgument
 
-from instruction_interface import InstructionGeneral, InstructionInterface
+from instruction_interface import InstructionInterface
 from llvm_destination import LlvmDestination
-from memory_interface import MemoryInterface, MemoryInterfaceSlave
+from memory_interface import MemoryInterface
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_source_file import LlvmSourceLine
@@ -13,13 +13,8 @@ from llvm_type import LlvmInteger, LlvmVariableName
 
 @dataclass
 class ReturnInstruction(InstructionInterface):
-    opcode: str
     data_type: TypeDeclaration
     operands: InstructionArgumentContainer
-    def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_operands(self) -> Optional[InstructionArgumentContainer]:
@@ -41,13 +36,8 @@ class ReturnInstruction(InstructionInterface):
     
 @dataclass
 class BitcastInstruction(InstructionInterface):
-    opcode: str
     data_type: TypeDeclaration
     operands: InstructionArgumentContainer
-    def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_operands(self) -> Optional[InstructionArgumentContainer]:
@@ -68,14 +58,9 @@ class BitcastInstruction(InstructionInterface):
 @dataclass
 class GetelementptrInstruction(InstructionInterface):
     destination: LlvmDestination
-    opcode: str
     data_type: TypeDeclaration
     operands: InstructionArgumentContainer
     offset: int
-    def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_operands(self) -> Optional[InstructionArgumentContainer]:
@@ -100,15 +85,9 @@ class GetelementptrInstruction(InstructionInterface):
 
 @dataclass
 class CallInstruction(InstructionInterface):
-    opcode: str
-    llvm_function: bool
     data_type: TypeDeclaration
     operands: InstructionArgumentContainer
     source_line: LlvmSourceLine
-    def get_instance_name(self) -> str:
-        return self.opcode
-    def get_library(self) -> str:
-        return "llvm" if self.llvm_function else "work"
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_operands(self) -> Optional[InstructionArgumentContainer]:
@@ -128,15 +107,10 @@ class CallInstruction(InstructionInterface):
 
 @dataclass
 class LoadInstruction(InstructionInterface):
-    opcode: str
     data_type: TypeDeclaration
     output_port_name: Optional[LlvmVariableName]
     operands: InstructionArgumentContainer
     source_line: LlvmSourceLine
-    def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_operands(self) -> Optional[InstructionArgumentContainer]:
@@ -156,17 +130,13 @@ class LoadInstruction(InstructionInterface):
 
 @dataclass
 class DefaultInstruction(InstructionInterface):
-    opcode: str
     sub_type: Optional[str]
     data_type: TypeDeclaration
     operands: InstructionArgumentContainer
     output_port_name: str
     source_line: LlvmSourceLine
     def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode, 
-                                                      sub_type=self.sub_type)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
+        return self.opcode.get_instance_name(sub_type=self.sub_type)
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_operands(self) -> Optional[InstructionArgumentContainer]:

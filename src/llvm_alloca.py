@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from instruction_argument import InstructionArgumentContainer
 
-from instruction_interface import InstructionGeneral, InstructionInterface
+from instruction_interface import InstructionInterface
 from llvm_declarations import LlvmDeclarationFactory
 from llvm_destination import LlvmDestination
 from llvm_intruction_parser import LlvmInstructionParserArguments, LlvmInstructionParserInterface
@@ -10,18 +10,13 @@ from llvm_source_file import LlvmSourceLine
 from memory_interface import MemoryInterface
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmVariableName
+from llvm_type import LlvmInstanceName, LlvmVariableName
 
 @dataclass
 class AllocaInstruction(InstructionInterface):
-    opcode: str
     data_type: TypeDeclaration
     output_port_name: Optional[LlvmVariableName]
     initialization: Optional[List[str]]
-    def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
     def get_data_type(self) -> TypeDeclaration:
         return self.data_type
     def get_generic_map(self) -> Optional[List[str]]:
@@ -45,7 +40,9 @@ class AllocaInstruction(InstructionInterface):
         return None
     def get_external_pointer_names(self) -> List[str]:
         return []
-
+    def returns_pointer(self) -> bool:
+        return True
+    
 class AllocaInstructionParser(LlvmInstructionParserInterface):
 
     def parse(self, arguments: LlvmInstructionParserArguments, destination: LlvmDestination, source_line: LlvmSourceLine) -> InstructionInterface:
@@ -54,7 +51,7 @@ class AllocaInstructionParser(LlvmInstructionParserInterface):
         # alloca %class.ClassTest, align 4
         x = arguments.instruction.split(",")
         y = x[0].split(maxsplit=1)
-        opcode = y[0]
+        opcode = LlvmInstanceName(name=y[0])
         data_type_position = y[1].replace("[", "").replace("]", "")
         data_type = LlvmDeclarationFactory().get(data_type=data_type_position, constants=arguments.constants)
         initialization = arguments.constants.get_initialization(name=arguments.destination.name)

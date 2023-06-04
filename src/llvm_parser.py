@@ -16,7 +16,7 @@ from llvm_source_file import LlvmSourceConstants, LlvmSourceFile, LlvmSourceFile
 
 from messages import Messages
 from llvm_type_declaration import TypeDeclaration
-from llvm_type import LlvmVariableName, LlvmTypeFactory
+from llvm_type import LlvmInstanceName, LlvmVariableName, LlvmTypeFactory
 from llvm_declarations import LlvmDeclarationFactory, LlvmPointerDeclaration, LlvmIntegerDeclaration
 
 @dataclass
@@ -28,13 +28,13 @@ class InstructionPosition:
     
 class InstructionPositionParser:
     source : List[str]
-    opcode : str
+    opcode : LlvmInstanceName
     sub_type: Optional[str]
     operands : List[InstructionArgument]
     data_type : str
     def __init__(self, instruction: List[str], position: InstructionPosition):
         self.source = instruction
-        self.opcode = instruction[position.opcode]
+        self.opcode = LlvmInstanceName(name=instruction[position.opcode])
         self.sub_type = instruction[position.sub_type] if position.sub_type is not None else None
         self.data_type = instruction[position.data_type].replace(",", "")
         self.operands = [self._parse_operand(instruction, item, index) for index, item in enumerate(position.operands)]
@@ -170,7 +170,7 @@ class BitCastInstructionParser(LlvmInstructionParserInterface):
     def parse(self, arguments: LlvmInstructionParserArguments, destination: LlvmDestination, source_line: LlvmSourceLine) -> InstructionInterface:
         utils = LlvmParserUtilities()
         c = utils.split_space(arguments.instruction)
-        opcode = c[0]
+        opcode = LlvmInstanceName(name=c[0])
         data_width = int(" ".join(c[1:-3]))
         data_type = LlvmIntegerDeclaration(data_width=data_width)
         signal_name = LlvmVariableName(c[-3])
@@ -190,7 +190,7 @@ class GetelementptrInstructionParser(LlvmInstructionParserInterface):
         1) instruction = "getelementptr inbounds i32, ptr %a, i64 1"
         2) instruction = "getelementptr inbounds [4 x i32], ptr %n, i64 0, i64 1"
         """
-        opcode = arguments.instruction.split()[0]
+        opcode = LlvmInstanceName(name=arguments.instruction.split()[0])
         utils = LlvmParserUtilities()
         c = utils.split_comma(arguments.instruction)
         # 1) c = "getelementptr inbounds i32" , "ptr %a", "i64 1"
@@ -222,7 +222,7 @@ class ReturnInstructionParser(LlvmInstructionParserInterface):
         """
         utils = LlvmParserUtilities()
         a = utils.split_space(arguments.instruction)
-        opcode = a[0].strip()
+        opcode = LlvmInstanceName(name=a[0].strip())
         data_type_position = a[1].strip()
         data_type = LlvmDeclarationFactory().get(data_type=data_type_position, constants=arguments.constants)
         try:
@@ -251,7 +251,8 @@ class CallInstructionParser(LlvmInstructionParserInterface):
     def _get_call_instruction(self, function_name: str, llvm_function: bool, return_type: str, arguments: str, source_line: LlvmSourceLine) -> CallInstruction:
         data_type = LlvmDeclarationFactory().get(return_type)
         operands = LlvmArgumentParser().parse(arguments=arguments, unnamed=True)
-        return CallInstruction(opcode=function_name, llvm_function=llvm_function, data_type=data_type, operands=InstructionArgumentContainer(operands), source_line=source_line)
+        opcode = LlvmInstanceName(name=function_name, llvm_library=llvm_function)
+        return CallInstruction(opcode=opcode, data_type=data_type, operands=InstructionArgumentContainer(operands), source_line=source_line)
 
     def _split_function_call(self, function_call: str) -> Tuple[str, str]:
         head_split = function_call.split()
@@ -293,7 +294,7 @@ class LoadInstructionParser(LlvmInstructionParserInterface):
         utils = LlvmParserUtilities()
         x = utils.split_top_comma(arguments.instruction)
         y = x[0].split(maxsplit=1)
-        opcode = y[0]
+        opcode = LlvmInstanceName(name=y[0])
         data_type = LlvmDeclarationFactory().get(data_type=y[1], constants=arguments.constants)
         operands = LlvmArgumentParser().parse(arguments=x[1], unnamed=True)
         return LoadInstruction(
