@@ -150,7 +150,7 @@ end function tag_to_std_ulogic_vector;
     def _get_memory_drivers(self, memory_instance: VhdlMemory) -> List[str]:
         memory_drivers = self.module.get_pointer_drivers(pointer_name=memory_instance.name)
         vhdl_code_generator = VhdlCodeGenerator()
-        return [vhdl_code_generator.get_vhdl_name(f"{i}_{memory_instance.name}") for i in memory_drivers]
+        return [vhdl_code_generator.get_vhdl_name(i) for i in memory_drivers]
 
     def _write_memory_instance(self, function_contents: VhdlFunctionContents, memory_instance: VhdlMemory) -> None:
         memory_drivers = self._get_memory_drivers(memory_instance=memory_instance)

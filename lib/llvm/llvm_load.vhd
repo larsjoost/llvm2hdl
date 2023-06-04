@@ -5,31 +5,31 @@ use ieee.numeric_std.all;
 entity llvm_load is
   port (
     a         : in  std_ulogic_vector;
+    m_araddr  : out std_ulogic_vector;
+    m_arid    : out std_ulogic_vector;
+    m_arvalid : out std_ulogic;
+    m_arready : in  std_ulogic;
+    m_rready  : out std_ulogic;
+    m_rvalid  : in  std_ulogic;
+    m_rdata   : in  std_ulogic_vector;
+    m_rid     : in  std_ulogic_vector;
+    m_awaddr  : out std_ulogic_vector;
+    m_wdata   : out std_ulogic_vector;
+    m_wid     : out std_ulogic_vector;
+    m_wvalid  : out std_ulogic;
+    m_wready  : in  std_ulogic;
+    m_bready  : out std_ulogic;
+    m_bvalid  : in  std_ulogic;
+    m_bid     : in  std_ulogic_vector;
+    m_tvalid  : out std_ulogic;
+    m_tready  : in  std_ulogic;
+    m_tdata   : out std_ulogic_vector;
     clk       : in  std_ulogic;
     sreset    : in  std_ulogic;
     s_tvalid  : in  std_ulogic;
     s_tready  : out std_ulogic;
     s_tag     : in  std_ulogic_vector;
-    m_tag     : out std_ulogic_vector;
-    m_tvalid  : out std_ulogic;
-    m_tready  : in  std_ulogic;
-    m_tdata   : out std_ulogic_vector;
-    m_araddr  : out std_ulogic_vector;
-    m_arid    : out std_ulogic_vector;
-    m_arvalid : out std_ulogic;
-    m_arready : in  std_ulogic;
-    m_rdata   : in  std_ulogic_vector;
-    m_rvalid  : in  std_ulogic;
-    m_rready  : out std_ulogic;
-    m_rid     : in  std_ulogic_vector;
-    m_awaddr  : out std_ulogic_vector;
-    m_wready  : in  std_ulogic;
-    m_wvalid  : out std_ulogic;
-    m_wdata   : out std_ulogic_vector;
-    m_wid     : out std_ulogic_vector;
-    m_bready  : out std_ulogic;
-    m_bvalid  : in  std_ulogic;
-    m_bid     : in  std_ulogic_vector
+    m_tag     : out std_ulogic_vector
     );
 end entity llvm_load;
 

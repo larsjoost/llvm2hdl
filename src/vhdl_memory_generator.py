@@ -4,6 +4,7 @@ from vhdl_code_generator import VhdlCodeGenerator
 from vhdl_function_contents import VhdlFunctionContents
 from vhdl_memory import VhdlMemory
 from vhdl_memory_port import VhdlMemoryPort
+from vhdl_signal_assignment import VhdlSignalAssignment
 
 class VhdlMemoryGenerator:
 
@@ -30,7 +31,8 @@ sreset => sreset,
         vhdl_memory_port = VhdlMemoryPort()
         block_name = f"arbiter_{memory_name}_b"
         signals = "\n".join([f"signal {i}; " for i in vhdl_memory_port.get_port_signals(name=memory_signal_name, scale_range="c_size")])
-        signal_assigment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=memory_instance_names)
+        assignment_names = [VhdlSignalAssignment(instance_name=i, signal_name=memory_name) for i in memory_instance_names]
+        signal_assigment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_signal_name, assignment_names=assignment_names)
         signal_assigments = "\n".join([f"{i};" for i in signal_assigment_list])
         memory_interface_name = f"memory_arbiter_{memory_name}"
         port_map = self._get_memory_arbiter_port_map(memory_master_name=memory_name, memory_slave_name=memory_signal_name)
@@ -53,7 +55,8 @@ end block {block_name};
 
     def _get_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str) -> str:
         vhdl_memory_port = VhdlMemoryPort()
-        assignment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_master_name, assignment_names=[memory_slave_name])
+        assignment_names = [VhdlSignalAssignment(instance_name=memory_slave_name, signal_name=memory_master_name)]
+        assignment_list = vhdl_memory_port.get_signal_assignments(signal_name=memory_master_name, assignment_names=assignment_names)
         return "\n".join([f"{i};" for i in assignment_list])
 
     def _write_memory_interface_signal_assignment(self, memory_master_name: str, memory_slave_name: str, 

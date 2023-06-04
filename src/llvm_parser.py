@@ -239,6 +239,7 @@ class AllocaInstructionParser(LlvmInstructionParserInterface):
         # alloca [3 x i32], align 4
         # alloca i32, align 4
         # alloca %class.ClassTest, align 4
+        assert False, f"alloca is not supported yet: {source_line.get_elaborated()}. It is propably caused by defining a non static variable"
         x = arguments.instruction.split(",")
         y = x[0].split(maxsplit=1)
         opcode = y[0]

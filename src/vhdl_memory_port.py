@@ -3,6 +3,8 @@ from messages import Messages
 from ports import Port
 from vhdl_port import VhdlInputPort, VhdlMasterPort, VhdlMemoryAddressWidth, VhdlMemoryDataWidth, VhdlMemoryIdWidth, VhdlOutputPort, VhdlPort, VhdlSlavePort
 
+from function_logger import log_entry_and_exit
+from vhdl_signal_assignment import VhdlSignalAssignment
 
 class VhdlMemoryPort:
 
@@ -49,21 +51,25 @@ class VhdlMemoryPort:
             for i in self._memory_ports
         ]
 
-    def get_memory_signal_name(self, instance_name: str, signal_name: str) -> str:
-        return f"{instance_name}_{signal_name}"
+    def _get_slave_signal_assignment(self, assignment: str, port_name: str, multiple_assignment_names: bool) -> str:
+        destination_assignment = f"({assignment})" if multiple_assignment_names else assignment
+        return f"{destination_assignment} <= {port_name}"
 
-    def _get_signal_assignment(self, port: VhdlPort, signal_name: str, assignment_names: List[str]) -> str:
+    def _get_master_signal_assignment(self, assignment: str, port_name: str) -> str:
+        return f"{port_name} <= {assignment}"
+
+    def _get_signal_assignment(self, port: VhdlPort, signal_name: str, assignment_names: List[VhdlSignalAssignment]) -> str:
         assignment_separator = " & " if port.is_master() else ", "
-        assignment = assignment_separator.join([self.get_memory_signal_name(instance_name=i, signal_name=port.name) for i in assignment_names])
-        destination_assignment = f"({assignment})" if len(assignment_names) > 1 else assignment
+        memory_assignments = [i.get_name(port_name=port.name) for i in assignment_names]
+        assignment = assignment_separator.join(memory_assignments)
         port_name = f"{signal_name}_{port.name}"
-        return (
-            f"{port_name} <= {assignment}"
-            if port.is_master()
-            else f"{destination_assignment} <= {port_name}"
-        )
+        if port.is_master():
+            return self._get_master_signal_assignment(assignment=assignment, port_name=port_name)
+        multiple_assignment_names = len(assignment_names) > 1
+        return self._get_slave_signal_assignment(assignment=assignment, port_name=port_name, multiple_assignment_names=multiple_assignment_names)
 
-    def get_signal_assignments(self, signal_name: str, assignment_names: List[str]) -> List[str]:
+    @log_entry_and_exit()
+    def get_signal_assignments(self, signal_name: str, assignment_names: List[VhdlSignalAssignment]) -> List[str]:
         return [
             f"{self._get_signal_assignment(port=i, signal_name=signal_name, assignment_names=assignment_names)}"
             for i in self._memory_ports

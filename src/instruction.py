@@ -181,11 +181,11 @@ class LoadInstruction(InstructionInterface):
     def access_memory_contents(self) -> bool:
         return True
     def map_function_arguments(self) -> bool:
-        return False
+        return True
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return LlvmOutputPort(data_type=self.data_type, port_name="m_tdata")
     def get_memory_interface(self) -> Optional[MemoryInterface]:    
-        return MemoryInterfaceMaster()
+        return None
     def get_external_pointer_names(self) -> List[str]:
         return []
 

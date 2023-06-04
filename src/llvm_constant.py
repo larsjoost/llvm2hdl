@@ -11,7 +11,7 @@ from vhdl_memory import VhdlMemory
 @dataclass
 class Constant:
     value: str
-    data_type: TypeDeclaration
+    data_type: Optional[TypeDeclaration]
 
 @dataclass
 class DeclarationBase:
@@ -42,9 +42,16 @@ class DeclarationBase:
         return False
     def get_memory_instance(self) -> Optional[VhdlMemory]:
         return None
+    def _get_memory_instance(self, type: TypeDeclaration, values: Optional[List[str]]) -> Optional[VhdlMemory]:
+        assert values is not None
+        initialization = VhdlDeclarations(data_type=type).get_initialization_array(values=values)
+        data_width = type.get_data_width()
+        assert data_width is not None
+        size_bytes = f"{data_width}/8"
+        return VhdlMemory(size_bytes=size_bytes, initialization=initialization, name=self.get_name())
 
 @dataclass
-class ConstantDeclaration(DeclarationBase):
+class GlobalVariableDeclaration(DeclarationBase):
     type: TypeDeclaration
     values: List[Constant]
     def get_type(self) -> Optional[TypeDeclaration]:
@@ -59,12 +66,7 @@ class ConstantDeclaration(DeclarationBase):
         return True
     def get_memory_instance(self) -> Optional[VhdlMemory]:
         values = self.get_values()
-        assert values is not None
-        initialization = VhdlDeclarations(data_type=self.type).get_initialization_array(values=values)
-        data_width = self.get_data_width()
-        assert data_width is not None
-        size_bytes = f"{data_width}/8"
-        return VhdlMemory(size_bytes=size_bytes, initialization=initialization, name=self.get_name())
+        return self._get_memory_instance(type=self.type, values=values)
     
 @dataclass
 class ReferenceDeclaration(DeclarationBase):
@@ -81,18 +83,6 @@ class ClassDeclaration(DeclarationBase):
         return self.type.get_dimensions()
     def get_data_width(self) -> Optional[str]:
         return self.type.get_data_width()
-
-@dataclass
-class GlobalVariableDeclaration(DeclarationBase):
-    type: TypeDeclaration
-    def get_dimensions(self) -> Tuple[int, Optional[str]]:
-        return self.type.get_dimensions()
-    def get_data_width(self) -> Optional[str]:
-        return self.type.get_data_width()
-    def is_variable(self) -> bool:
-        return True
-    def is_register(self) -> bool:
-        return True
 
 @dataclass
 class DeclarationContainer:

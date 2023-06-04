@@ -15,6 +15,7 @@ from vhdl_instruction import VhdlInstruction, VhdlInstructionContainer
 from vhdl_instruction_argument import VhdlInstructionArgument, VhdlInstructionArgumentFactory
 from vhdl_port_generator import VhdlPortGenerator
 from vhdl_memory_port import VhdlMemoryPort
+from vhdl_signal_assignment import VhdlSignalAssignment
 from vhdl_signal_name import VhdlSignalName
 
 class VhdlGeneratorInterface(ABC):
@@ -169,8 +170,9 @@ port map (
         memory_interface = self.instruction.get_memory_interface()
         if memory_interface is not None:
             master = memory_interface.is_master()
-            memory_port_map = vhdl_memory_port.get_port_map(name=self.get_instance_name(), master=master)
-            function_contents.add_instance_signals(vhdl_memory_port.get_port_signals(name=self.get_instance_name()))
+            name = self.get_instance_name()
+            memory_port_map = vhdl_memory_port.get_port_map(name=name, master=master)
+            function_contents.add_instance_signals(vhdl_memory_port.get_port_signals(name=name))
         return memory_port_map
 
     def _get_memory_port_name(self, port: VhdlInstructionArgument) -> Optional[str]:
@@ -178,7 +180,7 @@ port map (
             return None
         if not self.instruction.map_memory_interface():
             return None
-        return VhdlMemoryPort().get_memory_signal_name(instance_name=self.get_instance_name(), signal_name=port.get_name())
+        return VhdlSignalAssignment(instance_name=self.get_instance_name(), signal_name=port.get_name()).get_name()
 
     def _get_input_port_map(self, input_port: VhdlInstructionArgument, function_contents: FunctionContentsInterface) -> List[str]:
         vhdl_port = VhdlPortGenerator()

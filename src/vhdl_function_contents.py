@@ -27,6 +27,9 @@ class VhdlFunctionContents(FunctionContentsInterface):
     def _get_comment(self, current_frame: Optional[FrameType] = None) -> str:
         return VhdlCodeGenerator().get_comment(current_frame=current_frame)
         
+    def get_comment(self, contents: str) -> str:
+        return f"{self._get_comment(current_frame=inspect.currentframe())} {contents}"
+
     def get_signals(self) -> List[SignalInterface]:
         return self.container.get_signals()
 

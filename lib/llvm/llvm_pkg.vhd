@@ -37,6 +37,9 @@ package llvm_pkg is
   function get(data : integer_array_t; data_width : positive)
     return std_ulogic_vector;
 
+  function set_initialization(data: integer)
+    return integer_array_t;
+  
   function conv_std_ulogic_vector (
     arg                 : integer;
     constant data_width : positive)
@@ -118,6 +121,14 @@ package body llvm_pkg is
     return x;
   end function get;
 
+  function set_initialization(data: integer)
+    return integer_array_t is
+    variable x : integer_array_t(0 to 0);
+  begin
+    x(0) := data;
+    return x;
+  end function set_initialization;
+    
   function conv_std_ulogic_vector (
     arg                 : integer;
     constant data_width : positive)

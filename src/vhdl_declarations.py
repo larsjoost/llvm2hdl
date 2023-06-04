@@ -24,7 +24,7 @@ class VhdlDeclarations:
 
     def get_initialization_array(self, values: List[str]) -> str:
         arguments = ", ".join(values)
-        return f"integer_array_t'({arguments})"
+        return f"integer_array_t'({arguments})" if len(values) > 1 else f"set_initialization({arguments})"
 
     def get_initialization(self, values: List[str]) -> str:
         array = self.get_initialization_array(values=values)
