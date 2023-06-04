@@ -4,7 +4,7 @@ from instruction_argument import InstructionArgumentContainer, InstructionArgume
 
 from instruction_interface import InstructionGeneral, InstructionInterface
 from llvm_destination import LlvmDestination
-from memory_interface import MemoryInterface, MemoryInterfaceMaster, MemoryInterfaceSlave
+from memory_interface import MemoryInterface, MemoryInterfaceSlave
 from llvm_port import LlvmMemoryOutputPort, LlvmOutputPort
 from llvm_declarations import LlvmIntegerDeclaration
 from llvm_source_file import LlvmSourceLine
@@ -123,11 +123,11 @@ class GetelementptrInstruction(InstructionInterface):
     def access_memory_contents(self) -> bool:
         return True
     def map_function_arguments(self) -> bool:
-        return False
+        return True
     def get_output_port(self) -> Optional[LlvmOutputPort]:
         return LlvmMemoryOutputPort(data_type=self.data_type, port_name=self.destination.name)
     def get_memory_interface(self) -> Optional[MemoryInterface]:
-        return MemoryInterfaceMaster()
+        return None
     def get_external_pointer_names(self) -> List[str]:
         return []
     def returns_pointer(self) -> bool:

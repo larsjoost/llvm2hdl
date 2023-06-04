@@ -5,6 +5,24 @@ use ieee.numeric_std.all;
 entity llvm_getelementptr is
   port (
     a         : in  std_ulogic_vector;
+    -- Argument pointer interface
+    m_araddr  : out std_ulogic_vector;
+    m_arid    : out std_ulogic_vector;
+    m_arvalid : out std_ulogic;
+    m_arready : in  std_ulogic;
+    m_rready  : out std_ulogic;
+    m_rvalid  : in  std_ulogic;
+    m_rdata   : in  std_ulogic_vector;
+    m_rid     : in  std_ulogic_vector;
+    m_awaddr  : out std_ulogic_vector;
+    m_wdata   : out std_ulogic_vector;
+    m_wid     : out std_ulogic_vector;
+    m_wvalid  : out std_ulogic;
+    m_wready  : in  std_ulogic;
+    m_bready  : out std_ulogic;
+    m_bvalid  : in  std_ulogic;
+    m_bid     : in  std_ulogic_vector;
+    -- Second argument
     offset    : in  std_ulogic_vector;
     -- Output port interface
     m_tdata   : out std_ulogic_vector;
@@ -24,23 +42,6 @@ entity llvm_getelementptr is
     s_bready  : in  std_ulogic;
     s_bvalid  : out std_ulogic;
     s_bid     : out std_ulogic_vector;
-    -- Argument pointer interface
-    m_araddr  : out std_ulogic_vector;
-    m_arid    : out std_ulogic_vector;
-    m_arvalid : out std_ulogic;
-    m_arready : in  std_ulogic;
-    m_rdata   : in  std_ulogic_vector;
-    m_rvalid  : in  std_ulogic;
-    m_rready  : out std_ulogic;
-    m_rid     : in  std_ulogic_vector;
-    m_awaddr  : out std_ulogic_vector;
-    m_wready  : in  std_ulogic;
-    m_wvalid  : out std_ulogic;
-    m_wdata   : out std_ulogic_vector;
-    m_wid     : out std_ulogic_vector;
-    m_bready  : out std_ulogic;
-    m_bvalid  : in  std_ulogic;
-    m_bid     : in  std_ulogic_vector;
     clk       : in  std_ulogic;
     sreset    : in  std_ulogic;
     s_tag     : in  std_ulogic_vector;

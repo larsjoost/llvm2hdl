@@ -201,7 +201,7 @@ class GetelementptrInstructionParser(LlvmInstructionParserInterface):
         pointer_offset = int(array_index[-1])
         signal_data_type = LlvmPointerDeclaration()
         signal_name = LlvmVariableName(data_type[1])
-        argument = InstructionArgument(signal_name=signal_name, data_type=signal_data_type)
+        argument = InstructionArgument(signal_name=signal_name, data_type=signal_data_type, unnamed=True)
         operands = [argument]
         return GetelementptrInstruction(destination=destination, opcode=opcode, data_type=signal_data_type, operands=InstructionArgumentContainer(operands), offset=pointer_offset)
 

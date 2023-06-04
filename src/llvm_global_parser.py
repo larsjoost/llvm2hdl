@@ -9,8 +9,6 @@ from llvm_source_file import LlvmSourceLine
 from llvm_type import LlvmConstantName, LlvmReferenceName, LlvmVariableName
 from llvm_declarations import LlvmDeclarationFactory, LlvmIntegerDeclarationFactory, LlvmListDeclarationFactory
 
-from function_logger import log_entry_and_exit
-
 @dataclass
 class LlvmGlobalType:
     definition: str
