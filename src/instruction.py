@@ -66,41 +66,6 @@ class BitcastInstruction(InstructionInterface):
         return []
 
 @dataclass
-class AllocaInstruction(InstructionInterface):
-    opcode: str
-    data_type: TypeDeclaration
-    output_port_name: Optional[LlvmVariableName]
-    initialization: Optional[List[str]]
-    def get_instance_name(self) -> str:
-        return InstructionGeneral().get_instance_name(opcode=self.opcode)
-    def get_library(self) -> str:
-        return InstructionGeneral().get_library()
-    def get_data_type(self) -> TypeDeclaration:
-        return self.data_type
-    # TODO: Delete this
-    def get_generic_map(self) -> Optional[List[str]]:
-        data_width = self.data_type.get_data_width()
-        generic_map = [f"size_bytes => ({data_width})/8"]
-        if self.initialization is not None:
-            initialization = ", ".join(self.initialization)
-            generic_map.append(f"initialization => ({initialization})")
-        return generic_map
-    def get_operands(self) -> Optional[InstructionArgumentContainer]:
-        return None
-    def is_valid(self) -> bool:
-        return True
-    def access_memory_contents(self) -> bool:
-        return True
-    def get_output_port(self) -> Optional[LlvmOutputPort]:
-        return LlvmMemoryOutputPort(data_type=self.data_type)
-    def map_function_arguments(self) -> bool:
-        return False
-    def get_memory_interface(self) -> MemoryInterface:
-        return MemoryInterfaceSlave()
-    def get_external_pointer_names(self) -> List[str]:
-        return []
-
-@dataclass
 class GetelementptrInstruction(InstructionInterface):
     destination: LlvmDestination
     opcode: str

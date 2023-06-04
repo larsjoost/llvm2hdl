@@ -51,3 +51,6 @@ class InstructionInterface(ABC):
         return False
     def returns_pointer(self) -> bool:
         return False
+    def get_generic_map(self) -> Optional[List[str]]:
+        return None
+    

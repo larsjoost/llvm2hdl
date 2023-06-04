@@ -27,3 +27,10 @@ class VhdlFunction:
     
     def get_memory_instance_names(self) -> List[str]:
         return [VhdlCodeGenerator().get_vhdl_name(i) for i in self.function.get_memory_instance_names()]
+
+    def get_pointer_drivers(self, pointer_name: str) -> List[str]:
+        return self.function.get_pointer_drivers(pointer_name=pointer_name)
+    
+    def get_external_pointer_names(self) -> List[str]:
+        return self.function.get_external_pointer_names()
+    

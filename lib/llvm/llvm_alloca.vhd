@@ -13,7 +13,7 @@ entity llvm_alloca is
     initialization : integer_array_t := c_integer_array_default
     );
   port (
-    a         : out std_ulogic_vector;
+    m_tdata   : out std_ulogic_vector;
     s_araddr  : in  std_ulogic_vector;
     s_arid    : in  std_ulogic_vector;
     s_arvalid : in  std_ulogic;
@@ -47,7 +47,7 @@ architecture rtl of llvm_alloca is
 
 begin
 
-  ram_1: entity memory.ram
+  ram_1 : entity memory.ram
     generic map (
       size_bytes     => size_bytes,
       initialization => initialization)
@@ -70,14 +70,14 @@ begin
       s_bready  => s_bready,
       s_bvalid  => s_bvalid,
       s_bid     => s_bid);
-  
+
   s_tready <= m_tready;
 
   m_tvalid <= s_tvalid;
 
   m_tag <= s_tag;
 
-  a <= std_ulogic_vector(to_unsigned(0, a'length));
-  
+  m_tdata <= std_ulogic_vector(to_unsigned(0, m_tdata'length));
+
 end architecture rtl;
 

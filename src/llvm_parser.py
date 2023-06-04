@@ -1,9 +1,10 @@
 
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Union
-from instruction import AllocaInstruction, BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, LoadInstruction, ReturnInstruction
+from instruction import BitcastInstruction, CallInstruction, GetelementptrInstruction, DefaultInstruction, LoadInstruction, ReturnInstruction
 from instruction_argument import InstructionArgument, InstructionArgumentContainer
 from instruction_interface import InstructionInterface, LlvmOutputPort, MemoryInterface
+from llvm_alloca import AllocaInstructionParser
 from llvm_destination import LlvmDestination
 from llvm_globals_container import GlobalsContainer
 from llvm_function import LlvmFunction, LlvmFunctionContainer
@@ -152,7 +153,9 @@ class LlvmInstructionCommand(LlvmInstructionInterface):
         return []
     def get_pointer_destinations(self) -> List[LlvmDestination]:
         return [self.destination] if self.instruction.returns_pointer() else []        
-
+    def get_generic_map(self) -> Optional[List[str]]:
+        return self.instruction.get_generic_map()
+    
 class LlvmInstructionLabelParser:
 
     def parse(self, source_line: LlvmSourceLine) -> LlvmInstructionLabel:
@@ -232,26 +235,6 @@ class ReturnInstructionParser(LlvmInstructionParserInterface):
 
     def match(self, instruction: List[str]) -> bool:
         return instruction[0] == "ret"
-
-class AllocaInstructionParser(LlvmInstructionParserInterface):
-
-    def parse(self, arguments: LlvmInstructionParserArguments, destination: LlvmDestination, source_line: LlvmSourceLine) -> InstructionInterface:
-        # alloca [3 x i32], align 4
-        # alloca i32, align 4
-        # alloca %class.ClassTest, align 4
-        assert False, f"alloca is not supported yet: {source_line.get_elaborated()}. It is propably caused by defining a non static variable"
-        x = arguments.instruction.split(",")
-        y = x[0].split(maxsplit=1)
-        opcode = y[0]
-        data_type_position = y[1].replace("[", "").replace("]", "")
-        data_type = LlvmDeclarationFactory().get(data_type=data_type_position, constants=arguments.constants)
-        initialization = arguments.constants.get_initialization(name=arguments.destination.name)
-        return AllocaInstruction(
-            opcode=opcode, data_type=data_type, output_port_name=arguments.destination.name, initialization=initialization
-        )
-
-    def match(self, instruction: List[str]) -> bool:
-        return instruction[0] == "alloca"
 
 class CallInstructionParser(LlvmInstructionParserInterface):
 

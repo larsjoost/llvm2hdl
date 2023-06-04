@@ -4,8 +4,6 @@ from llvm_constant import DeclarationBase, DeclarationContainer
 from llvm_type import LlvmType, LlvmVariableName
 from vhdl_memory import VhdlMemory
 
-from function_logger import log_entry_and_exit
-
 @dataclass
 class GlobalsContainer:
     
@@ -41,7 +39,6 @@ class GlobalsContainer:
         declaration = self.get_declaration(name=name)
         return None if declaration is None else declaration.get_data_width()
 
-    @log_entry_and_exit()
     def get_memory_instances(self) -> List[VhdlMemory]:
         memory_instances = []
         for declaration in self.declarations:

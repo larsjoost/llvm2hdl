@@ -2,8 +2,6 @@ from typing import List, Optional, Union
 from messages import Messages
 from ports import Port
 from vhdl_port import VhdlInputPort, VhdlMasterPort, VhdlMemoryAddressWidth, VhdlMemoryDataWidth, VhdlMemoryIdWidth, VhdlOutputPort, VhdlPort, VhdlSlavePort
-
-from function_logger import log_entry_and_exit
 from vhdl_signal_assignment import VhdlSignalAssignment
 
 class VhdlMemoryPort:
@@ -68,7 +66,6 @@ class VhdlMemoryPort:
         multiple_assignment_names = len(assignment_names) > 1
         return self._get_slave_signal_assignment(assignment=assignment, port_name=port_name, multiple_assignment_names=multiple_assignment_names)
 
-    @log_entry_and_exit()
     def get_signal_assignments(self, signal_name: str, assignment_names: List[VhdlSignalAssignment]) -> List[str]:
         return [
             f"{self._get_signal_assignment(port=i, signal_name=signal_name, assignment_names=assignment_names)}"
